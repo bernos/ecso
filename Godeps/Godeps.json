@@ -1,0 +1,15 @@
+{
+	"ImportPath": "github.com/bernos/ecso",
+	"GoVersion": "go1.7",
+	"GodepVersion": "v74",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "gopkg.in/urfave/cli.v1",
+			"Comment": "v1.17.0",
+			"Rev": "01857ac33766ce0c93856370626f9799281c14f4"
+		}
+	]
+}

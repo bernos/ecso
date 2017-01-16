@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bernos/ecso/commands"
+	"github.com/bernos/ecso/logger"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -21,8 +22,8 @@ type initCommand struct {
 	Project string
 }
 
-func (cmd *initCommand) Execute() error {
-	fmt.Printf("Initialising project %s\n", cmd.Project)
+func (cmd *initCommand) Execute(log logger.Logger) error {
+	log.Info("Initialising project %s\n", cmd.Project)
 
 	return nil
 }

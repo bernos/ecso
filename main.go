@@ -4,11 +4,16 @@ import (
 	"os"
 
 	"github.com/bernos/ecso/commands/initcommand"
+	"github.com/bernos/ecso/logger"
 
 	"gopkg.in/urfave/cli.v1"
 )
 
 func main() {
+	log := logger.New(os.Stdout)
+
+	cli.ErrWriter = log.ErrWriter()
+
 	app := cli.NewApp()
 	app.Name = "ecso"
 	app.Usage = "Manage Amazon ECS projects"
@@ -26,7 +31,7 @@ func main() {
 			Usage:     "Initialise a new ecso project",
 			ArgsUsage: "project",
 			Action: func(c *cli.Context) error {
-				if err := initcommand.FromCliContext(c).Execute(); err != nil {
+				if err := initcommand.FromCliContext(c).Execute(log); err != nil {
 					return cli.NewExitError(err.Error(), 1)
 				}
 				return nil
