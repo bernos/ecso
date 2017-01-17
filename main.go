@@ -4,13 +4,13 @@ import (
 	"os"
 
 	"github.com/bernos/ecso/commands/initcommand"
-	"github.com/bernos/ecso/logger"
+	"github.com/bernos/ecso/pkg/ecso"
 
 	"gopkg.in/urfave/cli.v1"
 )
 
 func main() {
-	log := logger.New(os.Stdout)
+	log := ecso.NewLogger(os.Stdout)
 
 	cli.ErrWriter = log.ErrWriter()
 
