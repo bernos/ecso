@@ -4,6 +4,8 @@ import (
 	"os"
 
 	"github.com/bernos/ecso/commands/addenvironmentcommand"
+	"github.com/bernos/ecso/commands/envcommand"
+	"github.com/bernos/ecso/commands/environmentupcommand"
 	"github.com/bernos/ecso/commands/initcommand"
 	"github.com/bernos/ecso/pkg/ecso"
 
@@ -29,6 +31,8 @@ func main() {
 	app.Commands = []cli.Command{
 		initcommand.CliCommand(cfg),
 		addenvironmentcommand.CliCommand(cfg),
+		envcommand.CliCommand(cfg),
+		environmentupcommand.CliCommand(cfg),
 	}
 
 	app.Run(os.Args)

@@ -67,7 +67,26 @@ func SaveCurrentProject(project *ecso.Project) error {
 }
 
 func GetCurrentProjectFile() (string, error) {
-	wd, err := os.Getwd()
+	wd, err := GetCurrentProjectDir()
 
 	return filepath.Join(wd, ".ecso", "project.json"), err
+}
+
+func DirExists(dir string) (bool, error) {
+	_, err := os.Stat(dir)
+
+	switch {
+	case os.IsNotExist(err):
+		return false, nil
+	case err != nil:
+		return false, err
+	default:
+		return true, nil
+	}
+}
+
+func GetCurrentProjectDir() (string, error) {
+	// For now this is just pwd, but later might want to walk up
+	// the dir tree, so ecso can run from sub folders in a project
+	return os.Getwd()
 }

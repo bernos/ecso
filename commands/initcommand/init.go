@@ -64,7 +64,7 @@ func (cmd *initCommand) Execute(cfg *ecso.Config) error {
 }
 
 func errIfProjectExists(projectFile string) error {
-	exists, err := dirExists(path.Dir(projectFile))
+	exists, err := util.DirExists(path.Dir(projectFile))
 
 	if err != nil {
 		return err
@@ -78,7 +78,7 @@ func errIfProjectExists(projectFile string) error {
 }
 
 func promptForMissingOptions(options *Options) error {
-	wd, err := os.Getwd()
+	wd, err := util.GetCurrentProjectDir()
 
 	if err != nil {
 		return err
@@ -95,17 +95,4 @@ func promptForMissingOptions(options *Options) error {
 	}
 
 	return nil
-}
-
-func dirExists(dir string) (bool, error) {
-	_, err := os.Stat(dir)
-
-	switch {
-	case os.IsNotExist(err):
-		return false, nil
-	case err != nil:
-		return false, err
-	default:
-		return true, nil
-	}
 }
