@@ -55,8 +55,9 @@ func (l *log) Errorf(format string, a ...interface{}) {
 }
 
 func (l *log) Infof(format string, a ...interface{}) {
-	fmt.Fprintf(l.w, bold("Info: ")+format, a...)
+	fmt.Fprintf(l.w, bold("Info: ")+format+"\n", a...)
 }
+
 func (l *log) writeError(msg string) (n int, err error) {
 	return fmt.Fprintf(l.w, "%s %s", redBold("Error:"), red("%s", msg))
 }

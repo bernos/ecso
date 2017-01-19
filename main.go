@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	"github.com/bernos/ecso/commands/addenvironmentcommand"
 	"github.com/bernos/ecso/commands/initcommand"
 	"github.com/bernos/ecso/pkg/ecso"
 
@@ -10,9 +11,9 @@ import (
 )
 
 func main() {
-	log := ecso.NewLogger(os.Stdout)
+	cfg := ecso.NewConfig()
 
-	cli.ErrWriter = log.ErrWriter()
+	cli.ErrWriter = cfg.Logger.ErrWriter()
 
 	app := cli.NewApp()
 	app.Name = "ecso"
@@ -26,17 +27,8 @@ func main() {
 	}
 
 	app.Commands = []cli.Command{
-		{
-			Name:      "init",
-			Usage:     "Initialise a new ecso project",
-			ArgsUsage: "project",
-			Action: func(c *cli.Context) error {
-				if err := initcommand.FromCliContext(c).Execute(log); err != nil {
-					return cli.NewExitError(err.Error(), 1)
-				}
-				return nil
-			},
-		},
+		initcommand.CliCommand(cfg),
+		addenvironmentcommand.CliCommand(cfg),
 	}
 
 	app.Run(os.Args)
