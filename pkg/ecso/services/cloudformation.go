@@ -2,7 +2,12 @@ package services
 
 import (
 	"fmt"
+	"path"
 	"regexp"
+	"strings"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 var (
@@ -11,6 +16,22 @@ var (
 
 type CloudFormationService interface {
 	Package(templateFile string) (string, error)
+}
+
+func uploadNestedTemplateFiles(templateBody, bucket, prefix string, uploader *s3manager.Uploader) error {
+	for _, file := range findNestedTemplateFiles(templateBody) {
+		params := &s3manager.UploadInput{
+			Bucket: &bucket,
+			Key:    aws.String(path.Join(prefix, file)),
+			Body:   strings.NewReader(templateBody),
+		}
+
+		if _, err := uploader.Upload(params); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func findNestedTemplateFiles(templateBody string) []string {
