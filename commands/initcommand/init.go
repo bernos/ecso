@@ -6,13 +6,12 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/bernos/ecso/commands"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
-func New(projectName string, options ...func(*Options)) commands.Command {
+func New(projectName string, options ...func(*Options)) ecso.Command {
 	o := &Options{
 		ProjectName: projectName,
 	}
@@ -30,10 +29,10 @@ type initCommand struct {
 	options *Options
 }
 
-func (cmd *initCommand) Execute(cfg *ecso.Config) error {
+func (cmd *initCommand) Execute(project *ecso.Project, cfg *ecso.Config, prefs ecso.UserPreferences) error {
 	log := cfg.Logger
-
-	projectFile, err := util.GetCurrentProjectFile()
+	// TODO just a nil check on project
+	projectFile, err := ecso.GetCurrentProjectFile()
 
 	if err != nil {
 		return err
@@ -53,7 +52,7 @@ func (cmd *initCommand) Execute(cfg *ecso.Config) error {
 		return err
 	}
 
-	if err := util.SaveCurrentProject(ecso.NewProject(cmd.options.ProjectName)); err != nil {
+	if err := ecso.SaveCurrentProject(ecso.NewProject(cmd.options.ProjectName)); err != nil {
 		return err
 	}
 
@@ -78,7 +77,7 @@ func errIfProjectExists(projectFile string) error {
 }
 
 func promptForMissingOptions(options *Options) error {
-	wd, err := util.GetCurrentProjectDir()
+	wd, err := ecso.GetCurrentProjectDir()
 
 	if err != nil {
 		return err

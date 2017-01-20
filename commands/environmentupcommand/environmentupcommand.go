@@ -19,7 +19,7 @@ var keys = struct {
 	Unset: "unset",
 }
 
-func CliCommand(cfg *ecso.Config) cli.Command {
+func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	return cli.Command{
 		Name:      "environment-up",
 		Usage:     "Bring up the named environment",
@@ -30,16 +30,11 @@ func CliCommand(cfg *ecso.Config) cli.Command {
 				Usage: "If set, output shell commands to unset all ecso environment variables",
 			},
 		},
-		Action: func(c *cli.Context) error {
-			if err := FromCliContext(c).Execute(cfg); err != nil {
-				return cli.NewExitError(err.Error(), 1)
-			}
-			return nil
-		},
+		Action: commands.MakeAction(FromCliContext, dispatcher),
 	}
 }
 
-func FromCliContext(c *cli.Context) commands.Command {
+func FromCliContext(c *cli.Context) ecso.Command {
 	return New(c.Args().First(), func(opt *Options) {
 
 	})
@@ -49,7 +44,7 @@ type Options struct {
 	EnvironmentName string
 }
 
-func New(environmentName string, options ...func(*Options)) commands.Command {
+func New(environmentName string, options ...func(*Options)) ecso.Command {
 	o := &Options{
 		EnvironmentName: environmentName,
 	}
@@ -67,14 +62,8 @@ type envUpCommand struct {
 	options *Options
 }
 
-func (cmd *envUpCommand) Execute(cfg *ecso.Config) error {
+func (cmd *envUpCommand) Execute(project *ecso.Project, cfg *ecso.Config, prefs ecso.UserPreferences) error {
 	if err := validateOptions(cmd.options); err != nil {
-		return err
-	}
-
-	project, err := util.LoadCurrentProject()
-
-	if err != nil {
 		return err
 	}
 
@@ -107,7 +96,7 @@ func (cmd *envUpCommand) Execute(cfg *ecso.Config) error {
 }
 
 func getTemplateDir() (string, error) {
-	wd, err := util.GetCurrentProjectDir()
+	wd, err := ecso.GetCurrentProjectDir()
 
 	if err != nil {
 		return "", err

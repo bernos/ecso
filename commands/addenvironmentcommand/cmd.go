@@ -5,10 +5,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
-	"github.com/bernos/ecso/commands"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/ui"
-	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
 var prompts = struct {
@@ -53,7 +51,7 @@ type Options struct {
 	Account              string
 }
 
-func New(environmentName string, options ...func(*Options)) commands.Command {
+func New(environmentName string, options ...func(*Options)) ecso.Command {
 	o := &Options{
 		Name: environmentName,
 	}
@@ -71,18 +69,12 @@ type cmd struct {
 	options *Options
 }
 
-func (c *cmd) Execute(cfg *ecso.Config) error {
+func (c *cmd) Execute(project *ecso.Project, cfg *ecso.Config, prefs ecso.UserPreferences) error {
 	log := cfg.Logger
-
-	project, err := util.LoadCurrentProject()
-
-	if err != nil {
-		return err
-	}
 
 	log.BannerBlue("Adding a new environment to the %s project", project.Name)
 
-	if err := promptForMissingOptions(c.options, project, cfg); err != nil {
+	if err := promptForMissingOptions(c.options, project, cfg, prefs); err != nil {
 		return err
 	}
 
@@ -102,9 +94,7 @@ func (c *cmd) Execute(cfg *ecso.Config) error {
 
 	project.AddEnvironment(c.options.Name, environment)
 
-	err = util.SaveCurrentProject(project)
-
-	if err != nil {
+	if err := ecso.SaveCurrentProject(project); err != nil {
 		return err
 	}
 
@@ -113,16 +103,10 @@ func (c *cmd) Execute(cfg *ecso.Config) error {
 	return nil
 }
 
-func promptForMissingOptions(options *Options, project *ecso.Project, cfg *ecso.Config) error {
+func promptForMissingOptions(options *Options, project *ecso.Project, cfg *ecso.Config, preferences ecso.UserPreferences) error {
 	var (
 		accountDefaults = ecso.AccountDefaults{}
 	)
-
-	preferences, err := util.LoadUserPreferences()
-
-	if err != nil {
-		return err
-	}
 
 	// TODO Ask if there is an existing environment?
 	// If yes, then ask for the cfn stack id and collect outputs

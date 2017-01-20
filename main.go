@@ -12,8 +12,13 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
+var log = ecso.NewLogger(os.Stdout)
+
 func main() {
-	cfg := ecso.NewConfig()
+	project := MustLoadProject(ecso.LoadCurrentProject())
+	cfg := MustLoadConfig(ecso.NewConfig())
+	prefs := MustLoadUserPreferences(ecso.LoadUserPreferences())
+	dispatcher := ecso.NewDispatcher(project, cfg, prefs)
 
 	cli.ErrWriter = cfg.Logger.ErrWriter()
 
@@ -29,11 +34,32 @@ func main() {
 	}
 
 	app.Commands = []cli.Command{
-		initcommand.CliCommand(cfg),
-		addenvironmentcommand.CliCommand(cfg),
-		envcommand.CliCommand(cfg),
-		environmentupcommand.CliCommand(cfg),
+		initcommand.CliCommand(dispatcher),
+		addenvironmentcommand.CliCommand(dispatcher),
+		envcommand.CliCommand(dispatcher),
+		environmentupcommand.CliCommand(dispatcher),
 	}
 
 	app.Run(os.Args)
+}
+
+func MustLoadConfig(cfg *ecso.Config, err error) *ecso.Config {
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	return cfg
+}
+
+func MustLoadUserPreferences(prefs ecso.UserPreferences, err error) ecso.UserPreferences {
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	return prefs
+}
+
+func MustLoadProject(project *ecso.Project, err error) *ecso.Project {
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	return project
 }

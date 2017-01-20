@@ -3,6 +3,7 @@ package ecso
 import (
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/fatih/color"
 )
@@ -30,6 +31,7 @@ type Logger interface {
 	BannerBlue(format string, a ...interface{})
 	BannerGreen(format string, a ...interface{})
 	Errorf(format string, a ...interface{})
+	Fatalf(format string, a ...interface{})
 	Infof(format string, a ...interface{})
 	ErrWriter() io.Writer
 }
@@ -52,6 +54,11 @@ func (l *log) BannerGreen(format string, a ...interface{}) {
 
 func (l *log) Errorf(format string, a ...interface{}) {
 	l.writeError(fmt.Sprintf(format, a))
+}
+
+func (l *log) Fatalf(format string, a ...interface{}) {
+	l.Errorf(format, a...)
+	os.Exit(1)
 }
 
 func (l *log) Infof(format string, a ...interface{}) {

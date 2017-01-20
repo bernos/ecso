@@ -4,7 +4,53 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 )
+
+func LoadCurrentProject() (*Project, error) {
+	file, err := GetCurrentProjectFile()
+
+	if err != nil {
+		return nil, err
+	}
+
+	project, err := LoadProject(file)
+
+	if os.IsNotExist(err) {
+		return project, nil
+	}
+
+	return project, err
+}
+
+func SaveCurrentProject(project *Project) error {
+	file, err := GetCurrentProjectFile()
+
+	if err != nil {
+		return err
+	}
+
+	w, err := os.Create(file)
+
+	if err != nil {
+		return err
+	}
+
+	return project.Save(w)
+}
+
+func GetCurrentProjectFile() (string, error) {
+	wd, err := GetCurrentProjectDir()
+
+	return filepath.Join(wd, ".ecso", "project.json"), err
+}
+
+func GetCurrentProjectDir() (string, error) {
+	// For now this is just pwd, but later might want to walk up
+	// the dir tree, so ecso can run from sub folders in a project
+	return os.Getwd()
+}
 
 func LoadProject(path string) (*Project, error) {
 	data, err := ioutil.ReadFile(path)

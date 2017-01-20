@@ -1,6 +1,8 @@
-package skeletoncommand
+package envcommand
 
 import (
+	"fmt"
+
 	"github.com/bernos/ecso/commands"
 	"github.com/bernos/ecso/pkg/ecso"
 
@@ -15,13 +17,13 @@ var keys = struct {
 
 func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	return cli.Command{
-		Name:      "TODO",
-		Usage:     "TODO",
-		ArgsUsage: "[TODO]",
+		Name:      "env",
+		Usage:     "Output shell environment configuration for an ecso environment",
+		ArgsUsage: "[environment]",
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  keys.Unset,
-				Usage: "TODO",
+				Usage: "If set, output shell commands to unset all ecso environment variables",
 			},
 		},
 		Action: commands.MakeAction(FromCliContext, dispatcher),
@@ -30,12 +32,13 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 func FromCliContext(c *cli.Context) ecso.Command {
 	return New(c.Args().First(), func(opt *Options) {
-		// TODO: populate options from c
+		opt.Unset = c.Bool(keys.Unset)
 	})
 }
 
 type Options struct {
 	EnvironmentName string
+	Unset           bool
 }
 
 func New(environmentName string, options ...func(*Options)) ecso.Command {
@@ -47,15 +50,24 @@ func New(environmentName string, options ...func(*Options)) ecso.Command {
 		option(o)
 	}
 
-	return &skeletonCommand{
+	return &envCommand{
 		options: o,
 	}
 }
 
-type skeletonCommand struct {
+type envCommand struct {
 	options *Options
 }
 
-func (cmd *skeletonCommand) Execute(project *ecso.Project, cfg *ecso.Config, prefs ecso.UserPreferences) error {
+func (cmd *envCommand) Execute(project *ecso.Project, cfg *ecso.Config, prefs ecso.UserPreferences) error {
+	if cmd.options.EnvironmentName != "" {
+		if _, ok := project.Environments[cmd.options.EnvironmentName]; ok {
+			if cmd.options.Unset {
+				fmt.Printf("unset ECSO_ENVIRONMENT\n")
+			} else {
+				fmt.Printf("export ECSO_ENVIRONMENT=%s\n", cmd.options.EnvironmentName)
+			}
+		}
+	}
 	return nil
 }

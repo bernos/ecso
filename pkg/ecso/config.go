@@ -14,10 +14,14 @@ type Config struct {
 	STS    stsiface.STSAPI
 }
 
-func NewConfig(options ...func(*Config)) *Config {
-	sess := session.New(&aws.Config{
+func NewConfig(options ...func(*Config)) (*Config, error) {
+	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String("ap-southeast-2"),
 	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	cfg := &Config{
 		Logger: NewLogger(os.Stdout),
@@ -28,5 +32,5 @@ func NewConfig(options ...func(*Config)) *Config {
 		o(cfg)
 	}
 
-	return cfg
+	return cfg, nil
 }
