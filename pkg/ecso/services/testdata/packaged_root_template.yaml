@@ -1,0 +1,90 @@
+Description: >
+
+    This template deploys a highly available ECS cluster using an AutoScaling Group, with
+    ECS hosts distributed across multiple Availability Zones.
+
+Parameters:
+
+    VPC:
+        Description: Choose which VPC this ECS cluster should be deployed to
+        Type: AWS::EC2::VPC::Id
+
+    InstanceSubnets:
+        Description: Choose which subnets this ECS cluster instances should be deployed to
+        Type: List<AWS::EC2::Subnet::Id>
+
+    ALBSubnets:
+        Description: Choose which subnets the application load balancer should be deployed to
+        Type: List<AWS::EC2::Subnet::Id>
+
+Resources:
+
+    SecurityGroups:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: https://s3-ap-southeast-2.amazonaws.com/bucketname/my/bucket/prefix/infrastructure/security-groups.yaml
+            Parameters:
+                EnvironmentName: !Ref AWS::StackName
+                VPC: !Ref VPC
+
+    ALB:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: https://s3-ap-southeast-2.amazonaws.com/bucketname/my/bucket/prefix/infrastructure/load-balancers.yaml
+            Parameters:
+                EnvironmentName: !Ref AWS::StackName
+                VPC: !Ref VPC
+                Subnets: { "Fn::Join": [",", { "Ref": "ALBSubnets" } ] }
+                SecurityGroup:
+                  Fn::GetAtt:
+                  - SecurityGroups
+                  - Outputs.LoadBalancerSecurityGroup
+
+    ECS:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: https://s3-ap-southeast-2.amazonaws.com/bucketname/my/bucket/prefix/infrastructure/ecs-cluster.yaml
+            Parameters:
+                EnvironmentName: !Ref AWS::StackName
+                InstanceType: t2.large
+                ClusterSize: 4
+                VPC: !Ref VPC
+                SecurityGroup:
+                  Fn::GetAtt:
+                  - SecurityGroups
+                  - Outputs.ECSHostSecurityGroup
+                Subnets: { "Fn::Join": [",", { "Ref": "InstanceSubnets" } ] }
+
+Outputs:
+
+    VPC:
+        Description: The VPC ID
+        Value: !Ref VPC
+
+    Cluster:
+        Description: A reference to the ECS cluster.
+        Value:
+          Fn::GetAtt:
+            - ECS
+            - Outputs.Cluster
+
+    LoadBalancer:
+        Description: A reference to the application load balancer.
+        Value:
+          Fn::GetAtt:
+            - ALB
+            - Outputs.LoadBalancer
+
+    LoadBalancerUrl:
+        Description: The URL of the ALB
+        Value:
+          Fn::GetAtt:
+            - ALB
+            - Outputs.LoadBalancerUrl
+
+    Listener:
+        Description: A reference to the port 80 listener
+        Value:
+          Fn::GetAtt:
+            - ALB
+            - Outputs.Listener
