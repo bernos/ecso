@@ -82,6 +82,7 @@ type Environment struct {
 	Name                     string
 	CloudFormationBucket     string
 	CloudFormationParameters map[string]string
+	CloudFormationTags       map[string]string
 }
 
 type Service struct {

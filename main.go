@@ -3,9 +3,8 @@ package main
 import (
 	"os"
 
-	"github.com/bernos/ecso/commands/addenvironmentcommand"
-	"github.com/bernos/ecso/commands/envcommand"
-	"github.com/bernos/ecso/commands/environmentupcommand"
+	"github.com/bernos/ecso/commands/env"
+	"github.com/bernos/ecso/commands/environment"
 	"github.com/bernos/ecso/commands/initcommand"
 	"github.com/bernos/ecso/pkg/ecso"
 
@@ -35,9 +34,8 @@ func main() {
 
 	app.Commands = []cli.Command{
 		initcommand.CliCommand(dispatcher),
-		addenvironmentcommand.CliCommand(dispatcher),
-		envcommand.CliCommand(dispatcher),
-		environmentupcommand.CliCommand(dispatcher),
+		environment.CliCommand(dispatcher),
+		env.CliCommand(dispatcher),
 	}
 
 	app.Run(os.Args)

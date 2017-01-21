@@ -1,4 +1,4 @@
-package addenvironmentcommand
+package addenvironment
 
 import (
 	"github.com/bernos/ecso/commands"
@@ -47,7 +47,7 @@ func FromCliContext(c *cli.Context) ecso.Command {
 
 func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	return cli.Command{
-		Name:      "add-environment",
+		Name:      "add",
 		Usage:     "Add a new environment to the project",
 		ArgsUsage: "[environment]",
 		Flags: []cli.Flag{

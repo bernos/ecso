@@ -32,6 +32,7 @@ type Logger interface {
 	BannerGreen(format string, a ...interface{})
 	Errorf(format string, a ...interface{})
 	Fatalf(format string, a ...interface{})
+	Printf(format string, a ...interface{})
 	Infof(format string, a ...interface{})
 	ErrWriter() io.Writer
 }
@@ -63,6 +64,10 @@ func (l *log) Fatalf(format string, a ...interface{}) {
 
 func (l *log) Infof(format string, a ...interface{}) {
 	fmt.Fprintf(l.w, bold("Info: ")+format+"\n", a...)
+}
+
+func (l *log) Printf(format string, a ...interface{}) {
+	fmt.Fprintf(l.w, format, a...)
 }
 
 func (l *log) writeError(msg string) (n int, err error) {

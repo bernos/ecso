@@ -1,4 +1,4 @@
-package addenvironmentcommand
+package addenvironment
 
 import (
 	"fmt"
@@ -89,6 +89,10 @@ func (c *cmd) Execute(project *ecso.Project, cfg *ecso.Config, prefs ecso.UserPr
 			"VPC":             c.options.VPCID,
 			"InstanceSubnets": c.options.InstanceSubnets,
 			"ALBSubnets":      c.options.ALBSubnets,
+		},
+		CloudFormationTags: map[string]string{
+			"environment": c.options.Name,
+			"project":     project.Name,
 		},
 	}
 

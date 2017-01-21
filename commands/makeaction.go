@@ -10,6 +10,14 @@ import (
 func MakeAction(fn func(*cli.Context) ecso.Command, dispatcher ecso.Dispatcher, options ...func(*ecso.DispatchOptions)) func(*cli.Context) error {
 	return func(c *cli.Context) error {
 		if err := dispatcher.Dispatch(fn(c), options...); err != nil {
+			// if awsErr, ok := err.(awserr.Error); ok {
+			// 	fmt.Printf("AWS ERROR\n%s", awsErr.Code())
+
+			// 	if reqErr, ok := err.(awserr.RequestFailure); ok {
+			// 		// A service error occurred
+			// 		fmt.Println(reqErr.StatusCode(), reqErr.RequestID())
+			// 	}
+			// }
 			return cli.NewExitError(err.Error(), 1)
 		}
 		return nil

@@ -1,4 +1,4 @@
-package environmentupcommand
+package environmentup
 
 var templates = map[string]string{
 	"stack.yaml":           stackTemplate,
@@ -159,7 +159,10 @@ Mappings:
         eu-central-1:
             AMI: ami-54f5303b
         ap-northeast-1:
-            AMI: ami-9cd57fp-southeast-2:
+            AMI: ami-9cd57ffd
+        ap-southeast-1:
+            AMI: ami-a900a3ca
+        ap-southeast-2:
             AMI: ami-5781be34
 
 Resources:
@@ -356,7 +359,7 @@ Resources:
     DefaultTargetGroup:
         Type: AWS::ElasticLoadBalancingV2::TargetGroup
         Properties:
-            Name: default
+            Name: !Sub ${EnvironmentName}-default
             VpcId: !Ref VPC
             Port: 80
             Protocol: HTTP

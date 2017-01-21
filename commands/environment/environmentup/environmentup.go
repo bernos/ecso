@@ -1,9 +1,10 @@
-package environmentupcommand
+package environmentup
 
 import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/bernos/ecso/commands"
@@ -21,7 +22,7 @@ var keys = struct {
 
 func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	return cli.Command{
-		Name:      "environment-up",
+		Name:      "up",
 		Usage:     "Bring up the named environment",
 		ArgsUsage: "[environment]",
 		Flags: []cli.Flag{
@@ -67,11 +68,13 @@ func (cmd *envUpCommand) Execute(project *ecso.Project, cfg *ecso.Config, prefs 
 		return err
 	}
 
-	_, ok := project.Environments[cmd.options.EnvironmentName]
+	environment, ok := project.Environments[cmd.options.EnvironmentName]
 
 	if !ok {
 		return fmt.Errorf("No environment named '%s' was found", cmd.options.EnvironmentName)
 	}
+
+	cfg.Logger.BannerBlue("Bringing up environment '%s'", environment.Name)
 
 	// Check whether env cfn templates already exist?
 	templateDir, err := getTemplateDir()
@@ -87,10 +90,36 @@ func (cmd *envUpCommand) Execute(project *ecso.Project, cfg *ecso.Config, prefs 
 	}
 
 	if !exists {
+		cfg.Logger.Infof("Copying infrastructure stack templates to %s", templateDir)
+
 		if err := copyTemplates(templateDir); err != nil {
 			return err
 		}
 	}
+
+	stackName := fmt.Sprintf("%s-%s", project.Name, environment.Name)
+	rootTemplate := filepath.Join(templateDir, "stack.yaml")
+	bucket := environment.CloudFormationBucket
+	prefix := path.Join(project.Name, "infrastructure")
+	params := environment.CloudFormationParameters
+	tags := environment.CloudFormationTags
+
+	cfg.Logger.Infof("Packaging infrastructure stack templates")
+
+	packagedTemplate, err := cfg.CloudFormationService.Package(rootTemplate, bucket, prefix)
+
+	if err != nil {
+		return err
+	}
+
+	cfg.Logger.Printf("\n")
+	cfg.Logger.Infof("Deploying infrastructure stack '%s'", stackName)
+
+	if err := cfg.CloudFormationService.Deploy(packagedTemplate, stackName, params, tags); err != nil {
+		return err
+	}
+
+	cfg.Logger.BannerGreen("Environment '%s' is up and running", environment.Name)
 
 	return nil
 }
