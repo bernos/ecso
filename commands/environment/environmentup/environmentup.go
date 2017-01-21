@@ -70,7 +70,7 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 
 	cfg.Logger.Infof("Packaging infrastructure stack templates")
 
-	if err := deployStack(cfg, project, environment, filepath.Join(templateDir, "stack.yaml"), cmd.options.DryRun); err != nil {
+	if err := deployStack(ctx, environment, filepath.Join(templateDir, "stack.yaml"), cmd.options.DryRun); err != nil {
 		return err
 	}
 
@@ -83,8 +83,11 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func deployStack(cfg *ecso.Config, project *ecso.Project, env ecso.Environment, template string, dryRun bool) error {
+func deployStack(ctx *ecso.CommandContext, env ecso.Environment, template string, dryRun bool) error {
 	var (
+		cfg     = ctx.Config
+		project = ctx.Project
+
 		stackName = fmt.Sprintf("%s-%s", project.Name, env.Name)
 		bucket    = env.CloudFormationBucket
 		prefix    = path.Join(fmt.Sprintf("%s-%s", project.Name, env.Name), "infrastructure")

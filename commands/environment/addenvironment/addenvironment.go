@@ -112,8 +112,10 @@ func (c *cmd) Execute(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func promptForMissingOptions(options *Options, project *ecso.Project, cfg *ecso.Config, preferences *ecso.UserPreferences) error {
+func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
 	var (
+		cfg             = ctx.Config
+		prefs           = ctx.UserPreferences
 		accountDefaults = ecso.AccountDefaults{}
 	)
 
@@ -124,7 +126,7 @@ func promptForMissingOptions(options *Options, project *ecso.Project, cfg *ecso.
 		options.Account = account
 	}
 
-	if ac, ok := preferences.AccountDefaults[options.Account]; ok {
+	if ac, ok := prefs.AccountDefaults[options.Account]; ok {
 		accountDefaults = ac
 	}
 
