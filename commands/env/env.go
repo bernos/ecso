@@ -59,9 +59,9 @@ type envCommand struct {
 	options *Options
 }
 
-func (cmd *envCommand) Execute(project *ecso.Project, cfg *ecso.Config, prefs ecso.UserPreferences) error {
+func (cmd *envCommand) Execute(ctx *ecso.CommandContext) error {
 	if cmd.options.EnvironmentName != "" {
-		if _, ok := project.Environments[cmd.options.EnvironmentName]; ok {
+		if _, ok := ctx.Project.Environments[cmd.options.EnvironmentName]; ok {
 			if cmd.options.Unset {
 				fmt.Printf("unset ECSO_ENVIRONMENT\n")
 			} else {

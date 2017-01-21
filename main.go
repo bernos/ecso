@@ -48,7 +48,7 @@ func MustLoadConfig(cfg *ecso.Config, err error) *ecso.Config {
 	return cfg
 }
 
-func MustLoadUserPreferences(prefs ecso.UserPreferences, err error) ecso.UserPreferences {
+func MustLoadUserPreferences(prefs *ecso.UserPreferences, err error) *ecso.UserPreferences {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}

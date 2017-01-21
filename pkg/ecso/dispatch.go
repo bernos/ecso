@@ -4,7 +4,7 @@ import "fmt"
 
 // NewDispatcher creates a default Dispatcher for a Project, with the provided Config and
 // UserPreferences
-func NewDispatcher(project *Project, cfg *Config, prefs UserPreferences) Dispatcher {
+func NewDispatcher(project *Project, cfg *Config, prefs *UserPreferences) Dispatcher {
 	return DispatcherFunc(func(cmd Command, options ...func(*DispatchOptions)) error {
 		opt := &DispatchOptions{
 			EnsureProjectExists: true,
@@ -18,7 +18,7 @@ func NewDispatcher(project *Project, cfg *Config, prefs UserPreferences) Dispatc
 			return fmt.Errorf("No ecso project file was found")
 		}
 
-		return cmd.Execute(project, cfg, prefs)
+		return cmd.Execute(NewCommandContext(project, cfg, prefs))
 	})
 }
 

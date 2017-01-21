@@ -2,22 +2,39 @@ package ecso
 
 // Command represents a single ecso command
 type Command interface {
-	Execute(*Project, *Config, UserPreferences) error
+	Execute(ctx *CommandContext) error
 }
 
 // CommandFunc lifts a regular function to the Command interface
-type CommandFunc func(*Project, *Config, UserPreferences) error
+type CommandFunc func(*CommandContext) error
 
 // Execute executes the func
-func (fn CommandFunc) Execute(project *Project, cfg *Config, prefs UserPreferences) error {
-	return fn(project, cfg, prefs)
+func (fn CommandFunc) Execute(ctx *CommandContext) error {
+	return fn(ctx)
 }
 
 // CommandError wraps an error in a func that satisfies the Command
 // interface. Use this to simplify returning errors from functions
 // that create commands
 func CommandError(err error) Command {
-	return CommandFunc(func(project *Project, cfg *Config, prefs UserPreferences) error {
+	return CommandFunc(func(ctx *CommandContext) error {
 		return err
 	})
+}
+
+// CommandContext provides access to configuration options and preferences
+// scoped to a running Command
+type CommandContext struct {
+	Project         *Project
+	Config          *Config
+	UserPreferences *UserPreferences
+}
+
+// NewCommandContext creates a CommandContext
+func NewCommandContext(project *Project, config *Config, preferences *UserPreferences) *CommandContext {
+	return &CommandContext{
+		Project:         project,
+		Config:          config,
+		UserPreferences: preferences,
+	}
 }

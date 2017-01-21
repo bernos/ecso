@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 )
 
-func LoadUserPreferences() (UserPreferences, error) {
-	preferences := UserPreferences{}
+func LoadUserPreferences() (*UserPreferences, error) {
+	preferences := &UserPreferences{}
 	user, err := user.Current()
 
 	if err != nil {
@@ -26,7 +26,7 @@ func LoadUserPreferences() (UserPreferences, error) {
 		return preferences, err
 	}
 
-	err = json.Unmarshal(data, &preferences)
+	err = json.Unmarshal(data, preferences)
 
 	return preferences, err
 }

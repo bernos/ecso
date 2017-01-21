@@ -36,7 +36,12 @@ type envUpCommand struct {
 	options *Options
 }
 
-func (cmd *envUpCommand) Execute(project *ecso.Project, cfg *ecso.Config, prefs ecso.UserPreferences) error {
+func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
+	var (
+		project = ctx.Project
+		cfg     = ctx.Config
+	)
+
 	if err := validateOptions(cmd.options); err != nil {
 		return err
 	}

@@ -69,8 +69,13 @@ type cmd struct {
 	options *Options
 }
 
-func (c *cmd) Execute(project *ecso.Project, cfg *ecso.Config, prefs ecso.UserPreferences) error {
-	log := cfg.Logger
+func (c *cmd) Execute(ctx *ecso.CommandContext) error {
+	var (
+		log     = ctx.Config.Logger
+		project = ctx.Project
+		prefs   = ctx.UserPreferences
+		cfg     = ctx.Config
+	)
 
 	log.BannerBlue("Adding a new environment to the %s project", project.Name)
 
@@ -107,7 +112,7 @@ func (c *cmd) Execute(project *ecso.Project, cfg *ecso.Config, prefs ecso.UserPr
 	return nil
 }
 
-func promptForMissingOptions(options *Options, project *ecso.Project, cfg *ecso.Config, preferences ecso.UserPreferences) error {
+func promptForMissingOptions(options *Options, project *ecso.Project, cfg *ecso.Config, preferences *ecso.UserPreferences) error {
 	var (
 		accountDefaults = ecso.AccountDefaults{}
 	)

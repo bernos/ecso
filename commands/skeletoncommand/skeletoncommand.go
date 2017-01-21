@@ -56,6 +56,6 @@ type skeletonCommand struct {
 	options *Options
 }
 
-func (cmd *skeletonCommand) Execute(project *ecso.Project, cfg *ecso.Config, prefs ecso.UserPreferences) error {
+func (cmd *skeletonCommand) Execute(ctx *ecso.CommandContext) error {
 	return nil
 }

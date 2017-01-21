@@ -29,8 +29,10 @@ type initCommand struct {
 	options *Options
 }
 
-func (cmd *initCommand) Execute(project *ecso.Project, cfg *ecso.Config, prefs ecso.UserPreferences) error {
-	log := cfg.Logger
+func (cmd *initCommand) Execute(ctx *ecso.CommandContext) error {
+	var (
+		log = ctx.Config.Logger
+	)
 	// TODO just a nil check on project
 	projectFile, err := ecso.GetCurrentProjectFile()
 
