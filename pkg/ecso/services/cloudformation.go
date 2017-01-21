@@ -24,9 +24,10 @@ var (
 
 type CloudFormationService interface {
 	Package(templateFile, bucket, prefix string) (string, error)
-	Deploy(templateBody, stackName string, params, tags map[string]string) error
+	Deploy(templateBody, stackName string, params, tags map[string]string, dryRun bool) (string, error)
 	StackExists(stackName string) (bool, error)
 	WaitForChangeset(changeset string, status string) error
+	GetChangeSet(changeset string) (*cloudformation.DescribeChangeSetOutput, error)
 }
 
 func NewCloudFormationService(region string, cfnClient cloudformationiface.CloudFormationAPI, s3Client s3iface.S3API, log func(string, ...interface{})) CloudFormationService {
@@ -68,7 +69,7 @@ func (svc *cfnService) Package(templateFile, bucket, prefix string) (string, err
 	return updateNestedTemplateURLs(string(templateBody), svc.region, bucket, prefix), nil
 }
 
-func (svc *cfnService) Deploy(templateBody, stackName string, params, tags map[string]string) error {
+func (svc *cfnService) Deploy(templateBody, stackName string, params, tags map[string]string, dryRun bool) (string, error) {
 	input := &cloudformation.CreateChangeSetInput{
 		StackName:           aws.String(stackName),
 		ChangeSetName:       aws.String(fmt.Sprintf("%s-%d", stackName, time.Now().Unix())),
@@ -99,7 +100,7 @@ func (svc *cfnService) Deploy(templateBody, stackName string, params, tags map[s
 	exists, err := svc.StackExists(stackName)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if exists {
@@ -110,27 +111,31 @@ func (svc *cfnService) Deploy(templateBody, stackName string, params, tags map[s
 		input.ChangeSetType = aws.String("CREATE")
 	}
 
-	svc.log("Creating changeset...")
+	svc.log("Creating changeset...\n")
 
 	changeset, err := svc.cfnClient.CreateChangeSet(input)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	svc.log("Waiting for changeset %s to be ready\n", *changeset.Id)
+	svc.log("Waiting for changeset %s to be ready...\n", *changeset.Id)
 
 	if err := svc.WaitForChangeset(*changeset.Id, "CREATE_COMPLETE"); err != nil {
-		return err
+		return "", err
 	}
 
 	svc.log("Created changeset %s\n", *changeset.Id)
+
+	if dryRun {
+		return *changeset.Id, nil
+	}
 
 	if _, err := svc.cfnClient.ExecuteChangeSet(&cloudformation.ExecuteChangeSetInput{
 		ChangeSetName: changeset.Id,
 		StackName:     aws.String(stackName),
 	}); err != nil {
-		return err
+		return "", err
 	}
 
 	stack := &cloudformation.DescribeStacksInput{
@@ -139,11 +144,19 @@ func (svc *cfnService) Deploy(templateBody, stackName string, params, tags map[s
 
 	if exists {
 		svc.log("Waiting for stack update to complete...\n")
-		return svc.cfnClient.WaitUntilStackUpdateComplete(stack)
+		return *changeset.Id, svc.cfnClient.WaitUntilStackUpdateComplete(stack)
 	} else {
 		svc.log("Waiting for stack creation to complete...\n")
-		return svc.cfnClient.WaitUntilStackCreateComplete(stack)
+		return *changeset.Id, svc.cfnClient.WaitUntilStackCreateComplete(stack)
 	}
+}
+
+func (svc *cfnService) GetChangeSet(changeset string) (*cloudformation.DescribeChangeSetOutput, error) {
+	params := &cloudformation.DescribeChangeSetInput{
+		ChangeSetName: aws.String(changeset),
+	}
+
+	return svc.cfnClient.DescribeChangeSet(params)
 }
 
 func (svc *cfnService) StackExists(stackName string) (bool, error) {
