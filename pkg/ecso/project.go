@@ -85,21 +85,24 @@ type Environment struct {
 	CloudFormationTags       map[string]string
 }
 
-type Service struct {
-	Name string
-}
-
 func (p *Project) Save(w io.Writer) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "    ")
 	return enc.Encode(p)
 }
 
-func (p *Project) AddEnvironment(name string, environment Environment) {
+func (p *Project) AddEnvironment(environment Environment) {
 	if p.Environments == nil {
 		p.Environments = make(map[string]Environment)
 	}
-	p.Environments[name] = environment
+	p.Environments[environment.Name] = environment
+}
+
+func (p *Project) AddService(service Service) {
+	if p.Services == nil {
+		p.Services = make(map[string]Service)
+	}
+	p.Services[service.Name] = service
 }
 
 type UserPreferences struct {

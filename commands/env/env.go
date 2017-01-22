@@ -31,13 +31,11 @@ type envCommand struct {
 }
 
 func (cmd *envCommand) Execute(ctx *ecso.CommandContext) error {
-	if cmd.options.EnvironmentName != "" {
+	if cmd.options.Unset {
+		fmt.Printf("unset ECSO_ENVIRONMENT\n")
+	} else if cmd.options.EnvironmentName != "" {
 		if _, ok := ctx.Project.Environments[cmd.options.EnvironmentName]; ok {
-			if cmd.options.Unset {
-				fmt.Printf("unset ECSO_ENVIRONMENT\n")
-			} else {
-				fmt.Printf("export ECSO_ENVIRONMENT=%s\n", cmd.options.EnvironmentName)
-			}
+			fmt.Printf("export ECSO_ENVIRONMENT=%s\n", cmd.options.EnvironmentName)
 		}
 	}
 	return nil

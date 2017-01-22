@@ -6,6 +6,7 @@ import (
 	"github.com/bernos/ecso/commands/env"
 	"github.com/bernos/ecso/commands/environment"
 	"github.com/bernos/ecso/commands/initcommand"
+	"github.com/bernos/ecso/commands/service"
 	"github.com/bernos/ecso/pkg/ecso"
 
 	"gopkg.in/urfave/cli.v1"
@@ -35,6 +36,7 @@ func main() {
 	app.Commands = []cli.Command{
 		initcommand.CliCommand(dispatcher),
 		environment.CliCommand(dispatcher),
+		service.CliCommand(dispatcher),
 		env.CliCommand(dispatcher),
 	}
 

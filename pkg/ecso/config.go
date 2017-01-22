@@ -28,7 +28,8 @@ func NewConfig(options ...func(*Config)) (*Config, error) {
 	}
 
 	log := NewLogger(os.Stdout)
-	cfn := services.NewCloudFormationService("ap-southeast-2", cloudformation.New(sess), s3.New(sess), log.Printf)
+
+	cfn := services.NewCloudFormationService("ap-southeast-2", cloudformation.New(sess), s3.New(sess), log.PrefixPrintf("  "))
 
 	cfg := &Config{
 		Logger: log,

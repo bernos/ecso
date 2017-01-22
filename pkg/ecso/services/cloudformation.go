@@ -142,6 +142,14 @@ func (svc *cfnService) Deploy(templateBody, stackName string, params, tags map[s
 		StackName: aws.String(stackName),
 	}
 
+	cancel := svc.LogStackEvents(*changeset.StackId, func(ev *cloudformation.StackEvent, err error) {
+		if ev != nil {
+			svc.log("%s: %s\n", *ev.LogicalResourceId, *ev.ResourceStatus)
+		}
+	})
+
+	defer cancel()
+
 	if exists {
 		svc.log("Waiting for stack update to complete...\n")
 		return *changeset.Id, svc.cfnClient.WaitUntilStackUpdateComplete(stack)
@@ -217,6 +225,58 @@ func (svc *cfnService) WaitForChangeset(changeset string, status string) error {
 		}
 
 		time.Sleep(time.Second * 5)
+	}
+}
+
+func (svc *cfnService) LogStackEvents(stackID string, logger func(*cloudformation.StackEvent, error)) (cancel func()) {
+	done := make(chan struct{})
+	ticker := time.NewTicker(time.Second * 5)
+
+	params := &cloudformation.DescribeStackEventsInput{
+		StackName: aws.String(stackID),
+	}
+
+	go func() {
+		defer ticker.Stop()
+		var lastEventID string
+
+		for {
+			resp, err := svc.cfnClient.DescribeStackEvents(params)
+
+			if err != nil {
+				logger(nil, err)
+			} else {
+				if len(resp.StackEvents) > 0 {
+					newEvents := resp.StackEvents[:1]
+
+					if lastEventID != "" {
+						newEvents = resp.StackEvents
+
+						for i, event := range resp.StackEvents {
+							if *event.EventId == lastEventID {
+								newEvents = resp.StackEvents[:i]
+								break
+							}
+						}
+					}
+
+					for i := len(newEvents) - 1; i >= 0; i-- {
+						logger(newEvents[i], nil)
+						lastEventID = *newEvents[i].EventId
+					}
+				}
+			}
+
+			select {
+			case <-done:
+				return
+			case <-ticker.C:
+			}
+		}
+	}()
+
+	return func() {
+		close(done)
 	}
 }
 

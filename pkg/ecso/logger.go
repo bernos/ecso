@@ -33,6 +33,7 @@ type Logger interface {
 	Errorf(format string, a ...interface{})
 	Fatalf(format string, a ...interface{})
 	Printf(format string, a ...interface{})
+	PrefixPrintf(prefix string) func(string, ...interface{})
 	Infof(format string, a ...interface{})
 	ErrWriter() io.Writer
 }
@@ -68,6 +69,12 @@ func (l *log) Infof(format string, a ...interface{}) {
 
 func (l *log) Printf(format string, a ...interface{}) {
 	fmt.Fprintf(l.w, format, a...)
+}
+
+func (l *log) PrefixPrintf(prefix string) func(string, ...interface{}) {
+	return func(format string, a ...interface{}) {
+		fmt.Fprintf(l.w, prefix+format, a...)
+	}
 }
 
 func (l *log) writeError(msg string) (n int, err error) {

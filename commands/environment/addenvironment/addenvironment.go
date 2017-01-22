@@ -73,13 +73,11 @@ func (c *cmd) Execute(ctx *ecso.CommandContext) error {
 	var (
 		log     = ctx.Config.Logger
 		project = ctx.Project
-		prefs   = ctx.UserPreferences
-		cfg     = ctx.Config
 	)
 
 	log.BannerBlue("Adding a new environment to the %s project", project.Name)
 
-	if err := promptForMissingOptions(c.options, project, cfg, prefs); err != nil {
+	if err := promptForMissingOptions(c.options, ctx); err != nil {
 		return err
 	}
 
@@ -101,7 +99,7 @@ func (c *cmd) Execute(ctx *ecso.CommandContext) error {
 		},
 	}
 
-	project.AddEnvironment(c.options.Name, environment)
+	project.AddEnvironment(environment)
 
 	if err := ecso.SaveCurrentProject(project); err != nil {
 		return err
