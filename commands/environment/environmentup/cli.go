@@ -29,7 +29,7 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 				Usage: "If set, list pending changes, but do not execute the updates.",
 			},
 		},
-		Action: commands.MakeAction(FromCliContext, dispatcher),
+		Action: commands.MakeAction(dispatcher, FromCliContext),
 	}
 }
 

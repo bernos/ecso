@@ -24,7 +24,7 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 				Usage: "TODO",
 			},
 		},
-		Action: commands.MakeAction(FromCliContext, dispatcher),
+		Action: commands.MakeAction(dispatcher, FromCliContext),
 	}
 }
 

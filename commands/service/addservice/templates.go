@@ -1,6 +1,8 @@
 package addservice
 
-var composeFileTemplateString = `
+import "text/template"
+
+var composeFileTemplate = template.Must(template.New("composeFile").Parse(`
 version: '2'
 
 volumes:
@@ -31,9 +33,9 @@ services:
     volumes:
       - nginxdata:/nginx
     command: sh -c "while true; do echo \"This is the {{.Service.Name}} service <p><pre>` + "`env`" + `</pre></p> \" > /nginx/index.html; sleep 3; done"
-`
+`))
 
-var cloudFormationTemplateString = `
+var cloudFormationTemplate = template.Must(template.New("cloudFormationFile").Parse(`
 Parameters:
 
     VPC:
@@ -144,4 +146,4 @@ Outputs:
     CloudWatchLogsGroup:
         Description: Reference to the cloudwatch logs group
         Value: !Ref CloudWatchLogsGroup
-`
+`))

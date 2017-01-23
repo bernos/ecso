@@ -72,6 +72,6 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 				Usage: "The AWS region to create the environment in",
 			},
 		},
-		Action: commands.MakeAction(FromCliContext, dispatcher),
+		Action: commands.MakeAction(dispatcher, FromCliContext),
 	}
 }

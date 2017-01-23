@@ -9,7 +9,7 @@ type factory func(*cli.Context) ecso.Command
 
 // MakeAction is a factory func for generating wrapped ecso.Commands compatible
 // with the urfave/cli command line interface semantics and types
-func MakeAction(fn factory, dispatcher ecso.Dispatcher, options ...func(*ecso.DispatchOptions)) func(*cli.Context) error {
+func MakeAction(dispatcher ecso.Dispatcher, fn factory, options ...func(*ecso.DispatchOptions)) func(*cli.Context) error {
 	return func(c *cli.Context) error {
 		if err := dispatcher.Dispatch(fn(c), options...); err != nil {
 			// if awsErr, ok := err.(awserr.Error); ok {

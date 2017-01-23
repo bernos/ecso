@@ -2,16 +2,10 @@ package addservice
 
 import (
 	"fmt"
-	"html/template"
-	"os"
 	"path/filepath"
 
 	"github.com/bernos/ecso/pkg/ecso"
-)
-
-var (
-	composeFileTemplate    = template.Must(template.New("composeFile").Parse(composeFileTemplateString))
-	cloudFormationTemplate = template.Must(template.New("cloudFormationTemplate").Parse(cloudFormationTemplateString))
+	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
 type Options struct {
@@ -19,21 +13,6 @@ type Options struct {
 	DesiredCount int
 	Route        string
 	Port         int
-}
-
-func New(name string, options ...func(*Options)) ecso.Command {
-	o := &Options{
-		Name:         name,
-		DesiredCount: 1,
-	}
-
-	for _, option := range options {
-		option(o)
-	}
-
-	return &command{
-		options: o,
-	}
 }
 
 type command struct {
@@ -51,7 +30,9 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	// TODO prompt for missing options
+	if err := promptForMissingOptions(cmd.options, ctx); err != nil {
+		return err
+	}
 
 	if err := validateOptions(cmd.options); err != nil {
 		return err
@@ -74,19 +55,7 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		},
 	}
 
-	composeFile := filepath.Join(projectDir, service.ComposeFile)
-	cloudFormationFile := filepath.Join(projectDir, ".ecso/services", cmd.options.Name, "resources.yaml")
-	templateData := struct {
-		Service ecso.Service
-	}{
-		Service: service,
-	}
-
-	if err := writeFileFromTemplate(composeFile, composeFileTemplate, templateData); err != nil {
-		return err
-	}
-
-	if err := writeFileFromTemplate(cloudFormationFile, cloudFormationTemplate, templateData); err != nil {
+	if err := writeFiles(projectDir, service); err != nil {
 		return err
 	}
 
@@ -99,23 +68,51 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	return nil
 }
 
+func New(name string, options ...func(*Options)) ecso.Command {
+	o := &Options{
+		Name:         name,
+		DesiredCount: 1,
+	}
+
+	for _, option := range options {
+		option(o)
+	}
+
+	return &command{
+		options: o,
+	}
+}
+
+func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
+	// TODO prompt for missing options
+	return nil
+}
+
+func writeFiles(projectDir string, service ecso.Service) error {
+	var (
+		composeFile        = filepath.Join(projectDir, service.ComposeFile)
+		cloudFormationFile = filepath.Join(projectDir, ".ecso/services", service.Name, "resources.yaml")
+		templateData       = struct {
+			Service ecso.Service
+		}{
+			Service: service,
+		}
+	)
+
+	if err := util.WriteFileFromTemplate(composeFile, composeFileTemplate, templateData); err != nil {
+		return err
+	}
+
+	if err := util.WriteFileFromTemplate(cloudFormationFile, cloudFormationTemplate, templateData); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func validateOptions(opt *Options) error {
 	if opt.Name == "" {
 		return fmt.Errorf("Name is required")
 	}
 	return nil
-}
-
-func writeFileFromTemplate(filename string, tmpl *template.Template, data interface{}) error {
-	if err := os.MkdirAll(filepath.Dir(filename), os.ModePerm); err != nil {
-		return err
-	}
-
-	w, err := os.Create(filename)
-
-	if err != nil {
-		return err
-	}
-
-	return tmpl.Execute(w, data)
 }

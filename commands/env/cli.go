@@ -24,7 +24,7 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 				Usage: "If set, output shell commands to unset all ecso environment variables",
 			},
 		},
-		Action: commands.MakeAction(FromCliContext, dispatcher),
+		Action: commands.MakeAction(dispatcher, FromCliContext),
 	}
 }
 

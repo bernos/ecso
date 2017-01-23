@@ -41,7 +41,7 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 				Usage: "If set, the loadbalancer will bind to this port of the web container in this service",
 			},
 		},
-		Action: commands.MakeAction(FromCliContext, dispatcher),
+		Action: commands.MakeAction(dispatcher, FromCliContext),
 	}
 }
 

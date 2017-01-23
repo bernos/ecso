@@ -15,6 +15,6 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 		Name:      "init",
 		Usage:     "Initialise a new ecso project",
 		ArgsUsage: "[project]",
-		Action:    commands.MakeAction(FromCliContext, dispatcher, ecso.SkipEnsureProjectExists()),
+		Action:    commands.MakeAction(dispatcher, FromCliContext, ecso.SkipEnsureProjectExists()),
 	}
 }
