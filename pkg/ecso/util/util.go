@@ -32,3 +32,12 @@ func WriteFileFromTemplate(filename string, tmpl *template.Template, data interf
 
 	return tmpl.Execute(w, data)
 }
+
+func AnyError(err ...error) error {
+	for _, e := range err {
+		if e != nil {
+			return e
+		}
+	}
+	return nil
+}

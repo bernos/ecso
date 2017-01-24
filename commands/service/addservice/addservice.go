@@ -45,11 +45,12 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	log.BannerBlue("Adding '%s' service", cmd.options.Name)
 
 	service := ecso.Service{
-		Name:         cmd.options.Name,
-		ComposeFile:  filepath.Join("services", cmd.options.Name, "docker-compose.yaml"),
-		DesiredCount: cmd.options.DesiredCount,
-		Route:        cmd.options.Route,
-		Port:         cmd.options.Port,
+		Name:          cmd.options.Name,
+		ComposeFile:   filepath.Join("services", cmd.options.Name, "docker-compose.yaml"),
+		DesiredCount:  cmd.options.DesiredCount,
+		Route:         cmd.options.Route,
+		RoutePriority: len(ctx.Project.Services) + 1,
+		Port:          cmd.options.Port,
 		Tags: map[string]string{
 			"project": ctx.Project.Name,
 		},
@@ -91,7 +92,7 @@ func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
 func writeFiles(projectDir string, service ecso.Service) error {
 	var (
 		composeFile        = filepath.Join(projectDir, service.ComposeFile)
-		cloudFormationFile = filepath.Join(projectDir, ".ecso/services", service.Name, "resources.yaml")
+		cloudFormationFile = filepath.Join(projectDir, ".ecso/services", service.Name, "stack.yaml")
 		templateData       = struct {
 			Service ecso.Service
 		}{

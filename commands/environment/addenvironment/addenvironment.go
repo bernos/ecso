@@ -87,6 +87,7 @@ func (c *cmd) Execute(ctx *ecso.CommandContext) error {
 
 	environment := ecso.Environment{
 		Name:                 c.options.Name,
+		Region:               c.options.Region,
 		CloudFormationBucket: c.options.CloudFormationBucket,
 		CloudFormationParameters: map[string]string{
 			"VPC":             c.options.VPCID,
@@ -120,7 +121,13 @@ func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
 	// TODO Ask if there is an existing environment?
 	// If yes, then ask for the cfn stack id and collect outputs
 
-	if account := getCurrentAWSAccount(cfg.STS); options.Account == "" {
+	stsAPI, err := cfg.STSAPI("ap-southeast-2")
+
+	if err != nil {
+		return err
+	}
+
+	if account := getCurrentAWSAccount(stsAPI); options.Account == "" {
 		options.Account = account
 	}
 

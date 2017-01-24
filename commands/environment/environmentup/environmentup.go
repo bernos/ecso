@@ -95,7 +95,13 @@ func deployStack(ctx *ecso.CommandContext, env ecso.Environment, template string
 		tags      = env.CloudFormationTags
 	)
 
-	packagedTemplate, err := cfg.CloudFormationService.Package(template, bucket, prefix)
+	cfnService, err := cfg.CloudFormationService(env.Region)
+
+	if err != nil {
+		return err
+	}
+
+	packagedTemplate, err := cfnService.Package(template, bucket, prefix)
 
 	if err != nil {
 		return err
@@ -104,13 +110,13 @@ func deployStack(ctx *ecso.CommandContext, env ecso.Environment, template string
 	cfg.Logger.Printf("\n")
 	cfg.Logger.Infof("Deploying infrastructure stack '%s'", stackName)
 
-	id, err := cfg.CloudFormationService.Deploy(packagedTemplate, stackName, params, tags, dryRun)
+	result, err := cfnService.Deploy(packagedTemplate, stackName, params, tags, dryRun)
 
 	if err != nil {
 		return err
 	}
 
-	changeSet, err := cfg.CloudFormationService.GetChangeSet(id)
+	changeSet, err := cfnService.GetChangeSet(result.ChangeSetID)
 
 	if err != nil {
 		return err

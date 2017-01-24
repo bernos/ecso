@@ -80,6 +80,7 @@ type Project struct {
 
 type Environment struct {
 	Name                     string
+	Region                   string
 	CloudFormationBucket     string
 	CloudFormationParameters map[string]string
 	CloudFormationTags       map[string]string

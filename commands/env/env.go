@@ -2,6 +2,7 @@ package env
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/bernos/ecso/pkg/ecso"
 )
@@ -32,9 +33,24 @@ type envCommand struct {
 
 func (cmd *envCommand) Execute(ctx *ecso.CommandContext) error {
 	if cmd.options.Unset {
+		oldPS1 := os.Getenv("ECSO_OLD_PS1")
+
+		if oldPS1 != "" {
+			fmt.Printf("export PS1=\"%s\"\n", oldPS1)
+		}
+
 		fmt.Printf("unset ECSO_ENVIRONMENT\n")
+		fmt.Printf("unset ECSO_OLD_PS1\n")
 	} else if cmd.options.EnvironmentName != "" {
 		if _, ok := ctx.Project.Environments[cmd.options.EnvironmentName]; ok {
+
+			ps1 := os.Getenv("PS1")
+
+			if ps1 != "" {
+				fmt.Printf("export PS1=\"%s[ecso::%s:%s]> \"\n", ps1, ctx.Project.Name, cmd.options.EnvironmentName)
+				fmt.Printf("export ECSO_OLD_PS1=\"%s\"\n", ps1)
+			}
+
 			fmt.Printf("export ECSO_ENVIRONMENT=%s\n", cmd.options.EnvironmentName)
 		}
 	}

@@ -23,6 +23,10 @@ func ValidateNotEmpty(msg string) func(string) error {
 	}
 }
 
+func ValidateRequired(name string) func(string) error {
+	return ValidateNotEmpty(fmt.Sprintf("%s is required.", name))
+}
+
 func AskString(prompt, def string, validate func(string) error) (string, error) {
 	str := ""
 	err := AskStringVar(&str, prompt, def, validate)
