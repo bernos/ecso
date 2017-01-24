@@ -3,7 +3,6 @@ package serviceup
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 
@@ -81,36 +80,11 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func getClusterName(project *ecso.Project, env ecso.Environment) string {
-	return fmt.Sprintf("%s-%s", project.Name, env.Name)
-}
-
-func getServiceStackName(project *ecso.Project, env ecso.Environment, service ecso.Service) string {
-	return fmt.Sprintf("%s-%s-%s", project.Name, env.Name, service.Name)
-}
-
-func getECSTaskDefinitionName(project *ecso.Project, env ecso.Environment, service ecso.Service) string {
-	return fmt.Sprintf("%s-%s-%s", project.Name, env.Name, service.Name)
-}
-
-func getECSServiceName(service ecso.Service) string {
-	return fmt.Sprintf("%s-service", service.Name)
-}
-
-func getServiceBucketPrefix(project *ecso.Project, env ecso.Environment, service ecso.Service) string {
-	return path.Join(fmt.Sprintf("%s-%s-%s", project.Name, env.Name, service.Name), "templates")
-}
-
-func getCloudFormationTemplate(service ecso.Service) (string, error) {
-	templateDir, err := getTemplateDir(service.Name)
-	return filepath.Join(templateDir, "stack.yaml"), err
-}
-
-func setEnv(project *ecso.Project, env ecso.Environment, service ecso.Service) error {
+func setEnv(project *ecso.Project, env *ecso.Environment, service *ecso.Service) error {
 	if err := util.AnyError(
 		os.Setenv("ECSO_ENVIRONMENT", env.Name),
 		os.Setenv("ECSO_AWS_REGION", env.Region),
-		os.Setenv("ECSO_CLUSTER_NAME", getClusterName(project, env))); err != nil {
+		os.Setenv("ECSO_CLUSTER_NAME", service.GetClusterName(env))); err != nil {
 		return err
 	}
 
@@ -124,16 +98,15 @@ func setEnv(project *ecso.Project, env ecso.Environment, service ecso.Service) e
 	return nil
 }
 
-func deployService(ctx *ecso.CommandContext, env ecso.Environment, service ecso.Service) error {
+func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.Service) error {
 	var (
-		cfg     = ctx.Config
-		project = ctx.Project
-		log     = cfg.Logger
+		cfg = ctx.Config
+		log = cfg.Logger
 
-		cluster        = getClusterName(project, env)
-		stackName      = getServiceStackName(project, env, service)
-		taskName       = getECSTaskDefinitionName(project, env, service)
-		ecsServiceName = getECSServiceName(service)
+		cluster        = service.GetClusterName(env)
+		stackName      = service.GetCloudFormationStackName(env)
+		taskName       = service.GetECSTaskDefinitionName(env)
+		ecsServiceName = service.GetECSServiceName()
 	)
 
 	cfnService, err := cfg.CloudFormationService(env.Region)
@@ -256,21 +229,17 @@ func deployService(ctx *ecso.CommandContext, env ecso.Environment, service ecso.
 	return nil
 }
 
-func deployStack(ctx *ecso.CommandContext, env ecso.Environment, service ecso.Service) error {
+func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.Service) error {
 	var (
 		cfg       = ctx.Config
 		log       = cfg.Logger
 		project   = ctx.Project
 		bucket    = env.CloudFormationBucket
-		stackName = getServiceStackName(project, env, service)
-		prefix    = getServiceBucketPrefix(project, env, service)
+		stackName = service.GetCloudFormationStackName(env)
+		prefix    = service.GetCloudFormationBucketPrefix(env)
 	)
 
-	template, err := getCloudFormationTemplate(service)
-
-	if err != nil {
-		return err
-	}
+	template := service.GetCloudFormationTemplateFile()
 
 	cfnService, err := cfg.CloudFormationService(env.Region)
 
@@ -343,7 +312,7 @@ func getTemplateDir(serviceName string) (string, error) {
 	return filepath.Join(wd, ".ecso", "services", serviceName), nil
 }
 
-func getCloudFormationParameters(cfnService services.CloudFormationService, project *ecso.Project, env ecso.Environment, service ecso.Service) (map[string]string, error) {
+func getCloudFormationParameters(cfnService services.CloudFormationService, project *ecso.Project, env *ecso.Environment, service *ecso.Service) (map[string]string, error) {
 
 	outputs, err := cfnService.GetStackOutputs(fmt.Sprintf("%s-%s", project.Name, env.Name))
 
@@ -365,7 +334,7 @@ func getCloudFormationParameters(cfnService services.CloudFormationService, proj
 	return params, nil
 }
 
-func getCloudFormationTags(project *ecso.Project, env ecso.Environment, service ecso.Service) map[string]string {
+func getCloudFormationTags(project *ecso.Project, env *ecso.Environment, service *ecso.Service) map[string]string {
 	tags := map[string]string{
 		"project":     project.Name,
 		"environment": env.Name,

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/bernos/ecso/pkg/ecso"
@@ -37,60 +36,56 @@ type envUpCommand struct {
 }
 
 func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
-	var (
-		project = ctx.Project
-		cfg     = ctx.Config
-	)
 
 	if err := validateOptions(cmd.options); err != nil {
 		return err
 	}
 
-	environment, ok := project.Environments[cmd.options.EnvironmentName]
+	var (
+		project = ctx.Project
+		cfg     = ctx.Config
+		env     = project.Environments[cmd.options.EnvironmentName]
+	)
 
-	if !ok {
-		return fmt.Errorf("No environment named '%s' was found", cmd.options.EnvironmentName)
+	if env == nil {
+		return fmt.Errorf(
+			"No environment named '%s' was found",
+			cmd.options.EnvironmentName)
 	}
 
-	cfg.Logger.BannerBlue("Bringing up environment '%s'", environment.Name)
+	cfg.Logger.BannerBlue("Bringing up environment '%s'", env.Name)
 
 	if cmd.options.DryRun {
 		cfg.Logger.Infof("THIS IS A DRY RUN - no changes to the environment will be made.")
 	}
 
-	templateDir, err := getTemplateDir()
-
-	if err != nil {
-		return err
-	}
-
-	if err := ensureTemplates(templateDir, cfg.Logger.Infof); err != nil {
+	if err := ensureTemplates(env, cfg.Logger.Infof); err != nil {
 		return err
 	}
 
 	cfg.Logger.Infof("Packaging infrastructure stack templates")
 
-	if err := deployStack(ctx, environment, filepath.Join(templateDir, "stack.yaml"), cmd.options.DryRun); err != nil {
+	if err := deployStack(ctx, env, cmd.options.DryRun); err != nil {
 		return err
 	}
 
 	if cmd.options.DryRun {
 		cfg.Logger.BannerGreen("Review the above changes and re-run the command without the --dry-run option to apply them")
 	} else {
-		cfg.Logger.BannerGreen("Environment '%s' is up and running", environment.Name)
+		cfg.Logger.BannerGreen("Environment '%s' is up and running", env.Name)
 	}
 
 	return nil
 }
 
-func deployStack(ctx *ecso.CommandContext, env ecso.Environment, template string, dryRun bool) error {
+func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, dryRun bool) error {
 	var (
-		cfg     = ctx.Config
-		project = ctx.Project
+		cfg = ctx.Config
 
-		stackName = fmt.Sprintf("%s-%s", project.Name, env.Name)
+		stackName = env.GetCloudFormationStackName()
+		template  = env.GetCloudFormationTemplateFile()
+		prefix    = env.GetCloudFormationBucketPrefix()
 		bucket    = env.CloudFormationBucket
-		prefix    = path.Join(fmt.Sprintf("%s-%s", project.Name, env.Name), "infrastructure")
 		params    = env.CloudFormationParameters
 		tags      = env.CloudFormationTags
 	)
@@ -133,27 +128,19 @@ func deployStack(ctx *ecso.CommandContext, env ecso.Environment, template string
 	return nil
 }
 
-func ensureTemplates(dst string, log logfn) error {
+func ensureTemplates(env *ecso.Environment, log logfn) error {
+	dst := env.GetCloudFormationTemplateDir()
+
 	exists, err := util.DirExists(dst)
 
 	if err != nil || exists {
 		return err
 	}
 
-	return copyTemplates(dst, log)
+	return createCloudFormationTemplates(dst, log)
 }
 
-func getTemplateDir() (string, error) {
-	wd, err := ecso.GetCurrentProjectDir()
-
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(wd, ".ecso", "infrastructure", "templates"), nil
-}
-
-func copyTemplates(dst string, log logfn) error {
+func createCloudFormationTemplates(dst string, log logfn) error {
 	log("Copying infrastructure stack templates to %s", dst)
 
 	if err := os.MkdirAll(dst, os.ModePerm); err != nil {

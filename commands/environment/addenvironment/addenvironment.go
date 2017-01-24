@@ -85,7 +85,7 @@ func (c *cmd) Execute(ctx *ecso.CommandContext) error {
 		return fmt.Errorf("An environment named '%s' already exists for this project.", c.options.Name)
 	}
 
-	environment := ecso.Environment{
+	environment := &ecso.Environment{
 		Name:                 c.options.Name,
 		Region:               c.options.Region,
 		CloudFormationBucket: c.options.CloudFormationBucket,
@@ -102,7 +102,7 @@ func (c *cmd) Execute(ctx *ecso.CommandContext) error {
 
 	project.AddEnvironment(environment)
 
-	if err := ecso.SaveCurrentProject(project); err != nil {
+	if err := project.Save(); err != nil {
 		return err
 	}
 

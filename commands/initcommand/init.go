@@ -3,12 +3,10 @@ package initcommand
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/ui"
-	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
 func New(projectName string, options ...func(*Options)) ecso.Command {
@@ -33,47 +31,35 @@ func (cmd *initCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		log = ctx.Config.Logger
 	)
-	// TODO just a nil check on project
-	projectFile, err := ecso.GetCurrentProjectFile()
+
+	if ctx.Project != nil {
+		return fmt.Errorf("Found an existing project at %s.", ctx.Project.ProjectFile())
+	}
+
+	log.BannerBlue("Creating a new ecso project")
+
+	wd, err := os.Getwd()
 
 	if err != nil {
 		return err
 	}
-
-	if err := errIfProjectExists(projectFile); err != nil {
-		return err
-	}
-
-	log.BannerBlue("Creating a new ecso project")
 
 	if err := promptForMissingOptions(cmd.options); err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll(path.Dir(projectFile), os.ModePerm); err != nil {
+	project := ecso.NewProject(wd, cmd.options.ProjectName)
+
+	if err := os.MkdirAll(project.Dir(), os.ModePerm); err != nil {
 		return err
 	}
 
-	if err := ecso.SaveCurrentProject(ecso.NewProject(cmd.options.ProjectName)); err != nil {
+	if err := project.Save(); err != nil {
 		return err
 	}
 
-	log.Infof("Created project file at %s", projectFile)
-	log.BannerGreen("Successfully created project '%s'.", cmd.options.ProjectName)
-
-	return nil
-}
-
-func errIfProjectExists(projectFile string) error {
-	exists, err := util.DirExists(path.Dir(projectFile))
-
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		return fmt.Errorf("Found an existing project at %s.", path.Dir(projectFile))
-	}
+	log.Infof("Created project file at %s", project.ProjectFile())
+	log.BannerGreen("Successfully created project '%s'.", project.Name)
 
 	return nil
 }

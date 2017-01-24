@@ -9,13 +9,13 @@ import (
 )
 
 func LoadCurrentProject() (*Project, error) {
-	file, err := GetCurrentProjectFile()
+	dir, err := GetCurrentProjectDir()
 
 	if err != nil {
 		return nil, err
 	}
 
-	project, err := LoadProject(file)
+	project, err := LoadProject(dir)
 
 	if os.IsNotExist(err) {
 		return project, nil
@@ -24,84 +24,103 @@ func LoadCurrentProject() (*Project, error) {
 	return project, err
 }
 
-func SaveCurrentProject(project *Project) error {
-	file, err := GetCurrentProjectFile()
-
-	if err != nil {
-		return err
-	}
-
-	w, err := os.Create(file)
-
-	if err != nil {
-		return err
-	}
-
-	return project.Save(w)
-}
-
-func GetCurrentProjectFile() (string, error) {
-	wd, err := GetCurrentProjectDir()
-
-	return filepath.Join(wd, ".ecso", "project.json"), err
-}
-
 func GetCurrentProjectDir() (string, error) {
 	// For now this is just pwd, but later might want to walk up
 	// the dir tree, so ecso can run from sub folders in a project
 	return os.Getwd()
 }
 
-func LoadProject(path string) (*Project, error) {
-	data, err := ioutil.ReadFile(path)
+func LoadProject(dir string) (*Project, error) {
+	project := NewProject(dir, "unknown")
+
+	data, err := ioutil.ReadFile(project.ProjectFile())
 
 	if err != nil {
 		return nil, err
 	}
 
-	var project Project
+	err = json.Unmarshal(data, project)
 
-	err = json.Unmarshal(data, &project)
-
-	return &project, err
+	return project, err
 }
 
-func NewProject(name string) *Project {
+func NewProject(dir, name string) *Project {
 	return &Project{
-		Name: name,
+		dir:          dir,
+		Name:         name,
+		Environments: make(map[string]*Environment),
+		Services:     make(map[string]*Service),
 	}
 }
 
 type Project struct {
+	dir string
+
 	Name         string
-	Environments map[string]Environment
-	Services     map[string]Service
+	Environments map[string]*Environment
+	Services     map[string]*Service
 }
 
-type Environment struct {
-	Name                     string
-	Region                   string
-	CloudFormationBucket     string
-	CloudFormationParameters map[string]string
-	CloudFormationTags       map[string]string
+func (p *Project) Dir() string {
+	return p.dir
 }
 
-func (p *Project) Save(w io.Writer) error {
+func (p *Project) ProjectFile() string {
+	return filepath.Join(p.Dir(), ".ecso", "project.json")
+}
+
+func (p *Project) UnmarshalJSON(b []byte) error {
+	type Alias Project
+
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(p),
+	}
+
+	if err := json.Unmarshal(b, aux); err != nil {
+		return err
+	}
+
+	for _, env := range p.Environments {
+		env.project = p
+		// p.Environments[i] = env
+	}
+
+	for _, svc := range p.Services {
+		svc.project = p
+		// p.Services[i] = svc
+	}
+
+	return nil
+}
+
+func (p *Project) Save() error {
+	w, err := os.Create(p.ProjectFile())
+
+	if err != nil {
+		return err
+	}
+
+	return p.Write(w)
+}
+
+func (p *Project) Write(w io.Writer) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "    ")
 	return enc.Encode(p)
 }
 
-func (p *Project) AddEnvironment(environment Environment) {
+func (p *Project) AddEnvironment(environment *Environment) {
 	if p.Environments == nil {
-		p.Environments = make(map[string]Environment)
+		p.Environments = make(map[string]*Environment)
 	}
 	p.Environments[environment.Name] = environment
 }
 
-func (p *Project) AddService(service Service) {
+func (p *Project) AddService(service *Service) {
 	if p.Services == nil {
-		p.Services = make(map[string]Service)
+		p.Services = make(map[string]*Service)
 	}
 	p.Services[service.Name] = service
 }
