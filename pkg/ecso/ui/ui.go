@@ -9,6 +9,11 @@ import (
 	"github.com/fatih/color"
 )
 
+var (
+	bold = color.New(color.Bold).SprintfFunc()
+	warn = color.New(color.FgRed).SprintFunc()
+)
+
 func ValidateIntBetween(min, max int) func(int) error {
 	return func(v int) error {
 		if v < min || v > max {
@@ -52,10 +57,7 @@ func AskStringIfEmptyVar(dst *string, prompt, def string, validate func(string) 
 }
 
 func AskStringVar(dst *string, prompt, def string, validate func(string) error) error {
-
-	bold := color.New(color.Bold).SprintfFunc()
 	reader := bufio.NewReader(os.Stdin)
-	warn := color.New(color.FgRed).SprintFunc()
 
 	if len(def) > 0 {
 		prompt = fmt.Sprintf("%s (%s)", prompt, def)
@@ -79,7 +81,7 @@ func AskStringVar(dst *string, prompt, def string, validate func(string) error) 
 		}
 
 		if err := validate(str); err != nil {
-			fmt.Printf(" %s\n", warn(err.Error()))
+			fmt.Printf("   %s\n", warn(err.Error()))
 		} else {
 			*dst = str
 
@@ -103,10 +105,7 @@ func AskIntIfEmptyVar(dst *int, prompt string, def int, validate func(int) error
 }
 
 func AskIntVar(dst *int, prompt string, def int, validate func(int) error) error {
-
-	bold := color.New(color.Bold).SprintfFunc()
 	reader := bufio.NewReader(os.Stdin)
-	warn := color.New(color.FgRed).SprintFunc()
 
 	if def != 0 {
 		prompt = fmt.Sprintf("%s (%d)", prompt, def)
@@ -132,7 +131,7 @@ func AskIntVar(dst *int, prompt string, def int, validate func(int) error) error
 		i, err := strconv.Atoi(str)
 
 		if err != nil {
-			fmt.Printf(" %s\n", warn("Please enter a number"))
+			fmt.Printf("   %s\n", warn("Please enter a number"))
 		} else {
 			if err := validate(i); err != nil {
 				fmt.Printf(" %s\n", warn(err.Error()))
