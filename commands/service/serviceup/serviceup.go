@@ -122,7 +122,8 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 	}
 
 	// TODO: fully qualify the path to the service compose file
-	taskDefinition, err := ConvertToTaskDefinition(taskName, service.ComposeFile)
+	// taskDefinition, err := ConvertToTaskDefinition(taskName, service.ComposeFile)
+	taskDefinition, err := service.GetECSTaskDefinition(env)
 
 	log.Infof("Registering ECS task definition '%s'...", taskName)
 
@@ -170,7 +171,7 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 	if len(services.Services) == 0 {
 		log.Infof("Creating new ecs service...")
 
-		result, err := ecsClient.CreateService(&ecs.CreateServiceInput{
+		input := &ecs.CreateServiceInput{
 			DesiredCount:   aws.Int64(int64(service.DesiredCount)),
 			ServiceName:    aws.String(ecsServiceName),
 			TaskDefinition: resp.TaskDefinition.TaskDefinitionArn,
@@ -179,15 +180,20 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 				MaximumPercent:        aws.Int64(200),
 				MinimumHealthyPercent: aws.Int64(100),
 			},
-			LoadBalancers: []*ecs.LoadBalancer{
+			Role: aws.String(serviceStackOutputs["ServiceRole"]),
+		}
+
+		if len(service.Route) > 0 {
+			input.LoadBalancers = []*ecs.LoadBalancer{
 				{
 					ContainerName:  aws.String("web"),
 					ContainerPort:  aws.Int64(int64(service.Port)),
 					TargetGroupArn: aws.String(serviceStackOutputs["TargetGroup"]),
 				},
-			},
-			Role: aws.String(serviceStackOutputs["ServiceRole"]),
-		})
+			}
+		}
+
+		result, err := ecsClient.CreateService(input)
 
 		if err != nil {
 			return err
@@ -320,11 +326,17 @@ func getCloudFormationParameters(cfnService services.CloudFormationService, proj
 		return nil, err
 	}
 
-	params := map[string]string{
-		"VPC":           outputs["VPC"],
-		"Listener":      outputs["Listener"],
-		"Path":          service.Route,
-		"RoutePriority": strconv.Itoa(service.RoutePriority),
+	var params map[string]string
+
+	if len(service.Route) == 0 {
+		params = make(map[string]string)
+	} else {
+		params = map[string]string{
+			"VPC":           outputs["VPC"],
+			"Listener":      outputs["Listener"],
+			"Path":          service.Route,
+			"RoutePriority": strconv.Itoa(service.RoutePriority),
+		}
 	}
 
 	for k, v := range service.Environments[env.Name].CloudFormationParameters {

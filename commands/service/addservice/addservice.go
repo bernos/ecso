@@ -3,6 +3,7 @@ package addservice
 import (
 	"fmt"
 	"path/filepath"
+	"text/template"
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/util"
@@ -21,42 +22,37 @@ type command struct {
 
 func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	var (
-		log = ctx.Config.Logger
+		log     = ctx.Config.Logger
+		project = ctx.Project
 	)
-
-	projectDir, err := ecso.GetCurrentProjectDir()
-
-	if err != nil {
-		return err
-	}
 
 	if err := promptForMissingOptions(cmd.options, ctx); err != nil {
 		return err
 	}
 
-	if err := validateOptions(cmd.options); err != nil {
-		return err
-	}
-
-	if _, ok := ctx.Project.Services[cmd.options.Name]; ok {
+	if project.HasService(cmd.options.Name) {
 		return fmt.Errorf("Service '%s' already exists", cmd.options.Name)
 	}
 
 	log.BannerBlue("Adding '%s' service", cmd.options.Name)
 
 	service := &ecso.Service{
-		Name:          cmd.options.Name,
-		ComposeFile:   filepath.Join("services", cmd.options.Name, "docker-compose.yaml"),
-		DesiredCount:  cmd.options.DesiredCount,
-		Route:         cmd.options.Route,
-		RoutePriority: len(ctx.Project.Services) + 1,
-		Port:          cmd.options.Port,
+		Name:         cmd.options.Name,
+		ComposeFile:  filepath.Join("services", cmd.options.Name, "docker-compose.yaml"),
+		DesiredCount: cmd.options.DesiredCount,
 		Tags: map[string]string{
 			"project": ctx.Project.Name,
+			"service": cmd.options.Name,
 		},
 	}
 
-	if err := writeFiles(projectDir, service); err != nil {
+	if len(cmd.options.Route) > 0 {
+		service.Route = cmd.options.Route
+		service.RoutePriority = len(ctx.Project.Services) + 1
+		service.Port = cmd.options.Port
+	}
+
+	if err := writeFiles(project.Dir(), service); err != nil {
 		return err
 	}
 
@@ -84,11 +80,6 @@ func New(name string, options ...func(*Options)) ecso.Command {
 	}
 }
 
-func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
-	// TODO prompt for missing options
-	return nil
-}
-
 func writeFiles(projectDir string, service *ecso.Service) error {
 	var (
 		composeFile        = filepath.Join(projectDir, service.ComposeFile)
@@ -100,6 +91,17 @@ func writeFiles(projectDir string, service *ecso.Service) error {
 		}
 	)
 
+	var composeFileTemplate *template.Template
+	var cloudFormationTemplate *template.Template
+
+	if len(service.Route) > 0 {
+		composeFileTemplate = webServiceComposeFileTemplate
+		cloudFormationTemplate = webServiceCloudFormationTemplate
+	} else {
+		composeFileTemplate = workerComposeFileTemplate
+		cloudFormationTemplate = workerCloudFormationTemplate
+	}
+
 	if err := util.WriteFileFromTemplate(composeFile, composeFileTemplate, templateData); err != nil {
 		return err
 	}
@@ -108,12 +110,5 @@ func writeFiles(projectDir string, service *ecso.Service) error {
 		return err
 	}
 
-	return nil
-}
-
-func validateOptions(opt *Options) error {
-	if opt.Name == "" {
-		return fmt.Errorf("Name is required")
-	}
 	return nil
 }

@@ -98,7 +98,7 @@ func environmentNameValidator(p *ecso.Project) func(string) error {
 			return fmt.Errorf("Name is required")
 		}
 
-		if p.Environments[val] != nil {
+		if p.HasEnvironment(val) {
 			return fmt.Errorf("This project already contains an environment named '%s', please choose another name", val)
 		}
 		return nil

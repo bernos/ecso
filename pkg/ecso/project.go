@@ -69,6 +69,10 @@ func (p *Project) HasEnvironment(name string) bool {
 	return p.Environments[name] != nil
 }
 
+func (p *Project) HasService(name string) bool {
+	return p.Services[name] != nil
+}
+
 func (p *Project) ProjectFile() string {
 	return filepath.Join(p.Dir(), ".ecso", "project.json")
 }

@@ -2,7 +2,7 @@ package addservice
 
 import "text/template"
 
-var composeFileTemplate = template.Must(template.New("composeFile").Parse(`
+var webServiceComposeFileTemplate = template.Must(template.New("webServiceComposeFile").Parse(`
 version: '2'
 
 volumes:
@@ -35,7 +35,27 @@ services:
     command: sh -c "while true; do echo \"This is the {{.Service.Name}} service <p><pre>` + "`env`" + `</pre></p> \" > /nginx/index.html; sleep 3; done"
 `))
 
-var cloudFormationTemplate = template.Must(template.New("cloudFormationFile").Parse(`
+var workerComposeFileTemplate = template.Must(template.New("workerComposeFile").Parse(`
+version: '2'
+
+volumes:
+  nginxdata: {}
+
+services:
+  worker:
+    image: busybox:latest
+    mem_limit: 10000000
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${ECSO_AWS_REGION}
+        awslogs-group: ${ECSO_CLUSTER_NAME}-{{.Service.Name}}
+    volumes:
+      - nginxdata:/nginx
+    command: sh -c "while true; do echo \"This is the {{.Service.Name}} service <p><pre>` + "`env`" + `</pre></p> \" > /nginx/index.html; sleep 3; done"
+`))
+
+var webServiceCloudFormationTemplate = template.Must(template.New("webServiceCloudFormationFile").Parse(`
 Parameters:
 
     VPC:
@@ -89,12 +109,6 @@ Resources:
                 - TargetGroupArn: !Ref TargetGroup
                   Type: forward
 
-    CloudWatchLogsGroup:
-        Type: AWS::Logs::LogGroup
-        Properties:
-            LogGroupName: !Ref AWS::StackName
-            RetentionInDays: 365
-
     # This IAM Role grants the service access to register/unregister with the
     # Application Load Balancer (ALB). It is based on the default documented here:
     # http://docs.aws.amazon.com/AmazonECS/latest/developerguide/service_IAM_role.html
@@ -138,6 +152,61 @@ Outputs:
     TargetGroup:
         Description: Reference to the load balancer target group
         Value: !Ref TargetGroup
+
+    ServiceRole:
+        Description: The IAM role for the service
+        Value: !Ref ServiceRole
+
+    CloudWatchLogsGroup:
+        Description: Reference to the cloudwatch logs group
+        Value: !Ref CloudWatchLogsGroup
+`))
+
+var workerCloudFormationTemplate = template.Must(template.New("workerCloudFormationFile").Parse(`
+Resources:
+
+    CloudWatchLogsGroup:
+        Type: AWS::Logs::LogGroup
+        Properties:
+            LogGroupName: !Ref AWS::StackName
+            RetentionInDays: 365
+
+    ServiceRole:
+        Type: AWS::IAM::Role
+        Properties:
+            RoleName: !Sub ecs-service-${AWS::StackName}
+            Path: /
+            AssumeRolePolicyDocument: |
+                {
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Principal": { "Service": [ "ecs.amazonaws.com" ]},
+                        "Action": [ "sts:AssumeRole" ]
+                    }]
+                }
+            Policies:
+                - PolicyName: !Sub ecs-service-${AWS::StackName}
+                  PolicyDocument:
+                    {
+                        "Version": "2012-10-17",
+                        "Statement": [{
+                                "Effect": "Allow",
+                                "Action": [
+                                    "ec2:AuthorizeSecurityGroupIngress",
+                                    "ec2:Describe*",
+                                    "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
+                                    "elasticloadbalancing:Describe*",
+                                    "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
+                                    "elasticloadbalancing:DeregisterTargets",
+                                    "elasticloadbalancing:DescribeTargetGroups",
+                                    "elasticloadbalancing:DescribeTargetHealth",
+                                    "elasticloadbalancing:RegisterTargets"
+                                ],
+                                "Resource": "*"
+                        }]
+                    }
+
+Outputs:
 
     ServiceRole:
         Description: The IAM role for the service
