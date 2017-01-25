@@ -35,12 +35,12 @@ func (cmd *envCommand) Execute(ctx *ecso.CommandContext) error {
 	if cmd.options.Unset {
 		oldPS1 := os.Getenv("ECSO_OLD_PS1")
 
+		fmt.Printf("unset ECSO_ENVIRONMENT; ")
+		fmt.Printf("unset ECSO_OLD_PS1; ")
+
 		if oldPS1 != "" {
 			fmt.Printf("export PS1=\"%s\"\n", oldPS1)
 		}
-
-		fmt.Printf("unset ECSO_ENVIRONMENT\n")
-		fmt.Printf("unset ECSO_OLD_PS1\n")
 	} else if cmd.options.EnvironmentName != "" {
 		if _, ok := ctx.Project.Environments[cmd.options.EnvironmentName]; ok {
 

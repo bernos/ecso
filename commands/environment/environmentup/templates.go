@@ -372,7 +372,7 @@ Outputs:
 
     LoadBalancerUrl:
         Description: The URL of the ALB
-        Value: !GetAtt LoadBalancer.DNSName
+        Value: !Sub http://${LoadBalancer.DNSName}
 
     Listener:
         Description: A reference to a port 80 listener

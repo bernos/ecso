@@ -37,7 +37,7 @@ type envUpCommand struct {
 
 func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 
-	if err := validateOptions(cmd.options); err != nil {
+	if err := validateOptions(ctx, cmd.options); err != nil {
 		return err
 	}
 
@@ -46,12 +46,6 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		cfg     = ctx.Config
 		env     = project.Environments[cmd.options.EnvironmentName]
 	)
-
-	if env == nil {
-		return fmt.Errorf(
-			"No environment named '%s' was found",
-			cmd.options.EnvironmentName)
-	}
 
 	cfg.Logger.BannerBlue("Bringing up environment '%s'", env.Name)
 
@@ -71,8 +65,30 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 
 	if cmd.options.DryRun {
 		cfg.Logger.BannerGreen("Review the above changes and re-run the command without the --dry-run option to apply them")
+
+		return nil
 	} else {
 		cfg.Logger.BannerGreen("Environment '%s' is up and running", env.Name)
+
+		return logStackOutputs(ctx, env)
+	}
+}
+
+func logStackOutputs(ctx *ecso.CommandContext, env *ecso.Environment) error {
+	cfn, err := ctx.Config.CloudFormationService(env.Region)
+
+	if err != nil {
+		return err
+	}
+
+	outputs, err := cfn.GetStackOutputs(env.GetCloudFormationStackName())
+
+	if err != nil {
+		return err
+	}
+
+	for k, v := range outputs {
+		ctx.Config.Logger.Dt(k, v)
 	}
 
 	return nil
@@ -156,9 +172,14 @@ func createCloudFormationTemplates(dst string, log logfn) error {
 	return nil
 }
 
-func validateOptions(opt *Options) error {
+func validateOptions(ctx *ecso.CommandContext, opt *Options) error {
 	if opt.EnvironmentName == "" {
 		return fmt.Errorf("Environment name is required")
 	}
+
+	if !ctx.Project.HasEnvironment(opt.EnvironmentName) {
+		return fmt.Errorf("No environment named '%s' was found", opt.EnvironmentName)
+	}
+
 	return nil
 }

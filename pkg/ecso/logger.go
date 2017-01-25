@@ -36,6 +36,7 @@ type Logger interface {
 	PrefixPrintf(prefix string) func(string, ...interface{})
 	Infof(format string, a ...interface{})
 	ErrWriter() io.Writer
+	Dt(label, content string)
 }
 
 func NewLogger(w io.Writer) Logger {
@@ -52,6 +53,10 @@ func (l *log) BannerBlue(format string, a ...interface{}) {
 
 func (l *log) BannerGreen(format string, a ...interface{}) {
 	fmt.Fprintf(l.w, "\n%s\n\n", greenBold(format, a...))
+}
+
+func (l *log) Dt(label, content string) {
+	fmt.Fprintf(l.w, "  %s\n    %s\n", bold("%s:", label), content)
 }
 
 func (l *log) Errorf(format string, a ...interface{}) {
