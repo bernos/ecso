@@ -12,6 +12,11 @@
 			"Rev": "61e43dc76f7ee59a82bdf3d71033dc12bea4c77d"
 		},
 		{
+			"ImportPath": "github.com/aws/amazon-ecs-cli/ecs-cli/modules/compose/ecs/utils",
+			"Comment": "v0.4.6-1-g51076cf",
+			"Rev": "51076cf7ff470917d14de6c45ff31df59a1d1fa3"
+		},
+		{
 			"ImportPath": "github.com/aws/aws-sdk-go/aws",
 			"Comment": "v1.6.17-2-g5f8c776",
 			"Rev": "5f8c77604d405643d9bd8440d47b57bc40748824"

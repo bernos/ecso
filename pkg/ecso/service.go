@@ -5,8 +5,8 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/compose/ecs/utils"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/bernos/ecso/pkg/ecso/util"
 	"github.com/docker/libcompose/project"
 )
 
@@ -61,13 +61,13 @@ func (s *Service) GetECSTaskDefinition(env *Environment) (*ecs.TaskDefinition, e
 
 	name := s.GetECSTaskDefinitionName(env)
 
-	envLookup, err := util.GetDefaultEnvironmentLookup()
+	envLookup, err := utils.GetDefaultEnvironmentLookup()
 
 	if err != nil {
 		return nil, err
 	}
 
-	resourceLookup, err := util.GetDefaultResourceLookup()
+	resourceLookup, err := utils.GetDefaultResourceLookup()
 
 	if err != nil {
 		return nil, err
@@ -86,5 +86,5 @@ func (s *Service) GetECSTaskDefinition(env *Environment) (*ecs.TaskDefinition, e
 		return nil, err
 	}
 
-	return util.ConvertToTaskDefinition(name, context, p.ServiceConfigs)
+	return utils.ConvertToTaskDefinition(name, context, p.ServiceConfigs)
 }
