@@ -143,3 +143,41 @@ func AskIntVar(dst *int, prompt string, def int, validate func(int) error) error
 		}
 	}
 }
+
+func Choice(prompt string, choices []string) (int, error) {
+	i := 0
+	err := ChoiceVar(&i, prompt, choices)
+
+	return i, err
+}
+
+func ChoiceVar(dst *int, prompt string, choices []string) error {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Printf("%s\n", bold("%s: ", prompt))
+
+	for i, choice := range choices {
+		fmt.Printf(" %d) %s\n", i+1, choice)
+	}
+
+	for {
+		fmt.Print("  > ")
+
+		str, err := reader.ReadString('\n')
+
+		if err != nil {
+			return err
+		}
+
+		str = str[:len(str)-1]
+
+		i, err := strconv.Atoi(str)
+
+		if err != nil || i < 1 || i > len(choices) {
+			fmt.Printf("   %s\n", warn("Please enter a number between %d and %d", 1, len(choices)))
+		} else {
+			*dst = i - 1
+
+			return nil
+		}
+	}
+}

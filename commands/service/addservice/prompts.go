@@ -28,17 +28,20 @@ func promptForMissingOptions(opt *Options, ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&opt.Route, prompts.Route, "/"+opt.Name, routeValidator()); err != nil {
+	webChoice, err := ui.Choice("Is this a web service?", []string{"Yes", "No"})
+
+	if err != nil {
 		return err
 	}
 
-	// No route means not a we service, so we can bail now
-	if opt.Route == "" {
-		return nil
-	}
+	if webChoice == 0 {
+		if err := ui.AskStringIfEmptyVar(&opt.Route, prompts.Route, "/"+opt.Name, routeValidator()); err != nil {
+			return err
+		}
 
-	if err := ui.AskIntIfEmptyVar(&opt.Port, prompts.Port, 80, portValidator()); err != nil {
-		return err
+		if err := ui.AskIntIfEmptyVar(&opt.Port, prompts.Port, 80, portValidator()); err != nil {
+			return err
+		}
 	}
 
 	return nil
