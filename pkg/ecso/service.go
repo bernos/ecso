@@ -5,7 +5,12 @@ import (
 	"path"
 	"path/filepath"
 
+	"golang.org/x/net/context"
+
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/bernos/ecso/pkg/ecso/util"
+	"github.com/docker/libcompose/config"
+	"github.com/docker/libcompose/project"
 )
 
 type Service struct {
@@ -57,28 +62,34 @@ func (s *Service) GetECSServiceName() string {
 
 func (s *Service) GetECSTaskDefinition(env *Environment) (*ecs.TaskDefinition, error) {
 
-	return &ecs.TaskDefinition{}, nil
-	// envLookup, err := util.GetDefaultEnvironmentLookup()
+	envLookup, err := util.GetDefaultEnvironmentLookup()
 
-	// if err != nil {
-	// 	return nil, err
-	// }
+	if err != nil {
+		return nil, err
+	}
 
-	// resourceLookup, err := util.GetDefaultResourceLookup()
+	resourceLookup, err := util.GetDefaultResourceLookup()
 
-	// if err != nil {
-	// 	return nil, err
-	// }
+	if err != nil {
+		return nil, err
+	}
 
-	// context := &ctx.Context{
-	// 	Context: project.Context{
-	// 		ComposeFiles:      []string{s.ComposeFile},
-	// 		ProjectName:       s.GetECSTaskDefinitionName(env),
-	// 		EnvironmentLookup: envLookup,
-	// 		ResourceLookup:    resourceLookup,
-	// 	},
-	// }
+	context := &project.Context{
+		ComposeFiles:      []string{s.ComposeFile},
+		ProjectName:       s.GetECSTaskDefinitionName(env),
+		EnvironmentLookup: envLookup,
+		ResourceLookup:    resourceLookup,
+	}
 
+	fmt.Printf("%v", context)
+
+	p := project.NewProject(context, &runtime{}, nil)
+
+	if err := p.Parse(); err != nil {
+		return nil, err
+	}
+
+	return util.ConvertToTaskDefinition(s.GetECSTaskDefinitionName(env), context, p.ServiceConfigs)
 	// p, err := docker.NewProject(context, nil)
 
 	// if err != nil {
@@ -88,4 +99,11 @@ func (s *Service) GetECSTaskDefinition(env *Environment) (*ecs.TaskDefinition, e
 	// serviceConfigs := p.(*project.Project).ServiceConfigs
 
 	// return util.ConvertToTaskDefinition(s.GetECSTaskDefinitionName(env), &context.Context, serviceConfigs)
+	// return &ecs.TaskDefinition{}, nil
+}
+
+type runtime struct{}
+
+func (r *runtime) RemoveOrphans(ctx context.Context, projectName string, serviceConfigs *config.ServiceConfigs) error {
+	return nil
 }

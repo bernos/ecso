@@ -2,6 +2,9 @@
 	"ImportPath": "github.com/bernos/ecso",
 	"GoVersion": "go1.7",
 	"GodepVersion": "v74",
+	"Packages": [
+		"./..."
+	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/Sirupsen/logrus",
@@ -329,6 +332,11 @@
 		{
 			"ImportPath": "github.com/mattn/go-isatty",
 			"Rev": "56b76bdf51f7708750eac80fa38b952bb9f32639"
+		},
+		{
+			"ImportPath": "github.com/pkg/errors",
+			"Comment": "v0.7.0-3-gcbd18b5",
+			"Rev": "cbd18b5440315aa74a17dee2e50b67675b872b49"
 		},
 		{
 			"ImportPath": "github.com/spf13/pflag",
