@@ -31,6 +31,7 @@ type DeploymentResult struct {
 type CloudFormationService interface {
 	PackageAndDeploy(stackName, templateFile, bucket, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
 	Package(templateFile, bucket, prefix string) (string, error)
+	DeleteStack(serviceName string) error
 	Deploy(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error)
 	StackExists(stackName string) (bool, error)
 	WaitForChangeset(changeset string, status ...string) (*cloudformation.DescribeChangeSetOutput, error)
@@ -215,6 +216,30 @@ func (svc *cfnService) GetChangeSet(changeset string) (*cloudformation.DescribeC
 	}
 
 	return svc.cfnClient.DescribeChangeSet(params)
+}
+
+func (svc *cfnService) DeleteStack(stackName string) error {
+	_, err := svc.cfnClient.DeleteStack(&cloudformation.DeleteStackInput{
+		StackName: aws.String(stackName),
+	})
+
+	if err != nil {
+		return err
+	}
+
+	cancel := svc.LogStackEvents(stackName, func(ev *cloudformation.StackEvent, err error) {
+		if ev != nil {
+			svc.log("%s: %s\n", *ev.LogicalResourceId, *ev.ResourceStatus)
+		}
+	})
+
+	defer cancel()
+
+	svc.log("Waiting for stack delete to complete...\n")
+
+	return svc.cfnClient.WaitUntilStackDeleteComplete(&cloudformation.DescribeStacksInput{
+		StackName: aws.String(stackName),
+	})
 }
 
 func (svc *cfnService) StackExists(stackName string) (bool, error) {

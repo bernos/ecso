@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/bernos/ecso/commands/service/addservice"
+	"github.com/bernos/ecso/commands/service/servicedown"
 	"github.com/bernos/ecso/commands/service/serviceup"
 	"github.com/bernos/ecso/pkg/ecso"
 	"gopkg.in/urfave/cli.v1"
@@ -14,6 +15,7 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 		Subcommands: []cli.Command{
 			addservice.CliCommand(dispatcher),
 			serviceup.CliCommand(dispatcher),
+			servicedown.CliCommand(dispatcher),
 		},
 	}
 }

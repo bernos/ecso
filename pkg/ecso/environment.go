@@ -32,3 +32,7 @@ func (e *Environment) GetCloudFormationTemplateDir() string {
 func (e *Environment) GetCloudFormationTemplateFile() string {
 	return filepath.Join(e.GetCloudFormationTemplateDir(), "stack.yaml")
 }
+
+func (e *Environment) GetClusterName() string {
+	return fmt.Sprintf("%s-%s", e.project.Name, e.Name)
+}

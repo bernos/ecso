@@ -28,10 +28,6 @@ type ServiceConfiguration struct {
 	CloudFormationParameters map[string]string
 }
 
-func (s *Service) GetClusterName(env *Environment) string {
-	return fmt.Sprintf("%s-%s", s.project.Name, env.Name)
-}
-
 func (s *Service) GetCloudFormationTemplateDir() string {
 	return filepath.Join(s.project.Dir(), ".ecso", "services", s.Name)
 }

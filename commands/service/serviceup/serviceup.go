@@ -84,7 +84,7 @@ func setEnv(project *ecso.Project, env *ecso.Environment, service *ecso.Service)
 	if err := util.AnyError(
 		os.Setenv("ECSO_ENVIRONMENT", env.Name),
 		os.Setenv("ECSO_AWS_REGION", env.Region),
-		os.Setenv("ECSO_CLUSTER_NAME", service.GetClusterName(env))); err != nil {
+		os.Setenv("ECSO_CLUSTER_NAME", env.GetClusterName())); err != nil {
 		return err
 	}
 
@@ -103,7 +103,7 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 		cfg = ctx.Config
 		log = cfg.Logger
 
-		cluster        = service.GetClusterName(env)
+		cluster        = env.GetClusterName()
 		stackName      = service.GetCloudFormationStackName(env)
 		taskName       = service.GetECSTaskDefinitionName(env)
 		ecsServiceName = service.GetECSServiceName()
