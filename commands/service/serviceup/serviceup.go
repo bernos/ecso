@@ -168,7 +168,15 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 
 	log.Infof("Deploying ECS service '%s'", ecsServiceName)
 
-	if len(services.Services) == 0 {
+	isCreate := true
+
+	for _, s := range services.Services {
+		if *s.Status != "INACTIVE" {
+			isCreate = false
+		}
+	}
+
+	if isCreate {
 		log.Infof("Creating new ecs service...")
 
 		input := &ecs.CreateServiceInput{

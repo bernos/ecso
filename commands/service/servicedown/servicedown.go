@@ -70,6 +70,16 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	log.Printf("\n")
+	log.Infof("Deleting ECS service '%s'", service.GetECSServiceName())
+
+	if _, err := ecsAPI.DeleteService(&ecs.DeleteServiceInput{
+		Cluster: aws.String(env.GetClusterName()),
+		Service: aws.String(service.GetECSServiceName()),
+	}); err != nil {
+		return err
+	}
+
+	log.Printf("\n")
 	log.Infof("Deleting cloud formation stack '%s'", service.GetCloudFormationStackName(env))
 
 	if err := deleteCloudFormationStack(cfnService, service, env, log.PrefixPrintf("  ")); err != nil {
