@@ -25,8 +25,9 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 				Usage: "The name of the service to terminate",
 			},
 			cli.StringFlag{
-				Name:  keys.Environment,
-				Usage: "The environment to terminate the service from",
+				Name:   keys.Environment,
+				Usage:  "The environment to terminate the service from",
+				EnvVar: "ECSO_ENVIRONMENT",
 			},
 		},
 		Action: commands.MakeAction(dispatcher, FromCliContext),

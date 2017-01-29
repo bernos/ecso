@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/bernos/ecso/commands/service/addservice"
 	"github.com/bernos/ecso/commands/service/ls"
+	"github.com/bernos/ecso/commands/service/ps"
 	"github.com/bernos/ecso/commands/service/servicedown"
 	"github.com/bernos/ecso/commands/service/serviceup"
 	"github.com/bernos/ecso/pkg/ecso"
@@ -18,6 +19,7 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 			serviceup.CliCommand(dispatcher),
 			servicedown.CliCommand(dispatcher),
 			ls.CliCommand(dispatcher),
+			ps.CliCommand(dispatcher),
 		},
 	}
 }
