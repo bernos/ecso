@@ -28,10 +28,10 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func FromCliContext(c *cli.Context) ecso.Command {
+func FromCliContext(c *cli.Context) (ecso.Command, error) {
 	return New(c.Args().First(), func(opt *Options) {
 		// TODO: populate options from c
-	})
+	}), nil
 }
 
 type Options struct {

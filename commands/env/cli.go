@@ -28,8 +28,14 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func FromCliContext(c *cli.Context) ecso.Command {
-	return New(c.Args().First(), func(opt *Options) {
+func FromCliContext(c *cli.Context) (ecso.Command, error) {
+	env := c.Args().First()
+
+	if env == "" {
+		return nil, commands.NewArgumentRequiredError("environment")
+	}
+
+	return New(env, func(opt *Options) {
 		opt.Unset = c.Bool(keys.Unset)
-	})
+	}), nil
 }

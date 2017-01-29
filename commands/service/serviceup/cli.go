@@ -34,8 +34,19 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func FromCliContext(c *cli.Context) ecso.Command {
-	return New(c.String(keys.Name), c.String(keys.Environment), func(opt *Options) {
+func FromCliContext(c *cli.Context) (ecso.Command, error) {
+	name := c.String(keys.Name)
+	env := c.String(keys.Environment)
+
+	if name == "" {
+		return nil, commands.NewOptionRequiredError(keys.Name)
+	}
+
+	if env == "" {
+		return nil, commands.NewOptionRequiredError(keys.Environment)
+	}
+
+	return New(name, env, func(opt *Options) {
 		// TODO: populate options from c
-	})
+	}), nil
 }

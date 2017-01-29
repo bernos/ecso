@@ -1,4 +1,4 @@
-package servicedown
+package ls
 
 import (
 	"github.com/bernos/ecso/commands"
@@ -8,25 +8,19 @@ import (
 )
 
 var keys = struct {
-	Name        string
 	Environment string
 }{
-	Name:        "name",
 	Environment: "environment",
 }
 
 func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	return cli.Command{
-		Name:  "down",
-		Usage: "terminates a service",
+		Name:  "ls",
+		Usage: "List services",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  keys.Name,
-				Usage: "The name of the service to terminate",
-			},
-			cli.StringFlag{
 				Name:  keys.Environment,
-				Usage: "The environment to terminate the service from",
+				Usage: "Environment to query",
 			},
 		},
 		Action: commands.MakeAction(dispatcher, FromCliContext),
@@ -34,18 +28,13 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func FromCliContext(c *cli.Context) (ecso.Command, error) {
-	service := c.String(keys.Name)
 	env := c.String(keys.Environment)
-
-	if service == "" {
-		return nil, commands.NewOptionRequiredError(keys.Name)
-	}
 
 	if env == "" {
 		return nil, commands.NewOptionRequiredError(keys.Environment)
 	}
 
-	return New(c.String(keys.Name), c.String(keys.Environment), func(opt *Options) {
+	return New(env, func(opt *Options) {
 		// TODO: populate options from c
 	}), nil
 }

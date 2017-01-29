@@ -33,8 +33,14 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func FromCliContext(c *cli.Context) ecso.Command {
-	return New(c.String(keys.Name), func(opt *Options) {
+func FromCliContext(c *cli.Context) (ecso.Command, error) {
+	env := c.String(keys.Name)
+
+	if env == "" {
+		return nil, commands.NewOptionRequiredError(keys.Name)
+	}
+
+	return New(env, func(opt *Options) {
 		opt.DryRun = c.Bool(keys.DryRun)
-	})
+	}), nil
 }

@@ -21,7 +21,7 @@ var keys = struct {
 	Region:          "region",
 }
 
-func FromCliContext(c *cli.Context) ecso.Command {
+func FromCliContext(c *cli.Context) (ecso.Command, error) {
 	return New(c.Args().First(), func(opt *Options) {
 		if c.String(keys.CloudFormationBucket) != "" {
 			opt.CloudFormationBucket = c.String(keys.CloudFormationBucket)
@@ -42,7 +42,7 @@ func FromCliContext(c *cli.Context) ecso.Command {
 		if c.String(keys.Region) != "" {
 			opt.Region = c.String(keys.Region)
 		}
-	})
+	}), nil
 }
 
 func CliCommand(dispatcher ecso.Dispatcher) cli.Command {

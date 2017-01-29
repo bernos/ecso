@@ -6,8 +6,8 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
-func FromCliContext(c *cli.Context) ecso.Command {
-	return New(c.Args().First())
+func FromCliContext(c *cli.Context) (ecso.Command, error) {
+	return New(c.Args().First()), nil
 }
 
 func CliCommand(dispatcher ecso.Dispatcher) cli.Command {

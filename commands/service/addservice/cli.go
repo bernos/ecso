@@ -45,10 +45,10 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func FromCliContext(c *cli.Context) ecso.Command {
+func FromCliContext(c *cli.Context) (ecso.Command, error) {
 	return New(c.String(keys.Name), func(opt *Options) {
 		opt.DesiredCount = c.Int(keys.DesiredCount)
 		opt.Route = c.String(keys.Route)
 		opt.Port = c.Int(keys.Port)
-	})
+	}), nil
 }
