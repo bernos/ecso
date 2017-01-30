@@ -14,6 +14,8 @@ type Options struct {
 	InstanceSubnets      string
 	Region               string
 	Account              string
+	InstanceType         string
+	Size                 int
 }
 
 func New(environmentName string, options ...func(*Options)) ecso.Command {
@@ -58,6 +60,8 @@ func (c *cmd) Execute(ctx *ecso.CommandContext) error {
 			"VPC":             c.options.VPCID,
 			"InstanceSubnets": c.options.InstanceSubnets,
 			"ALBSubnets":      c.options.ALBSubnets,
+			"InstanceType":    c.options.InstanceType,
+			"ClusterSize":     fmt.Sprintf("%d", c.options.Size),
 		},
 		CloudFormationTags: map[string]string{
 			"environment": c.options.Name,

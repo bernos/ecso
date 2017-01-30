@@ -27,6 +27,15 @@ Parameters:
         Description: Choose which subnets the application load balancer should be deployed to
         Type: List<AWS::EC2::Subnet::Id>
 
+    ClusterSize:
+        Description: Choose the number of container instances to add to the cluster
+        Type: Number
+
+    InstanceType:
+        Description: Choose the type of EC2 instance to add to the cluster
+        Type: String
+        Default: t2.large
+
 Resources:
 
     SecurityGroups:
@@ -56,8 +65,8 @@ Resources:
             TemplateURL: ./ecs-cluster.yaml
             Parameters:
                 EnvironmentName: !Ref AWS::StackName
-                InstanceType: t2.large
-                ClusterSize: 4
+                InstanceType: !Ref InstanceType
+                ClusterSize: !Ref ClusterSize
                 VPC: !Ref VPC
                 SecurityGroup:
                   Fn::GetAtt:

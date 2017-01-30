@@ -12,13 +12,17 @@ var keys = struct {
 	CloudFormationBucket string
 	ALBSubnets           string
 	InstanceSubnets      string
+	InstanceType         string
 	Region               string
+	Size                 string
 }{
 	Name:            "name",
 	VPCID:           "vpc",
 	ALBSubnets:      "alb-subnets",
 	InstanceSubnets: "instance-subnets",
+	InstanceType:    "instance-type",
 	Region:          "region",
+	Size:            "size",
 }
 
 func FromCliContext(c *cli.Context) (ecso.Command, error) {
@@ -41,6 +45,14 @@ func FromCliContext(c *cli.Context) (ecso.Command, error) {
 
 		if c.String(keys.Region) != "" {
 			opt.Region = c.String(keys.Region)
+		}
+
+		if c.Int(keys.Size) != 0 {
+			opt.Size = c.Int(keys.Size)
+		}
+
+		if c.String(keys.InstanceType) != "" {
+			opt.InstanceType = c.String(keys.InstanceType)
 		}
 	}), nil
 }
@@ -70,6 +82,14 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 			cli.StringFlag{
 				Name:  keys.Region,
 				Usage: "The AWS region to create the environment in",
+			},
+			cli.IntFlag{
+				Name:  keys.Size,
+				Usage: "Then number of container instances to create",
+			},
+			cli.StringFlag{
+				Name:  keys.InstanceType,
+				Usage: "The type of container instances to create",
 			},
 		},
 		Action: commands.MakeAction(dispatcher, FromCliContext),

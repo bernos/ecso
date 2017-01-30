@@ -50,7 +50,7 @@ func (cmd *initCommand) Execute(ctx *ecso.CommandContext) error {
 
 	project := ecso.NewProject(wd, cmd.options.ProjectName)
 
-	if err := os.MkdirAll(project.Dir(), os.ModePerm); err != nil {
+	if err := os.MkdirAll(filepath.Join(project.Dir(), ".ecso"), os.ModePerm); err != nil {
 		return err
 	}
 

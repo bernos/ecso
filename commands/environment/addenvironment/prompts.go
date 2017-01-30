@@ -23,6 +23,8 @@ func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
 		Bucket          string
 		ALBSubnets      string
 		InstanceSubnets string
+		InstanceType    string
+		Size            string
 	}{
 		Name:            "What is the name of your environment?",
 		Region:          "Which AWS region will the environment be deployed to?",
@@ -30,6 +32,8 @@ func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
 		Bucket:          "Which S3 bucket would you like to use to store CloudFormation templates used by ecso?",
 		ALBSubnets:      "Which subnets would you like to deploy the load balancer to?",
 		InstanceSubnets: "Which subnets would you like to deploy the ECS container instances to?",
+		InstanceType:    "What type of instances would you like to add to the ECS cluster?",
+		Size:            "How many instances would you like to add to the ECS cluster?",
 	}
 
 	var validators = struct {
@@ -39,6 +43,8 @@ func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
 		Bucket          func(string) error
 		ALBSubnets      func(string) error
 		InstanceSubnets func(string) error
+		InstanceType    func(string) error
+		Size            func(int) error
 	}{
 		Name:            environmentNameValidator(ctx.Project),
 		Region:          ui.ValidateRequired("Region is required"),
@@ -46,6 +52,8 @@ func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
 		Bucket:          ui.ValidateRequired("Bucket is required"),
 		ALBSubnets:      ui.ValidateRequired("ALB subnets are required"),
 		InstanceSubnets: ui.ValidateRequired("Instance subnets are required"),
+		InstanceType:    ui.ValidateRequired("Instance type is required"),
+		Size:            ui.ValidateIntBetween(2, 100),
 	}
 
 	// TODO Ask if there is an existing environment?
@@ -86,6 +94,14 @@ func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
 	}
 
 	if err := ui.AskStringIfEmptyVar(&options.InstanceSubnets, prompts.InstanceSubnets, accountDefaults.InstanceSubnets, validators.InstanceSubnets); err != nil {
+		return err
+	}
+
+	if err := ui.AskStringIfEmptyVar(&options.InstanceType, prompts.InstanceType, "t2.large", validators.InstanceType); err != nil {
+		return err
+	}
+
+	if err := ui.AskIntIfEmptyVar(&options.Size, prompts.Size, 4, validators.Size); err != nil {
 		return err
 	}
 
