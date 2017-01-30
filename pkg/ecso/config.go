@@ -7,6 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/cloudformation/cloudformationiface"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -22,13 +24,32 @@ type Config struct {
 	// CloudFormationService services.CloudFormationService
 
 	// aws services by aws region
-	sessions    map[string]*session.Session
-	stsClients  map[string]stsiface.STSAPI
-	cfnClients  map[string]cloudformationiface.CloudFormationAPI
-	s3Clients   map[string]s3iface.S3API
-	cfnServices map[string]services.CloudFormationService
-	ecsClients  map[string]ecsiface.ECSAPI
-	ecsServices map[string]services.ECSService
+	sessions      map[string]*session.Session
+	stsClients    map[string]stsiface.STSAPI
+	cfnClients    map[string]cloudformationiface.CloudFormationAPI
+	s3Clients     map[string]s3iface.S3API
+	cfnServices   map[string]services.CloudFormationService
+	ecsClients    map[string]ecsiface.ECSAPI
+	ecsServices   map[string]services.ECSService
+	cwLogsClients map[string]cloudwatchlogsiface.CloudWatchLogsAPI
+}
+
+func (c *Config) CloudWatchLogsAPI(region string) (cloudwatchlogsiface.CloudWatchLogsAPI, error) {
+	if c.cwLogsClients == nil {
+		c.cwLogsClients = make(map[string]cloudwatchlogsiface.CloudWatchLogsAPI)
+	}
+
+	if _, ok := c.cwLogsClients[region]; !ok {
+		sess, err := c.getSession(region)
+
+		if err != nil {
+			return nil, err
+		}
+
+		c.cwLogsClients[region] = cloudwatchlogs.New(sess)
+	}
+
+	return c.cwLogsClients[region], nil
 }
 
 func (c *Config) STSAPI(region string) (stsiface.STSAPI, error) {
