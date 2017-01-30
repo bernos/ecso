@@ -28,6 +28,7 @@ type Config struct {
 	s3Clients   map[string]s3iface.S3API
 	cfnServices map[string]services.CloudFormationService
 	ecsClients  map[string]ecsiface.ECSAPI
+	ecsServices map[string]services.ECSService
 }
 
 func (c *Config) STSAPI(region string) (stsiface.STSAPI, error) {
@@ -124,6 +125,24 @@ func (c *Config) CloudFormationService(region string) (services.CloudFormationSe
 	}
 
 	return c.cfnServices[region], nil
+}
+
+func (c *Config) ECSService(region string) (services.ECSService, error) {
+	if c.ecsServices == nil {
+		c.ecsServices = make(map[string]services.ECSService)
+	}
+
+	if _, ok := c.ecsServices[region]; !ok {
+		ecsAPI, err := c.ECSAPI(region)
+
+		if err != nil {
+			return nil, err
+		}
+
+		c.ecsServices[region] = services.NewECSService(ecsAPI, c.Logger.PrefixPrintf("  "))
+	}
+
+	return c.ecsServices[region], nil
 }
 
 func (c *Config) getSession(region string) (*session.Session, error) {
