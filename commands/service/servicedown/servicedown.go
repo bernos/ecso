@@ -63,20 +63,30 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	log.Infof("Stopping ECS service '%s'", service.GetECSServiceName())
+	exists, err := ecsServiceExists(service, env, ecsAPI)
 
-	if err := stopECSService(ecsAPI, service, env, log.PrefixPrintf("  ")); err != nil {
+	if err != nil {
 		return err
 	}
 
-	log.Printf("\n")
-	log.Infof("Deleting ECS service '%s'", service.GetECSServiceName())
+	if exists {
+		log.Infof("Stopping ECS service '%s'", service.GetECSServiceName())
 
-	if _, err := ecsAPI.DeleteService(&ecs.DeleteServiceInput{
-		Cluster: aws.String(env.GetClusterName()),
-		Service: aws.String(service.GetECSServiceName()),
-	}); err != nil {
-		return err
+		if err := stopECSService(ecsAPI, service, env, log.PrefixPrintf("  ")); err != nil {
+			return err
+		}
+
+		log.Printf("\n")
+		log.Infof("Deleting ECS service '%s'", service.GetECSServiceName())
+
+		if _, err := ecsAPI.DeleteService(&ecs.DeleteServiceInput{
+			Cluster: aws.String(env.GetClusterName()),
+			Service: aws.String(service.GetECSServiceName()),
+		}); err != nil {
+			return err
+		}
+	} else {
+		log.Infof("ECS service '%s' doesn't exists, nothing to clean up", service.GetECSServiceName())
 	}
 
 	log.Printf("\n")
@@ -131,6 +141,21 @@ func deleteCloudFormationStack(cfnService services.CloudFormationService, servic
 	return cfnService.DeleteStack(stackName)
 }
 
+func ecsServiceExists(service *ecso.Service, env *ecso.Environment, ecsAPI ecsiface.ECSAPI) (bool, error) {
+	resp, err := ecsAPI.DescribeServices(&ecs.DescribeServicesInput{
+		Cluster: aws.String(env.GetClusterName()),
+		Services: []*string{
+			aws.String(service.GetECSServiceName()),
+		},
+	})
+
+	if err != nil {
+		return false, err
+	}
+
+	return len(resp.Services) > 0, nil
+}
+
 func stopECSService(ecsAPI ecsiface.ECSAPI, service *ecso.Service, env *ecso.Environment, log func(string, ...interface{})) error {
 
 	describeServiceInput := &ecs.DescribeServicesInput{
@@ -149,7 +174,7 @@ func stopECSService(ecsAPI ecsiface.ECSAPI, service *ecso.Service, env *ecso.Env
 
 	// Nothing to do
 	if len(description.Services) == 0 {
-		log("No service named '$s' was found in the cluster '%s'", service.GetECSServiceName(), env.GetClusterName())
+		log("No service named '%s' was found in the cluster '%s'", service.GetECSServiceName(), env.GetClusterName())
 		return nil
 	}
 
