@@ -40,6 +40,7 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	var (
+		cfg     = ctx.Config
 		service = ctx.Project.Services[cmd.options.Name]
 		env     = ctx.Project.Environments[cmd.options.Environment]
 		log     = ctx.Config.Logger
@@ -52,6 +53,12 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 
 	// Stop the ecs service
 	ecsAPI, err := ctx.Config.ECSAPI(env.Region)
+
+	if err != nil {
+		return err
+	}
+
+	ecsService, err := cfg.ECSService(env.Region)
 
 	if err != nil {
 		return err
@@ -72,7 +79,7 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	if exists {
 		log.Infof("Stopping ECS service '%s'", service.GetECSServiceName())
 
-		if err := stopECSService(ecsAPI, service, env, log.PrefixPrintf("  ")); err != nil {
+		if err := stopECSService(ecsService, ecsAPI, service, env, log.PrefixPrintf("  ")); err != nil {
 			return err
 		}
 
@@ -156,7 +163,7 @@ func ecsServiceExists(service *ecso.Service, env *ecso.Environment, ecsAPI ecsif
 	return len(resp.Services) > 0, nil
 }
 
-func stopECSService(ecsAPI ecsiface.ECSAPI, service *ecso.Service, env *ecso.Environment, log func(string, ...interface{})) error {
+func stopECSService(ecsService services.ECSService, ecsAPI ecsiface.ECSAPI, service *ecso.Service, env *ecso.Environment, log func(string, ...interface{})) error {
 
 	describeServiceInput := &ecs.DescribeServicesInput{
 		Cluster: aws.String(env.GetClusterName()),
@@ -198,6 +205,14 @@ func stopECSService(ecsAPI ecsiface.ECSAPI, service *ecso.Service, env *ecso.Env
 		}
 
 		log("Waiting for tasks to drain, and service to become stable...\n")
+
+		cancel := ecsService.LogServiceEvents(service.GetECSServiceName(), env.GetClusterName(), func(e *ecs.ServiceEvent, err error) {
+			if err == nil && e != nil {
+				log("  %s %s\n", *e.CreatedAt, *e.Message)
+			}
+		})
+
+		defer cancel()
 
 		if err := ecsAPI.WaitUntilServicesStable(describeServiceInput); err != nil {
 			return err

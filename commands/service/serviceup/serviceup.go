@@ -103,6 +103,8 @@ func logOutputs(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.S
 
 	ctx.Config.Logger.Dt("Service console", consoleURL)
 
+	ctx.Config.Logger.Printf("\n")
+
 	return nil
 }
 
@@ -142,6 +144,12 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 	}
 
 	serviceStackOutputs, err := cfnService.GetStackOutputs(stackName)
+
+	if err != nil {
+		return err
+	}
+
+	ecsService, err := cfg.ECSService(env.Region)
 
 	if err != nil {
 		return err
@@ -256,6 +264,14 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 	}
 
 	log.Infof("Waiting for service to become stable...")
+
+	cancel := ecsService.LogServiceEvents(ecsServiceName, env.GetClusterName(), func(e *ecs.ServiceEvent, err error) {
+		if err == nil && e != nil {
+			log.Printf("  %s %s\n", *e.CreatedAt, *e.Message)
+		}
+	})
+
+	defer cancel()
 
 	if err := ecsClient.WaitUntilServicesStable(&ecs.DescribeServicesInput{
 		Services: []*string{

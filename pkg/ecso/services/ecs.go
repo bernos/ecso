@@ -49,22 +49,24 @@ func (svc *ecsService) LogServiceEvents(service, cluster string, logger func(*ec
 				if len(resp.Services) != 1 {
 					logger(nil, fmt.Errorf("Expected to find 1 service, but found %d", len(resp.Services)))
 				} else {
-					newEvents := resp.Services[0].Events[:1]
+					if len(resp.Services[0].Events) > 0 {
+						newEvents := resp.Services[0].Events[:1]
 
-					if lastEventID != "" {
-						newEvents = resp.Services[0].Events
+						if lastEventID != "" {
+							newEvents = resp.Services[0].Events
 
-						for i, event := range resp.Services[0].Events {
-							if *event.Id == lastEventID {
-								newEvents = resp.Services[0].Events[:i]
-								break
+							for i, event := range resp.Services[0].Events {
+								if *event.Id == lastEventID {
+									newEvents = resp.Services[0].Events[:i]
+									break
+								}
 							}
 						}
-					}
 
-					for i := len(newEvents) - 1; i >= 0; i-- {
-						logger(newEvents[i], nil)
-						lastEventID = *newEvents[i].Id
+						for i := len(newEvents) - 1; i >= 0; i-- {
+							logger(newEvents[i], nil)
+							lastEventID = *newEvents[i].Id
+						}
 					}
 				}
 			}
