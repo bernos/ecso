@@ -21,8 +21,9 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 		Usage: "Removes an entire environment",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  keys.Name,
-				Usage: "The name of the environment to remove",
+				Name:   keys.Name,
+				Usage:  "The name of the environment to remove",
+				EnvVar: "ECSO_ENVIRONMENT",
 			},
 			cli.BoolFlag{
 				Name:  keys.Force,
