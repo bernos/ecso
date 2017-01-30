@@ -2,9 +2,9 @@ package logs
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/bernos/ecso/pkg/ecso"
 )
@@ -60,17 +60,14 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	logGroup := outputs["CloudWatchLogsGroup"]
 
 	if logGroup != "" {
-		sess, err := session.NewSession(&aws.Config{
-			Region: aws.String(env.Region),
-		})
+
+		cwLogsAPI, err := cfg.CloudWatchLogsAPI(env.Region)
 
 		if err != nil {
 			return err
 		}
 
-		cfnLogs := cloudwatchlogs.New(sess)
-
-		resp, err := cfnLogs.FilterLogEvents(&cloudwatchlogs.FilterLogEventsInput{
+		resp, err := cwLogsAPI.FilterLogEvents(&cloudwatchlogs.FilterLogEventsInput{
 			LogGroupName: aws.String(logGroup),
 		})
 
@@ -78,7 +75,11 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 			return err
 		}
 
-		log.Printf("%#v\n", resp)
+		for _, event := range resp.Events {
+			log.Printf("%s %s\n", time.Unix(*event.Timestamp, 0), *event.Message)
+		}
+
+		// log.Printf("%#v\n", resp)
 	}
 
 	return nil
