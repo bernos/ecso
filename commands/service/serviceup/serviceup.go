@@ -77,6 +77,32 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		service.Name,
 		environment.Name)
 
+	return logOutputs(ctx, environment, service)
+}
+
+func logOutputs(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.Service) error {
+	cfn, err := ctx.Config.CloudFormationService(env.Region)
+
+	if err != nil {
+		return err
+	}
+
+	outputs, err := cfn.GetStackOutputs(env.GetCloudFormationStackName())
+
+	if err != nil {
+		return err
+	}
+
+	if service.Route != "" {
+		ctx.Config.Logger.Dt(
+			"Service URL",
+			fmt.Sprintf("%s%s", outputs["LoadBalancerUrl"], service.Route))
+	}
+
+	consoleURL := fmt.Sprintf("https://%s.console.aws.amazon.com/ecs/home?region=%s#/clusters/%s/services/%s/tasks", env.Region, env.Region, env.GetClusterName(), service.GetECSServiceName())
+
+	ctx.Config.Logger.Dt("Service console", consoleURL)
+
 	return nil
 }
 

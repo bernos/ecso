@@ -50,7 +50,7 @@ func (s *Service) GetECSTaskDefinitionName(env *Environment) string {
 }
 
 func (s *Service) GetECSServiceName() string {
-	return fmt.Sprintf("%s-service", s.Name)
+	return fmt.Sprintf("%s", s.Name)
 }
 
 func (s *Service) GetECSTaskDefinition(env *Environment) (*ecs.TaskDefinition, error) {
