@@ -76,10 +76,8 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		}
 
 		for _, event := range resp.Events {
-			log.Printf("%s %s\n", time.Unix(*event.Timestamp, 0), *event.Message)
+			log.Printf("%-42s %s\n", time.Unix(*event.Timestamp/1000, *event.Timestamp%1000), *event.Message)
 		}
-
-		// log.Printf("%#v\n", resp)
 	}
 
 	return nil

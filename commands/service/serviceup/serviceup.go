@@ -165,6 +165,16 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 		return err
 	}
 
+	for _, container := range taskDefinition.ContainerDefinitions {
+		container.SetLogConfiguration(&ecs.LogConfiguration{
+			LogDriver: aws.String(ecs.LogDriverAwslogs),
+			Options: map[string]*string{
+				"awslogs-region": aws.String(env.Region),
+				"awslogs-group":  aws.String(serviceStackOutputs["CloudWatchLogsGroup"]),
+			},
+		})
+	}
+
 	ecsClient, err := cfg.ECSAPI(env.Region)
 
 	if err != nil {

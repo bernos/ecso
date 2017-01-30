@@ -12,11 +12,6 @@ services:
   web:
     image: nginx:latest
     mem_limit: 20000000
-    logging:
-      driver: awslogs
-      options:
-        awslogs-region: ${ECSO_AWS_REGION}
-        awslogs-group: ${ECSO_CLUSTER_NAME}-{{.Service.Name}}
     ports:
       - "0:80"
     volumes:
@@ -25,11 +20,6 @@ services:
   backend:
     image: busybox:latest
     mem_limit: 10000000
-    logging:
-      driver: awslogs
-      options:
-        awslogs-region: ${ECSO_AWS_REGION}
-        awslogs-group: ${ECSO_CLUSTER_NAME}-{{.Service.Name}}
     volumes:
       - nginxdata:/nginx
     command: sh -c "while true; do echo \"This is the {{.Service.Name}} service <p><pre>` + "`env`" + `</pre></p> \" > /nginx/index.html; sleep 3; done"
@@ -45,11 +35,6 @@ services:
   worker:
     image: busybox:latest
     mem_limit: 10000000
-    logging:
-      driver: awslogs
-      options:
-        awslogs-region: ${ECSO_AWS_REGION}
-        awslogs-group: ${ECSO_CLUSTER_NAME}-{{.Service.Name}}
     volumes:
       - nginxdata:/nginx
     command: sh -c "while true; do echo \"This is the {{.Service.Name}} service <p><pre>` + "`env`" + `</pre></p> \" > /nginx/index.html; sleep 3; done"
