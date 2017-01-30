@@ -47,6 +47,12 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		env     = project.Environments[cmd.options.EnvironmentName]
 	)
 
+	cfn, err := ctx.Config.CloudFormationService(env.Region)
+
+	if err != nil {
+		return err
+	}
+
 	cfg.Logger.BannerBlue("Bringing up environment '%s'", env.Name)
 
 	if cmd.options.DryRun {
@@ -70,28 +76,8 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 	} else {
 		cfg.Logger.BannerGreen("Environment '%s' is up and running", env.Name)
 
-		return logStackOutputs(ctx, env)
+		return cfn.LogStackOutputs(env.GetCloudFormationStackName(), cfg.Logger.Dt)
 	}
-}
-
-func logStackOutputs(ctx *ecso.CommandContext, env *ecso.Environment) error {
-	cfn, err := ctx.Config.CloudFormationService(env.Region)
-
-	if err != nil {
-		return err
-	}
-
-	outputs, err := cfn.GetStackOutputs(env.GetCloudFormationStackName())
-
-	if err != nil {
-		return err
-	}
-
-	for k, v := range outputs {
-		ctx.Config.Logger.Dt(k, v)
-	}
-
-	return nil
 }
 
 func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, dryRun bool) error {

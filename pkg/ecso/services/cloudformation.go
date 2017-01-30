@@ -37,6 +37,7 @@ type CloudFormationService interface {
 	WaitForChangeset(changeset string, status ...string) (*cloudformation.DescribeChangeSetOutput, error)
 	GetChangeSet(changeset string) (*cloudformation.DescribeChangeSetOutput, error)
 	GetStackOutputs(stackName string) (map[string]string, error)
+	LogStackOutputs(stackName string, logfn func(name, value string)) error
 }
 
 func NewCloudFormationService(region string, cfnClient cloudformationiface.CloudFormationAPI, s3Client s3iface.S3API, log func(string, ...interface{})) CloudFormationService {
@@ -355,6 +356,20 @@ func (svc *cfnService) LogStackEvents(stackID string, logger func(*cloudformatio
 	return func() {
 		close(done)
 	}
+}
+
+func (svc *cfnService) LogStackOutputs(stackName string, logfn func(name, value string)) error {
+	outputs, err := svc.GetStackOutputs(stackName)
+
+	if err != nil {
+		return err
+	}
+
+	for k, v := range outputs {
+		logfn(k, v)
+	}
+
+	return nil
 }
 
 func (svc *cfnService) ensureBucket(bucket string) error {
