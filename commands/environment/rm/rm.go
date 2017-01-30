@@ -63,6 +63,12 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
+	delete(ctx.Project.Environments, cmd.options.Name)
+
+	if err := ctx.Project.Save(); err != nil {
+		return err
+	}
+
 	log.BannerGreen("Successfully removed '%s' environment", env.Name)
 
 	return nil
