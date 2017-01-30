@@ -63,7 +63,7 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	cfg.Logger.Infof("Packaging infrastructure stack templates")
+	cfg.Logger.Infof("Deploying infrastructure Cloud Formation templates")
 
 	if err := deployStack(ctx, env, cmd.options.DryRun); err != nil {
 		return err
@@ -73,11 +73,12 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		cfg.Logger.BannerGreen("Review the above changes and re-run the command without the --dry-run option to apply them")
 
 		return nil
-	} else {
-		cfg.Logger.BannerGreen("Environment '%s' is up and running", env.Name)
-
-		return cfn.LogStackOutputs(env.GetCloudFormationStackName(), cfg.Logger.Dt)
 	}
+
+	cfg.Logger.BannerGreen("Environment '%s' is up and running", env.Name)
+
+	return cfn.LogStackOutputs(env.GetCloudFormationStackName(), cfg.Logger.Dt)
+
 }
 
 func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, dryRun bool) error {
@@ -98,16 +99,7 @@ func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, dryRun bool) e
 		return err
 	}
 
-	packagedTemplate, err := cfnService.Package(template, bucket, prefix)
-
-	if err != nil {
-		return err
-	}
-
-	cfg.Logger.Printf("\n")
-	cfg.Logger.Infof("Deploying infrastructure stack '%s'", stackName)
-
-	result, err := cfnService.Deploy(packagedTemplate, stackName, params, tags, dryRun)
+	result, err := cfnService.PackageAndDeploy(stackName, template, bucket, prefix, tags, params, dryRun)
 
 	if err != nil {
 		return err
