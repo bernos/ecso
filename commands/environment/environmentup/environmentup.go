@@ -109,27 +109,7 @@ func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, dryRun bool) (
 
 	cfnService := registry.CloudFormationService(cfg.Logger.PrefixPrintf("  "))
 
-	result, err := cfnService.PackageAndDeploy(stackName, template, bucket, prefix, tags, params, dryRun)
-
-	// if err != nil {
-	// 	return result, err
-	// }
-
-	// changeSet, err := cfnService.GetChangeSet(result.ChangeSetID)
-
-	// if err != nil {
-	// 	return result, err
-	// }
-
-	// if dryRun {
-	// 	cfg.Logger.BannerGreen("The following changes would be made to the environment:")
-	// } else {
-	// 	cfg.Logger.BannerGreen("The following changes were made to the environment:")
-	// }
-
-	// fmt.Printf("%#v\n", changeSet)
-
-	return result, nil
+	return cfnService.PackageAndDeploy(stackName, template, bucket, prefix, tags, params, dryRun)
 }
 
 func ensureTemplates(env *ecso.Environment, log logfn) error {

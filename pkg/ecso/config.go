@@ -16,6 +16,7 @@ type Config struct {
 
 func (c *Config) GetAWSClientRegistry(region string) (*AWSClientRegistry, error) {
 	if c.awsClientRegistries[region] == nil {
+
 		sess, err := session.NewSession(&aws.Config{
 			Region: aws.String(region),
 		})
@@ -186,7 +187,8 @@ func NewConfig(options ...func(*Config)) (*Config, error) {
 	log := NewLogger(os.Stdout)
 
 	cfg := &Config{
-		Logger: log,
+		awsClientRegistries: make(map[string]*AWSClientRegistry),
+		Logger:              log,
 	}
 
 	for _, o := range options {

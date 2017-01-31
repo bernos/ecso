@@ -50,7 +50,7 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	services, err := getServices(env, ecsAPI)
 
 	if err != nil {
-		return nil
+		return err
 	}
 
 	printServices(services, ctx.Config.Logger)
