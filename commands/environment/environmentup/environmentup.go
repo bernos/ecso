@@ -43,19 +43,13 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	var (
-		project = ctx.Project
-		cfg     = ctx.Config
-		log     = cfg.Logger
-		env     = project.Environments[cmd.options.EnvironmentName]
+		project  = ctx.Project
+		cfg      = ctx.Config
+		log      = cfg.Logger
+		env      = project.Environments[cmd.options.EnvironmentName]
+		registry = cfg.MustGetAWSClientRegistry(env.Region)
+		cfn      = registry.CloudFormationService(log.PrefixPrintf("  "))
 	)
-
-	registry, err := cfg.GetAWSClientRegistry(env.Region)
-
-	if err != nil {
-		return err
-	}
-
-	cfn := registry.CloudFormationService(log.PrefixPrintf("  "))
 
 	cfg.Logger.BannerBlue("Bringing up environment '%s'", env.Name)
 
@@ -91,23 +85,16 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 
 func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, dryRun bool) (*services.DeploymentResult, error) {
 	var (
-		cfg = ctx.Config
-
-		stackName = env.GetCloudFormationStackName()
-		template  = env.GetCloudFormationTemplateFile()
-		prefix    = env.GetCloudFormationBucketPrefix()
-		bucket    = env.CloudFormationBucket
-		params    = env.CloudFormationParameters
-		tags      = env.CloudFormationTags
+		cfg        = ctx.Config
+		stackName  = env.GetCloudFormationStackName()
+		template   = env.GetCloudFormationTemplateFile()
+		prefix     = env.GetCloudFormationBucketPrefix()
+		bucket     = env.CloudFormationBucket
+		params     = env.CloudFormationParameters
+		tags       = env.CloudFormationTags
+		registry   = cfg.MustGetAWSClientRegistry(env.Region)
+		cfnService = registry.CloudFormationService(cfg.Logger.PrefixPrintf("  "))
 	)
-
-	registry, err := cfg.GetAWSClientRegistry(env.Region)
-
-	if err != nil {
-		return nil, err
-	}
-
-	cfnService := registry.CloudFormationService(cfg.Logger.PrefixPrintf("  "))
 
 	return cfnService.PackageAndDeploy(stackName, template, bucket, prefix, tags, params, dryRun)
 }

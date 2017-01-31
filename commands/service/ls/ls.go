@@ -39,11 +39,12 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 
 	env := ctx.Project.Environments[cmd.options.Environment]
 
-	registry, err := ctx.Config.GetAWSClientRegistry(env.Region)
+	registry := ctx.Config.MustGetAWSClientRegistry(env.Region)
+	// registry, err := ctx.Config.GetAWSClientRegistry(env.Region)
 
-	if err != nil {
-		return err
-	}
+	// if err != nil {
+	// 	return err
+	// }
 
 	ecsAPI := registry.ECSAPI()
 

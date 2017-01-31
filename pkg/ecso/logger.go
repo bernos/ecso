@@ -65,6 +65,7 @@ func (l *log) Errorf(format string, a ...interface{}) {
 
 func (l *log) Fatalf(format string, a ...interface{}) {
 	l.Errorf(format, a...)
+	fmt.Printf(format, a...)
 	os.Exit(1)
 }
 

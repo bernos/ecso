@@ -40,26 +40,19 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	var (
-		service = ctx.Project.Services[cmd.options.Name]
-		env     = ctx.Project.Environments[cmd.options.Environment]
-		log     = ctx.Config.Logger
+		service    = ctx.Project.Services[cmd.options.Name]
+		env        = ctx.Project.Environments[cmd.options.Environment]
+		log        = ctx.Config.Logger
+		registry   = ctx.Config.MustGetAWSClientRegistry(env.Region)
+		ecsAPI     = registry.ECSAPI()
+		ecsService = registry.ECSService(log.PrefixPrintf("  "))
+		cfnService = registry.CloudFormationService(log.PrefixPrintf("  "))
 	)
 
 	log.BannerBlue(
 		"Terminating the '%s' service in the '%s' environment",
 		service.Name,
 		env.Name)
-
-	registry, err := ctx.Config.GetAWSClientRegistry(env.Region)
-	// Stop the ecs service
-
-	if err != nil {
-		return err
-	}
-
-	ecsAPI := registry.ECSAPI()
-	ecsService := registry.ECSService(log.PrefixPrintf("  "))
-	cfnService := registry.CloudFormationService(log.PrefixPrintf("  "))
 
 	exists, err := ecsServiceExists(service, env, ecsAPI)
 

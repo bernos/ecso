@@ -35,17 +35,11 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	var (
-		log = ctx.Config.Logger
-		env = ctx.Project.Environments[cmd.options.Name]
+		log        = ctx.Config.Logger
+		env        = ctx.Project.Environments[cmd.options.Name]
+		registry   = ctx.Config.MustGetAWSClientRegistry(env.Region)
+		cfnService = registry.CloudFormationService(log.PrefixPrintf("  "))
 	)
-
-	registry, err := ctx.Config.GetAWSClientRegistry(env.Region)
-
-	if err != nil {
-		return err
-	}
-
-	cfnService := registry.CloudFormationService(log.PrefixPrintf("  "))
 
 	log.BannerBlue("Removing '%s' environment", env.Name)
 

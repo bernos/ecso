@@ -87,18 +87,13 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	var (
-		log     = ctx.Config.Logger
-		env     = ctx.Project.Environments[cmd.options.Environment]
-		service = ctx.Project.Services[cmd.options.Name]
+		log        = ctx.Config.Logger
+		env        = ctx.Project.Environments[cmd.options.Environment]
+		service    = ctx.Project.Services[cmd.options.Name]
+		registry   = ctx.Config.MustGetAWSClientRegistry(env.Region)
+		ecsService = registry.ECSService(log.PrefixPrintf("  "))
+		count      = 0
 	)
-
-	registry, err := ctx.Config.GetAWSClientRegistry(env.Region)
-
-	if err != nil {
-		return err
-	}
-
-	ecsService := registry.ECSService(log.PrefixPrintf("  "))
 
 	cancel := ecsService.LogServiceEvents(service.GetECSServiceName(), env.GetClusterName(), func(e *ecs.ServiceEvent, err error) {
 		if err != nil {
@@ -109,8 +104,6 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	})
 
 	defer cancel()
-
-	count := 0
 
 	for count < 10 {
 		time.Sleep(time.Second * 60)

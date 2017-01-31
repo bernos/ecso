@@ -39,20 +39,14 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	var (
-		cfg     = ctx.Config
-		service = ctx.Project.Services[cmd.options.Name]
-		env     = ctx.Project.Environments[cmd.options.Environment]
-		log     = ctx.Config.Logger
+		cfg       = ctx.Config
+		service   = ctx.Project.Services[cmd.options.Name]
+		env       = ctx.Project.Environments[cmd.options.Environment]
+		log       = ctx.Config.Logger
+		registry  = cfg.MustGetAWSClientRegistry(env.Region)
+		cfn       = registry.CloudFormationService(log.PrefixPrintf("  "))
+		cwLogsAPI = registry.CloudWatchLogsAPI()
 	)
-
-	registry, err := cfg.GetAWSClientRegistry(env.Region)
-	// cfn, err := cfg.CloudFormationService(env.Region)
-
-	if err != nil {
-		return err
-	}
-
-	cfn := registry.CloudFormationService(log.PrefixPrintf("  "))
 
 	outputs, err := cfn.GetStackOutputs(service.GetCloudFormationStackName(env))
 
@@ -63,13 +57,6 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	logGroup := outputs["CloudWatchLogsGroup"]
 
 	if logGroup != "" {
-
-		cwLogsAPI := registry.CloudWatchLogsAPI()
-		// cwLogsAPI, err := cfg.CloudWatchLogsAPI(env.Region)
-
-		// if err != nil {
-		// 	return err
-		// }
 
 		resp, err := cwLogsAPI.FilterLogEvents(&cloudwatchlogs.FilterLogEventsInput{
 			LogGroupName: aws.String(logGroup),

@@ -81,13 +81,10 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 }
 
 func logOutputs(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.Service) error {
-	registry, err := ctx.Config.GetAWSClientRegistry(env.Region)
-
-	if err != nil {
-		return err
-	}
-
-	cfn := registry.CloudFormationService(ctx.Config.Logger.PrefixPrintf("  "))
+	var (
+		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
+		cfn      = registry.CloudFormationService(ctx.Config.Logger.PrefixPrintf("  "))
+	)
 
 	outputs, err := cfn.GetStackOutputs(env.GetCloudFormationStackName())
 
@@ -137,17 +134,12 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 		stackName      = service.GetCloudFormationStackName(env)
 		taskName       = service.GetECSTaskDefinitionName(env)
 		ecsServiceName = service.GetECSServiceName()
+
+		registry   = cfg.MustGetAWSClientRegistry(env.Region)
+		ecsClient  = registry.ECSAPI()
+		cfnService = registry.CloudFormationService(log.PrefixPrintf("  "))
+		ecsService = registry.ECSService(log.PrefixPrintf("  "))
 	)
-
-	registry, err := cfg.GetAWSClientRegistry(env.Region)
-
-	if err != nil {
-		return err
-	}
-
-	ecsClient := registry.ECSAPI()
-	cfnService := registry.CloudFormationService(log.PrefixPrintf("  "))
-	ecsService := registry.ECSService(log.PrefixPrintf("  "))
 
 	serviceStackOutputs, err := cfnService.GetStackOutputs(stackName)
 
@@ -297,23 +289,16 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 
 func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.Service) error {
 	var (
-		cfg       = ctx.Config
-		log       = cfg.Logger
-		project   = ctx.Project
-		bucket    = env.CloudFormationBucket
-		stackName = service.GetCloudFormationStackName(env)
-		prefix    = service.GetCloudFormationBucketPrefix(env)
+		cfg        = ctx.Config
+		log        = cfg.Logger
+		project    = ctx.Project
+		bucket     = env.CloudFormationBucket
+		stackName  = service.GetCloudFormationStackName(env)
+		prefix     = service.GetCloudFormationBucketPrefix(env)
+		registry   = cfg.MustGetAWSClientRegistry(env.Region)
+		template   = service.GetCloudFormationTemplateFile()
+		cfnService = registry.CloudFormationService(log.PrefixPrintf("  "))
 	)
-
-	registry, err := cfg.GetAWSClientRegistry(env.Region)
-
-	if err != nil {
-		return err
-	}
-
-	template := service.GetCloudFormationTemplateFile()
-
-	cfnService := registry.CloudFormationService(log.PrefixPrintf("  "))
 
 	params, err := getCloudFormationParameters(cfnService, project, env, service)
 
