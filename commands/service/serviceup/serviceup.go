@@ -81,11 +81,13 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 }
 
 func logOutputs(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.Service) error {
-	cfn, err := ctx.Config.CloudFormationService(env.Region)
+	registry, err := ctx.Config.GetAWSClientRegistry(env.Region)
 
 	if err != nil {
 		return err
 	}
+
+	cfn := registry.CloudFormationService(ctx.Config.Logger.PrefixPrintf("  "))
 
 	outputs, err := cfn.GetStackOutputs(env.GetCloudFormationStackName())
 
@@ -99,9 +101,9 @@ func logOutputs(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.S
 			fmt.Sprintf("%s%s", outputs["LoadBalancerUrl"], service.Route))
 	}
 
-	consoleURL := fmt.Sprintf("https://%s.console.aws.amazon.com/ecs/home?region=%s#/clusters/%s/services/%s/tasks", env.Region, env.Region, env.GetClusterName(), service.GetECSServiceName())
-
-	ctx.Config.Logger.Dt("Service console", consoleURL)
+	ctx.Config.Logger.Dt(
+		"Service console",
+		util.ServiceConsoleURL(service.GetECSServiceName(), env.GetClusterName(), env.Region))
 
 	ctx.Config.Logger.Printf("\n")
 
@@ -137,11 +139,15 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 		ecsServiceName = service.GetECSServiceName()
 	)
 
-	cfnService, err := cfg.CloudFormationService(env.Region)
+	registry, err := cfg.GetAWSClientRegistry(env.Region)
 
 	if err != nil {
 		return err
 	}
+
+	ecsClient := registry.ECSAPI()
+	cfnService := registry.CloudFormationService(log.PrefixPrintf("  "))
+	ecsService := registry.ECSService(log.PrefixPrintf("  "))
 
 	serviceStackOutputs, err := cfnService.GetStackOutputs(stackName)
 
@@ -149,16 +155,14 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 		return err
 	}
 
-	ecsService, err := cfg.ECSService(env.Region)
-
-	if err != nil {
-		return err
-	}
-
 	// TODO: fully qualify the path to the service compose file
 	// taskDefinition, err := ConvertToTaskDefinition(taskName, service.ComposeFile)
+	log.Printf("\n")
+	log.Infof("Converting '%s' to task definition...", service.ComposeFile)
+
 	taskDefinition, err := service.GetECSTaskDefinition(env)
 
+	log.Printf("\n")
 	log.Infof("Registering ECS task definition '%s'...", taskName)
 
 	if err != nil {
@@ -175,12 +179,6 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 		})
 	}
 
-	ecsClient, err := cfg.ECSAPI(env.Region)
-
-	if err != nil {
-		return err
-	}
-
 	resp, err := ecsClient.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
 		ContainerDefinitions: taskDefinition.ContainerDefinitions,
 		Family:               taskDefinition.Family,
@@ -194,8 +192,8 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 		return err
 	}
 
-	log.Infof(
-		"Registered ECS task definition %s:%d",
+	log.Printf(
+		"  Registered ECS task definition %s:%d\n\n",
 		*resp.TaskDefinition.Family,
 		*resp.TaskDefinition.Revision)
 
@@ -221,7 +219,7 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 	}
 
 	if isCreate {
-		log.Infof("Creating new ecs service...")
+		log.Printf("  Creating new ecs service...\n")
 
 		input := &ecs.CreateServiceInput{
 			DesiredCount:   aws.Int64(int64(service.DesiredCount)),
@@ -232,7 +230,6 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 				MaximumPercent:        aws.Int64(200),
 				MinimumHealthyPercent: aws.Int64(100),
 			},
-			Role: aws.String(serviceStackOutputs["ServiceRole"]),
 		}
 
 		if len(service.Route) > 0 {
@@ -243,19 +240,21 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 					TargetGroupArn: aws.String(serviceStackOutputs["TargetGroup"]),
 				},
 			}
+
+			input.Role = aws.String(serviceStackOutputs["ServiceRole"])
 		}
 
-		result, err := ecsClient.CreateService(input)
+		_, err := ecsClient.CreateService(input)
 
 		if err != nil {
 			return err
 		}
 
-		log.Infof("Create successful %#v", result)
+		log.Printf("  Create successful\n")
 	} else {
-		log.Infof("Updating existing ecs service...")
+		log.Printf("  Updating existing ecs service...\n")
 
-		result, err := ecsClient.UpdateService(&ecs.UpdateServiceInput{
+		_, err := ecsClient.UpdateService(&ecs.UpdateServiceInput{
 			DesiredCount:   aws.Int64(int64(service.DesiredCount)),
 			Service:        aws.String(ecsServiceName),
 			TaskDefinition: resp.TaskDefinition.TaskDefinitionArn,
@@ -270,9 +269,10 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 			return err
 		}
 
-		log.Infof("Update successful %#v", result)
+		log.Printf("  Update successful\n")
 	}
 
+	log.Printf("\n")
 	log.Infof("Waiting for service to become stable...")
 
 	cancel := ecsService.LogServiceEvents(ecsServiceName, env.GetClusterName(), func(e *ecs.ServiceEvent, err error) {
@@ -305,13 +305,15 @@ func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.
 		prefix    = service.GetCloudFormationBucketPrefix(env)
 	)
 
-	template := service.GetCloudFormationTemplateFile()
-
-	cfnService, err := cfg.CloudFormationService(env.Region)
+	registry, err := cfg.GetAWSClientRegistry(env.Region)
 
 	if err != nil {
 		return err
 	}
+
+	template := service.GetCloudFormationTemplateFile()
+
+	cfnService := registry.CloudFormationService(log.PrefixPrintf("  "))
 
 	params, err := getCloudFormationParameters(cfnService, project, env, service)
 
@@ -321,7 +323,6 @@ func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.
 
 	tags := getCloudFormationTags(project, env, service)
 
-	log.Printf("\n")
 	log.Infof("Deploying service cloudformartion stack '%s'...", stackName)
 
 	result, err := cfnService.PackageAndDeploy(
@@ -337,12 +338,8 @@ func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.
 		return err
 	}
 
-	log.Printf("\n")
-
-	if result.DidRequireUpdating {
-		log.Infof("Successfully deployed Cloud Formation stack '%s'", result.StackID)
-	} else {
-		log.Infof("No updates were required to Cloud Formation stack '%s'", result.StackID)
+	if !result.DidRequireUpdating {
+		log.Printf("  No updates were required to Cloud Formation stack '%s'\n", result.StackID)
 	}
 
 	return nil

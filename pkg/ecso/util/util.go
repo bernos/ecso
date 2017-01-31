@@ -1,6 +1,8 @@
 package util
 
 import (
+	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -40,4 +42,16 @@ func AnyError(err ...error) error {
 		}
 	}
 	return nil
+}
+
+func ClusterConsoleURL(cluster, region string) string {
+	return fmt.Sprintf("https://%s.console.aws.amazon.com/ecs/home?region=%s#/clusters/%s/services", region, region, cluster)
+}
+
+func ServiceConsoleURL(service, cluster, region string) string {
+	return fmt.Sprintf("https://%s.console.aws.amazon.com/ecs/home?region=%s#/clusters/%s/services/%s/tasks", region, region, cluster, service)
+}
+
+func CloudFormationConsoleURL(stackID, region string) string {
+	return fmt.Sprintf("https://%s.console.aws.amazon.com/cloudformation/home?region=%s#/stack/detail?stackId=%s", region, region, url.QueryEscape(stackID))
 }

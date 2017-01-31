@@ -40,7 +40,6 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	var (
-		cfg     = ctx.Config
 		service = ctx.Project.Services[cmd.options.Name]
 		env     = ctx.Project.Environments[cmd.options.Environment]
 		log     = ctx.Config.Logger
@@ -51,24 +50,16 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		service.Name,
 		env.Name)
 
+	registry, err := ctx.Config.GetAWSClientRegistry(env.Region)
 	// Stop the ecs service
-	ecsAPI, err := ctx.Config.ECSAPI(env.Region)
 
 	if err != nil {
 		return err
 	}
 
-	ecsService, err := cfg.ECSService(env.Region)
-
-	if err != nil {
-		return err
-	}
-
-	cfnService, err := ctx.Config.CloudFormationService(env.Region)
-
-	if err != nil {
-		return err
-	}
+	ecsAPI := registry.ECSAPI()
+	ecsService := registry.ECSService(log.PrefixPrintf("  "))
+	cfnService := registry.CloudFormationService(log.PrefixPrintf("  "))
 
 	exists, err := ecsServiceExists(service, env, ecsAPI)
 

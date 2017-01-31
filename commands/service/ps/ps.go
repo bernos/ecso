@@ -60,11 +60,13 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		rows    = make([]*row, 0)
 	)
 
-	ecsAPI, err := ctx.Config.ECSAPI(env.Region)
+	registry, err := ctx.Config.GetAWSClientRegistry(env.Region)
 
 	if err != nil {
 		return err
 	}
+
+	ecsAPI := registry.ECSAPI()
 
 	tasks, err := ecsAPI.ListTasks(&ecs.ListTasksInput{
 		Cluster:     aws.String(env.GetClusterName()),

@@ -34,8 +34,6 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		return fmt.Errorf("Service '%s' already exists", cmd.options.Name)
 	}
 
-	log.BannerBlue("Adding '%s' service", cmd.options.Name)
-
 	service := &ecso.Service{
 		Name:         cmd.options.Name,
 		ComposeFile:  filepath.Join("services", cmd.options.Name, "docker-compose.yaml"),
@@ -61,6 +59,8 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	if err := ctx.Project.Save(); err != nil {
 		return err
 	}
+
+	log.BannerGreen("Service '%s' added successfully. Now run `ecso service up --name %s --environment <environment>` to deploy", cmd.options.Name, cmd.options.Name)
 
 	return nil
 }

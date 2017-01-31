@@ -59,11 +59,13 @@ func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
 	// TODO Ask if there is an existing environment?
 	// If yes, then ask for the cfn stack id and collect outputs
 
-	stsAPI, err := cfg.STSAPI("ap-southeast-2")
+	registry, err := cfg.GetAWSClientRegistry("ap-southeast-2")
 
 	if err != nil {
 		return err
 	}
+
+	stsAPI := registry.STSAPI()
 
 	if account := getCurrentAWSAccount(stsAPI); options.Account == "" {
 		options.Account = account

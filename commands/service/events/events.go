@@ -92,11 +92,13 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		service = ctx.Project.Services[cmd.options.Name]
 	)
 
-	ecsService, err := ctx.Config.ECSService(env.Region)
+	registry, err := ctx.Config.GetAWSClientRegistry(env.Region)
 
 	if err != nil {
 		return err
 	}
+
+	ecsService := registry.ECSService(log.PrefixPrintf("  "))
 
 	cancel := ecsService.LogServiceEvents(service.GetECSServiceName(), env.GetClusterName(), func(e *ecs.ServiceEvent, err error) {
 		if err != nil {

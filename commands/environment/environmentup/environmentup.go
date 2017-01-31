@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/services"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
@@ -44,14 +45,17 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		project = ctx.Project
 		cfg     = ctx.Config
+		log     = cfg.Logger
 		env     = project.Environments[cmd.options.EnvironmentName]
 	)
 
-	cfn, err := ctx.Config.CloudFormationService(env.Region)
+	registry, err := cfg.GetAWSClientRegistry(env.Region)
 
 	if err != nil {
 		return err
 	}
+
+	cfn := registry.CloudFormationService(log.PrefixPrintf("  "))
 
 	cfg.Logger.BannerBlue("Bringing up environment '%s'", env.Name)
 
@@ -63,9 +67,11 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	cfg.Logger.Infof("Deploying infrastructure Cloud Formation templates")
+	cfg.Logger.Infof("Deploying infrastructure Cloud Formation stack")
 
-	if err := deployStack(ctx, env, cmd.options.DryRun); err != nil {
+	result, err := deployStack(ctx, env, cmd.options.DryRun)
+
+	if err != nil {
 		return err
 	}
 
@@ -77,11 +83,13 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 
 	cfg.Logger.BannerGreen("Environment '%s' is up and running", env.Name)
 
-	return cfn.LogStackOutputs(env.GetCloudFormationStackName(), cfg.Logger.Dt)
+	cfg.Logger.Dt("Cloud Formation stack", util.CloudFormationConsoleURL(result.StackID, env.Region))
+	cfg.Logger.Dt("ECS Console", util.ClusterConsoleURL(env.GetClusterName(), env.Region))
 
+	return cfn.LogStackOutputs(env.GetCloudFormationStackName(), cfg.Logger.Dt)
 }
 
-func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, dryRun bool) error {
+func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, dryRun bool) (*services.DeploymentResult, error) {
 	var (
 		cfg = ctx.Config
 
@@ -93,33 +101,35 @@ func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, dryRun bool) e
 		tags      = env.CloudFormationTags
 	)
 
-	cfnService, err := cfg.CloudFormationService(env.Region)
+	registry, err := cfg.GetAWSClientRegistry(env.Region)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	cfnService := registry.CloudFormationService(cfg.Logger.PrefixPrintf("  "))
 
 	result, err := cfnService.PackageAndDeploy(stackName, template, bucket, prefix, tags, params, dryRun)
 
-	if err != nil {
-		return err
-	}
+	// if err != nil {
+	// 	return result, err
+	// }
 
-	changeSet, err := cfnService.GetChangeSet(result.ChangeSetID)
+	// changeSet, err := cfnService.GetChangeSet(result.ChangeSetID)
 
-	if err != nil {
-		return err
-	}
+	// if err != nil {
+	// 	return result, err
+	// }
 
-	if dryRun {
-		cfg.Logger.BannerGreen("The following changes would be made to the environment:")
-	} else {
-		cfg.Logger.BannerGreen("The following changes were made to the environment:")
-	}
+	// if dryRun {
+	// 	cfg.Logger.BannerGreen("The following changes would be made to the environment:")
+	// } else {
+	// 	cfg.Logger.BannerGreen("The following changes were made to the environment:")
+	// }
 
-	fmt.Printf("%#v\n", changeSet)
+	// fmt.Printf("%#v\n", changeSet)
 
-	return nil
+	return result, nil
 }
 
 func ensureTemplates(env *ecso.Environment, log logfn) error {

@@ -16,7 +16,7 @@ func promptForMissingOptions(opt *Options, ctx *ecso.CommandContext) error {
 	}{
 		Name:         "What is the name of your service?",
 		DesiredCount: "How many instances of the service would you like to run?",
-		Route:        "What route would you like to expose the service at? Leave empty if you don't want to expose this service",
+		Route:        "What route would you like to expose the service at?",
 		Port:         "Which container port would you like to expose?",
 	}
 

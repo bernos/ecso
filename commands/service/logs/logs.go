@@ -45,11 +45,14 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		log     = ctx.Config.Logger
 	)
 
-	cfn, err := cfg.CloudFormationService(env.Region)
+	registry, err := cfg.GetAWSClientRegistry(env.Region)
+	// cfn, err := cfg.CloudFormationService(env.Region)
 
 	if err != nil {
 		return err
 	}
+
+	cfn := registry.CloudFormationService(log.PrefixPrintf("  "))
 
 	outputs, err := cfn.GetStackOutputs(service.GetCloudFormationStackName(env))
 
@@ -61,11 +64,12 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 
 	if logGroup != "" {
 
-		cwLogsAPI, err := cfg.CloudWatchLogsAPI(env.Region)
+		cwLogsAPI := registry.CloudWatchLogsAPI()
+		// cwLogsAPI, err := cfg.CloudWatchLogsAPI(env.Region)
 
-		if err != nil {
-			return err
-		}
+		// if err != nil {
+		// 	return err
+		// }
 
 		resp, err := cwLogsAPI.FilterLogEvents(&cloudwatchlogs.FilterLogEventsInput{
 			LogGroupName: aws.String(logGroup),
