@@ -49,10 +49,6 @@ type command struct {
 }
 
 func (cmd *command) Execute(ctx *ecso.CommandContext) error {
-	if err := validateOptions(cmd.options, ctx); err != nil {
-		return err
-	}
-
 	var (
 		service  = ctx.Project.Services[cmd.options.Name]
 		env      = ctx.Project.Environments[cmd.options.Environment]
@@ -93,6 +89,32 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	log.Printf("\n")
 	printRows(rows, log)
 	log.Printf("\n")
+
+	return nil
+}
+
+func (cmd *command) Prompt(ctx *ecso.CommandContext) error {
+	return nil
+}
+
+func (cmd *command) Validate(ctx *ecso.CommandContext) error {
+	opt := cmd.options
+
+	err := util.AnyError(
+		ui.ValidateRequired("Name")(opt.Name),
+		ui.ValidateRequired("Environment")(opt.Environment))
+
+	if err != nil {
+		return err
+	}
+
+	if _, ok := ctx.Project.Services[opt.Name]; !ok {
+		return fmt.Errorf("Service '%s' not found", opt.Name)
+	}
+
+	if _, ok := ctx.Project.Environments[opt.Environment]; !ok {
+		return fmt.Errorf("Environment '%s' not found", opt.Environment)
+	}
 
 	return nil
 }
@@ -229,24 +251,4 @@ func getContainerImage(taskDefinitionArn, containerName string, ecsAPI ecsiface.
 func getIDFromArn(arn string) string {
 	tokens := strings.Split(arn, "/")
 	return tokens[len(tokens)-1]
-}
-
-func validateOptions(opt *Options, ctx *ecso.CommandContext) error {
-	err := util.AnyError(
-		ui.ValidateRequired("Name")(opt.Name),
-		ui.ValidateRequired("Environment")(opt.Environment))
-
-	if err != nil {
-		return err
-	}
-
-	if _, ok := ctx.Project.Services[opt.Name]; !ok {
-		return fmt.Errorf("Service '%s' not found", opt.Name)
-	}
-
-	if _, ok := ctx.Project.Environments[opt.Environment]; !ok {
-		return fmt.Errorf("Environment '%s' not found", opt.Environment)
-	}
-
-	return nil
 }

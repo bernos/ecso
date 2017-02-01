@@ -57,21 +57,13 @@ type skeletonCommand struct {
 }
 
 func (cmd *skeletonCommand) Execute(ctx *ecso.CommandContext) error {
-	if err := promptForMissingOptions(cmd.options, ctx); err != nil {
-		return err
-	}
-
-	if err := validateOptions(cmd.options, ctx); err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
+func (cmd *skeletonCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func validateOptions(opt *Options, ctx *ecso.CommandContext) error {
+func (cmd *skeletonCommand) Prompt(ctx *ecso.CommandContext) error {
 	return nil
 }

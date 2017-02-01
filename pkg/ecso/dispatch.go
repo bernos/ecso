@@ -18,6 +18,16 @@ func NewDispatcher(project *Project, cfg *Config, prefs *UserPreferences) Dispat
 			return fmt.Errorf("No ecso project file was found")
 		}
 
+		ctx := NewCommandContext(project, cfg, prefs)
+
+		if err := cmd.Prompt(ctx); err != nil {
+			return err
+		}
+
+		if err := cmd.Validate(ctx); err != nil {
+			return err
+		}
+
 		return cmd.Execute(NewCommandContext(project, cfg, prefs))
 	})
 }

@@ -16,6 +16,7 @@ type Options struct {
 	Account              string
 	InstanceType         string
 	Size                 int
+	DNSZone              string
 }
 
 func New(environmentName string, options ...func(*Options)) ecso.Command {
@@ -42,12 +43,6 @@ func (c *cmd) Execute(ctx *ecso.CommandContext) error {
 		project = ctx.Project
 	)
 
-	log.BannerBlue("Adding a new environment to the %s project", project.Name)
-
-	if err := promptForMissingOptions(c.options, ctx); err != nil {
-		return err
-	}
-
 	if project.HasEnvironment(c.options.Name) {
 		return fmt.Errorf("An environment named '%s' already exists for this project.", c.options.Name)
 	}
@@ -61,6 +56,7 @@ func (c *cmd) Execute(ctx *ecso.CommandContext) error {
 			"InstanceSubnets": c.options.InstanceSubnets,
 			"ALBSubnets":      c.options.ALBSubnets,
 			"InstanceType":    c.options.InstanceType,
+			"DNSZone":         c.options.DNSZone,
 			"ClusterSize":     fmt.Sprintf("%d", c.options.Size),
 		},
 		CloudFormationTags: map[string]string{
@@ -75,5 +71,9 @@ func (c *cmd) Execute(ctx *ecso.CommandContext) error {
 
 	log.BannerGreen("Successfully added environment '%s' to the project", c.options.Name)
 
+	return nil
+}
+
+func (c *cmd) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }

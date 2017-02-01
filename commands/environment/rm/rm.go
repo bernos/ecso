@@ -30,10 +30,6 @@ type command struct {
 }
 
 func (cmd *command) Execute(ctx *ecso.CommandContext) error {
-	if err := validateOptions(cmd.options, ctx); err != nil {
-		return err
-	}
-
 	var (
 		log        = ctx.Config.Logger
 		env        = ctx.Project.Environments[cmd.options.Name]
@@ -70,7 +66,13 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func validateOptions(opt *Options, ctx *ecso.CommandContext) error {
+func (cmd *command) Prompt(ctx *ecso.CommandContext) error {
+	return nil
+}
+
+func (cmd *command) Validate(ctx *ecso.CommandContext) error {
+	opt := cmd.options
+
 	if ctx.Project.Environments[opt.Name] == nil {
 		return fmt.Errorf("Environment '%s' not found", opt.Name)
 	}

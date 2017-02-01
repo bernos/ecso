@@ -33,10 +33,6 @@ type command struct {
 }
 
 func (cmd *command) Execute(ctx *ecso.CommandContext) error {
-	if err := validateOptions(cmd.options, ctx); err != nil {
-		return err
-	}
-
 	env := ctx.Project.Environments[cmd.options.Environment]
 
 	registry := ctx.Config.MustGetAWSClientRegistry(env.Region)
@@ -55,6 +51,24 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	printServices(services, ctx.Config.Logger)
+
+	return nil
+}
+
+func (cmd *command) Prompt(ctx *ecso.CommandContext) error {
+	return nil
+}
+
+func (cmd *command) Validate(ctx *ecso.CommandContext) error {
+	opt := cmd.options
+
+	if opt.Environment == "" {
+		return fmt.Errorf("Environment is required")
+	}
+
+	if !ctx.Project.HasEnvironment(opt.Environment) {
+		return fmt.Errorf("Environment '%s' not found", opt.Environment)
+	}
 
 	return nil
 }
@@ -149,18 +163,6 @@ func printServices(services []*ecs.Service, log ecso.Logger) {
 			*svc.RunningCount,
 			*svc.Status)
 	}
-}
-
-func validateOptions(opt *Options, ctx *ecso.CommandContext) error {
-	if opt.Environment == "" {
-		return fmt.Errorf("Environment is required")
-	}
-
-	if !ctx.Project.HasEnvironment(opt.Environment) {
-		return fmt.Errorf("Environment '%s' not found", opt.Environment)
-	}
-
-	return nil
 }
 
 func taskDefinitionName(arn string) string {

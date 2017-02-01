@@ -32,19 +32,9 @@ func (cmd *initCommand) Execute(ctx *ecso.CommandContext) error {
 		log = ctx.Config.Logger
 	)
 
-	if ctx.Project != nil {
-		return fmt.Errorf("Found an existing project at %s.", ctx.Project.ProjectFile())
-	}
-
-	log.BannerBlue("Creating a new ecso project")
-
-	wd, err := os.Getwd()
+	wd, err := ecso.GetCurrentProjectDir()
 
 	if err != nil {
-		return err
-	}
-
-	if err := promptForMissingOptions(cmd.options); err != nil {
 		return err
 	}
 
@@ -64,22 +54,28 @@ func (cmd *initCommand) Execute(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func promptForMissingOptions(options *Options) error {
+func (cmd *initCommand) Prompt(ctx *ecso.CommandContext) error {
+	log := ctx.Config.Logger
+
+	if ctx.Project != nil {
+		return fmt.Errorf("Found an existing project at %s.", ctx.Project.ProjectFile())
+	}
+
+	log.BannerBlue("Creating a new ecso project")
+
 	wd, err := ecso.GetCurrentProjectDir()
 
 	if err != nil {
 		return err
 	}
 
-	name := filepath.Base(wd)
-
-	if err := ui.AskStringIfEmptyVar(
-		&options.ProjectName,
+	return ui.AskStringIfEmptyVar(
+		&cmd.options.ProjectName,
 		"What is the name of your project?",
-		name,
-		ui.ValidateNotEmpty("Project name is required")); err != nil {
-		return err
-	}
+		filepath.Base(wd),
+		ui.ValidateNotEmpty("Project name is required"))
+}
 
+func (cmd *initCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-func promptForMissingOptions(opt *Options, ctx *ecso.CommandContext) error {
+func (cmd *command) Prompt(ctx *ecso.CommandContext) error {
 	var prompts = struct {
 		Name         string
 		DesiredCount string
@@ -19,6 +19,8 @@ func promptForMissingOptions(opt *Options, ctx *ecso.CommandContext) error {
 		Route:        "What route would you like to expose the service at?",
 		Port:         "Which container port would you like to expose?",
 	}
+
+	opt := cmd.options
 
 	if err := ui.AskStringIfEmptyVar(&opt.Name, prompts.Name, "", serviceNameValidator(ctx.Project)); err != nil {
 		return err

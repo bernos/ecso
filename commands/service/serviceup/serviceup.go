@@ -39,11 +39,6 @@ func New(name, environment string, options ...func(*Options)) ecso.Command {
 }
 
 func (cmd *command) Execute(ctx *ecso.CommandContext) error {
-
-	if err := validateOptions(cmd.options, ctx); err != nil {
-		return err
-	}
-
 	var (
 		cfg         = ctx.Config
 		log         = cfg.Logger
@@ -78,6 +73,32 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		environment.Name)
 
 	return logOutputs(ctx, environment, service)
+}
+
+func (cmd *command) Prompt(ctx *ecso.CommandContext) error {
+	return nil
+}
+
+func (cmd *command) Validate(ctx *ecso.CommandContext) error {
+	opt := cmd.options
+
+	err := util.AnyError(
+		ui.ValidateRequired("Name")(opt.Name),
+		ui.ValidateRequired("Environment")(opt.Environment))
+
+	if err != nil {
+		return err
+	}
+
+	if _, ok := ctx.Project.Services[opt.Name]; !ok {
+		return fmt.Errorf("Service '%s' not found", opt.Name)
+	}
+
+	if _, ok := ctx.Project.Environments[opt.Environment]; !ok {
+		return fmt.Errorf("Environment '%s' not found", opt.Environment)
+	}
+
+	return nil
 }
 
 func logOutputs(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.Service) error {
@@ -325,26 +346,6 @@ func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.
 
 	if !result.DidRequireUpdating {
 		log.Printf("  No updates were required to Cloud Formation stack '%s'\n", result.StackID)
-	}
-
-	return nil
-}
-
-func validateOptions(opt *Options, ctx *ecso.CommandContext) error {
-	err := util.AnyError(
-		ui.ValidateRequired("Name")(opt.Name),
-		ui.ValidateRequired("Environment")(opt.Environment))
-
-	if err != nil {
-		return err
-	}
-
-	if _, ok := ctx.Project.Services[opt.Name]; !ok {
-		return fmt.Errorf("Service '%s' not found", opt.Name)
-	}
-
-	if _, ok := ctx.Project.Environments[opt.Environment]; !ok {
-		return fmt.Errorf("Environment '%s' not found", opt.Environment)
 	}
 
 	return nil

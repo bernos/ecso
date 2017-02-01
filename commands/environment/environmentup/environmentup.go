@@ -37,11 +37,6 @@ type envUpCommand struct {
 }
 
 func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
-
-	if err := validateOptions(ctx, cmd.options); err != nil {
-		return err
-	}
-
 	var (
 		project  = ctx.Project
 		cfg      = ctx.Config
@@ -83,6 +78,24 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 	return cfn.LogStackOutputs(env.GetCloudFormationStackName(), cfg.Logger.Dt)
 }
 
+func (cmd *envUpCommand) Validate(ctx *ecso.CommandContext) error {
+	opt := cmd.options
+
+	if opt.EnvironmentName == "" {
+		return fmt.Errorf("Environment name is required")
+	}
+
+	if !ctx.Project.HasEnvironment(opt.EnvironmentName) {
+		return fmt.Errorf("No environment named '%s' was found", opt.EnvironmentName)
+	}
+
+	return nil
+}
+
+func (cmd *envUpCommand) Prompt(ctx *ecso.CommandContext) error {
+	return nil
+}
+
 func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, dryRun bool) (*services.DeploymentResult, error) {
 	var (
 		cfg        = ctx.Config
@@ -122,18 +135,6 @@ func createCloudFormationTemplates(dst string, log logfn) error {
 		if err := ioutil.WriteFile(filepath.Join(dst, file), []byte(content), os.ModePerm); err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-func validateOptions(ctx *ecso.CommandContext, opt *Options) error {
-	if opt.EnvironmentName == "" {
-		return fmt.Errorf("Environment name is required")
-	}
-
-	if !ctx.Project.HasEnvironment(opt.EnvironmentName) {
-		return fmt.Errorf("No environment named '%s' was found", opt.EnvironmentName)
 	}
 
 	return nil

@@ -2,6 +2,8 @@ package ecso
 
 // Command represents a single ecso command
 type Command interface {
+	Prompt(ctx *CommandContext) error
+	Validate(ctx *CommandContext) error
 	Execute(ctx *CommandContext) error
 }
 
@@ -11,6 +13,14 @@ type CommandFunc func(*CommandContext) error
 // Execute executes the func
 func (fn CommandFunc) Execute(ctx *CommandContext) error {
 	return fn(ctx)
+}
+
+func (fn CommandFunc) Prompt(ctx *CommandContext) error {
+	return nil
+}
+
+func (fn CommandFunc) Validate(ctx *CommandContext) error {
+	return nil
 }
 
 // CommandError wraps an error in a func that satisfies the Command

@@ -35,10 +35,6 @@ type command struct {
 }
 
 func (cmd *command) Execute(ctx *ecso.CommandContext) error {
-	if err := validateOptions(cmd.options, ctx); err != nil {
-		return err
-	}
-
 	var (
 		service    = ctx.Project.Services[cmd.options.Name]
 		env        = ctx.Project.Environments[cmd.options.Environment]
@@ -96,7 +92,13 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func validateOptions(opt *Options, ctx *ecso.CommandContext) error {
+func (cmd *command) Prompt(ctx *ecso.CommandContext) error {
+	return nil
+}
+
+func (cmd *command) Validate(ctx *ecso.CommandContext) error {
+	opt := cmd.options
+
 	if opt.Name == "" {
 		return fmt.Errorf("Name is required")
 	}

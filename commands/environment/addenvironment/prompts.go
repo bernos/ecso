@@ -9,8 +9,12 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
+func (c *cmd) Prompt(ctx *ecso.CommandContext) error {
+
 	var (
+		log             = ctx.Config.Logger
+		project         = ctx.Project
+		options         = c.options
 		cfg             = ctx.Config
 		prefs           = ctx.UserPreferences
 		accountDefaults = ecso.AccountDefaults{}
@@ -27,6 +31,7 @@ func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
 		InstanceSubnets string
 		InstanceType    string
 		Size            string
+		DNSZone         string
 	}{
 		Name:            "What is the name of your environment?",
 		Region:          "Which AWS region will the environment be deployed to?",
@@ -36,6 +41,7 @@ func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
 		InstanceSubnets: "Which subnets would you like to deploy the ECS container instances to?",
 		InstanceType:    "What type of instances would you like to add to the ECS cluster?",
 		Size:            "How many instances would you like to add to the ECS cluster?",
+		DNSZone:         "Which DNS zone would you like to use for service discovery?",
 	}
 
 	var validators = struct {
@@ -46,6 +52,7 @@ func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
 		ALBSubnets      func(string) error
 		InstanceSubnets func(string) error
 		InstanceType    func(string) error
+		DNSZone         func(string) error
 		Size            func(int) error
 	}{
 		Name:            environmentNameValidator(ctx.Project),
@@ -55,11 +62,13 @@ func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
 		ALBSubnets:      ui.ValidateRequired("ALB subnets are required"),
 		InstanceSubnets: ui.ValidateRequired("Instance subnets are required"),
 		InstanceType:    ui.ValidateRequired("Instance type is required"),
+		DNSZone:         ui.ValidateRequired("DNS zone is required"),
 		Size:            ui.ValidateIntBetween(2, 100),
 	}
 
 	// TODO Ask if there is an existing environment?
 	// If yes, then ask for the cfn stack id and collect outputs
+	log.BannerBlue("Adding a new environment to the %s project", project.Name)
 
 	if account := getCurrentAWSAccount(stsAPI); options.Account == "" {
 		options.Account = account
@@ -98,6 +107,10 @@ func promptForMissingOptions(options *Options, ctx *ecso.CommandContext) error {
 	}
 
 	if err := ui.AskIntIfEmptyVar(&options.Size, prompts.Size, 4, validators.Size); err != nil {
+		return err
+	}
+
+	if err := ui.AskStringIfEmptyVar(&options.DNSZone, prompts.DNSZone, accountDefaults.DNSZone, validators.DNSZone); err != nil {
 		return err
 	}
 

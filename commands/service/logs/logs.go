@@ -34,10 +34,6 @@ type command struct {
 }
 
 func (cmd *command) Execute(ctx *ecso.CommandContext) error {
-	if err := validateOptions(cmd.options, ctx); err != nil {
-		return err
-	}
-
 	var (
 		cfg       = ctx.Config
 		service   = ctx.Project.Services[cmd.options.Name]
@@ -74,22 +70,26 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func validateOptions(opt *Options, ctx *ecso.CommandContext) error {
-	if opt.Name == "" {
+func (cmd *command) Validate(ctx *ecso.CommandContext) error {
+	if cmd.options.Name == "" {
 		return fmt.Errorf("Name is required")
 	}
 
-	if opt.Environment == "" {
+	if cmd.options.Environment == "" {
 		return fmt.Errorf("Environment is required")
 	}
 
-	if !ctx.Project.HasService(opt.Name) {
-		return fmt.Errorf("No service named '%s' was found", opt.Name)
+	if !ctx.Project.HasService(cmd.options.Name) {
+		return fmt.Errorf("No service named '%s' was found", cmd.options.Name)
 	}
 
-	if !ctx.Project.HasEnvironment(opt.Environment) {
-		return fmt.Errorf("No environment named '%s' was found", opt.Environment)
+	if !ctx.Project.HasEnvironment(cmd.options.Environment) {
+		return fmt.Errorf("No environment named '%s' was found", cmd.options.Environment)
 	}
 
+	return nil
+}
+
+func (cmd *command) Prompt(ctx *ecso.CommandContext) error {
 	return nil
 }

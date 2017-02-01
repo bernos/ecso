@@ -141,4 +141,5 @@ type AccountDefaults struct {
 	VPCID           string
 	ALBSubnets      string
 	InstanceSubnets string
+	DNSZone         string
 }

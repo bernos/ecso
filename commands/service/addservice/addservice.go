@@ -26,10 +26,6 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		project = ctx.Project
 	)
 
-	if err := promptForMissingOptions(cmd.options, ctx); err != nil {
-		return err
-	}
-
 	if project.HasService(cmd.options.Name) {
 		return fmt.Errorf("Service '%s' already exists", cmd.options.Name)
 	}
@@ -62,6 +58,10 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 
 	log.BannerGreen("Service '%s' added successfully. Now run `ecso service up --name %s --environment <environment>` to deploy", cmd.options.Name, cmd.options.Name)
 
+	return nil
+}
+
+func (cmd *command) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
