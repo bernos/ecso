@@ -36,6 +36,10 @@ Parameters:
         Type: String
         Default: t2.large
 
+    DNSZone:
+        Description: Select the DNS zone to use for service discovery
+        Type: String
+
 Resources:
 
     SecurityGroups:
@@ -68,6 +72,7 @@ Resources:
                 InstanceType: !Ref InstanceType
                 ClusterSize: !Ref ClusterSize
                 VPC: !Ref VPC
+                DNSZone: !Ref DNSZone
                 SecurityGroup:
                   Fn::GetAtt:
                   - SecurityGroups
@@ -141,6 +146,10 @@ Parameters:
         Description: Select the Security Group to use for the ECS cluster hosts
         Type: AWS::EC2::SecurityGroup::Id
 
+    DNSZone:
+        Description: Select the DNS zone to use for service discovery
+        Type: String
+
 Mappings:
 
     # These are the latest ECS optimized AMIs as of November 2016:
@@ -181,6 +190,11 @@ Resources:
         Properties:
             ClusterName: !Ref EnvironmentName
 
+    CloudWatchLogsGroup:
+        Type: AWS::Logs::LogGroup
+        Properties:
+            RetentionInDays: 7
+
     ECSAutoScalingGroup:
         Type: AWS::AutoScaling::AutoScalingGroup
         Properties:
@@ -214,23 +228,25 @@ Resources:
             UserData:
                 "Fn::Base64": !Sub |
                     #!/bin/bash
-                    yum install -y aws-cfn-bootstrap
+		    echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
 
-                    # export MYVAR=foobar
-                    # echo 'OPTIONS="-e FOO=bar"' > /etc/sysconfig/docker
+                    yum install -y aws-cfn-bootstrap
 
                     /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration
                     /opt/aws/bin/cfn-signal -e $? --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSAutoScalingGroup
 
         Metadata:
             AWS::CloudFormation::Init:
-                config:
-                    commands:
-                        01_add_instance_to_cluster:
-                            command: !Sub echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
+                configSets:
+                    install_all:
+                        - install_cfn
+                        - install_logs
+                        - install_ecssd_agent
+
+                install_cfn:
                     files:
                         "/etc/cfn/cfn-hup.conf":
-                            mode: 000400
+                            mode: "000400"
                             owner: root
                             group: root
                             content: !Sub |
@@ -243,7 +259,8 @@ Resources:
                                 [cfn-auto-reloader-hook]
                                 triggers=post.update
                                 path=Resources.ContainerInstances.Metadata.AWS::CloudFormation::Init
-                                action=/opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration
+                                action=/opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration --configsets install_all
+                                runas=root
 
                     services:
                         sysvinit:
@@ -254,6 +271,89 @@ Resources:
                                     - /etc/cfn/cfn-hup.conf
                                     - /etc/cfn/hooks.d/cfn-auto-reloader.conf
 
+                install_logs:
+                    packages:
+                        yum:
+                            awslogs: []
+
+                    commands:
+                        01_create_state_directory:
+                            command: "mkdir -p /var/awslogs/state"
+
+                    files:
+                        "/etc/awslogs/awscli.conf":
+                            mode: "000400"
+                            owner: root
+                            group: root
+                            content: !Sub |
+                                [plugins]
+                                cwlogs = cwlogs
+                                [default]
+                                region = ${AWS::Region}
+
+                        "/etc/awslogs/awslogs.conf":
+                            mode: "000400"
+                            owner: root
+                            group: root
+                            content: !Sub |
+                                [general]
+                                state_file = /var/awslogs/state/agent-state
+                                [/var/log/cloud-init.log]
+                                file = /var/log/cloud-init.log
+                                log_group_name = ${CloudWatchLogsGroup}
+                                log_stream_name = {instance_id}/cloud-init.log
+                                datetime_format =
+                                [/var/log/cloud-init-output.log]
+                                file = /var/log/cloud-init-output.log
+                                log_group_name = ${CloudWatchLogsGroup}
+                                log_stream_name = {instance_id}/cloud-init-output.log
+                                datetime_format =
+                                [/var/log/cfn-init.log]
+                                file = /var/log/cfn-init.log
+                                log_group_name = ${CloudWatchLogsGroup}
+                                log_stream_name = {instance_id}/cfn-init.log
+                                datetime_format =
+                                [/var/log/cfn-hup.log]
+                                file = /var/log/cfn-hup.log
+                                log_group_name = ${CloudWatchLogsGroup}
+                                log_stream_name = {instance_id}/cfn-hup.log
+                                datetime_format =
+                                [/var/log/cfn-wire.log]
+                                file = /var/log/cfn-wire.log
+                                log_group_name = ${CloudWatchLogsGroup}
+                                log_stream_name = {instance_id}/cfn-wire.log
+                                datetime_format =
+
+                    services:
+                        sysvinit:
+                            awslogs:
+                                enabled: true
+                                unsureRunning: true
+                                files:
+                                    - /etc/awslogs/awslogs.conf
+
+                install_ecssd_agent:
+                    commands:
+                        start_ecssd_agent:
+                            command: "start ecssd-agent"
+
+                    files:
+                        "/etc/init/ecssd-agent.conf":
+                            mode: "000644"
+                            owner: root
+                            group: root
+                            content: !Sub |
+                                description "Amazon EC2 Container Service Discovery"
+                                author "Javieros Ros"
+                                start on stopped rc RUNLEVEL=[345]
+                                exec /usr/local/bin/ecssd_agent ${DNSZone} >> /var/log/ecssd_agent.log 2>&1
+                                respawn
+
+                        "/usr/local/bin/ecssd_agent":
+                            source: https://github.com/awslabs/service-discovery-ecs-dns/releases/download/1.2/ecssd_agent
+                            mode: "000755"
+                            owner: root
+                            group: root
     # This IAM Role is attached to all of the ECS hosts. It is based on the default role
     # published here:
     # http://docs.aws.amazon.com/AmazonECS/latest/developerguide/instance_IAM_role.html
@@ -291,12 +391,16 @@ Resources:
                                 "ecs:RegisterContainerInstance",
                                 "ecs:StartTelemetrySession",
                                 "ecs:Submit*",
+                                "logs:CreateLogGroup",
                                 "logs:CreateLogStream",
                                 "logs:PutLogEvents",
+                                "logs:DescribeLogStreams",
                                 "ecr:BatchCheckLayerAvailability",
                                 "ecr:BatchGetImage",
                                 "ecr:GetDownloadUrlForLayer",
-                                "ecr:GetAuthorizationToken"
+                                "ecr:GetAuthorizationToken",
+                                "route53:*",
+                                "elasticloadbalancing:DescribeLoadBalancers"
                             ],
                             "Resource": "*"
                         }]
