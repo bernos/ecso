@@ -32,6 +32,7 @@ func (c *cmd) Prompt(ctx *ecso.CommandContext) error {
 		InstanceType    string
 		Size            string
 		DNSZone         string
+		DataDogAPIKey   string
 	}{
 		Name:            "What is the name of your environment?",
 		Region:          "Which AWS region will the environment be deployed to?",
@@ -42,6 +43,7 @@ func (c *cmd) Prompt(ctx *ecso.CommandContext) error {
 		InstanceType:    "What type of instances would you like to add to the ECS cluster?",
 		Size:            "How many instances would you like to add to the ECS cluster?",
 		DNSZone:         "Which DNS zone would you like to use for service discovery?",
+		DataDogAPIKey:   "What is your Data Dog API key?",
 	}
 
 	var validators = struct {
@@ -54,6 +56,7 @@ func (c *cmd) Prompt(ctx *ecso.CommandContext) error {
 		InstanceType    func(string) error
 		DNSZone         func(string) error
 		Size            func(int) error
+		DataDogAPIKey   func(string) error
 	}{
 		Name:            environmentNameValidator(ctx.Project),
 		Region:          ui.ValidateRequired("Region is required"),
@@ -64,6 +67,7 @@ func (c *cmd) Prompt(ctx *ecso.CommandContext) error {
 		InstanceType:    ui.ValidateRequired("Instance type is required"),
 		DNSZone:         ui.ValidateRequired("DNS zone is required"),
 		Size:            ui.ValidateIntBetween(2, 100),
+		DataDogAPIKey:   ui.ValidateRequired("DataDog API key is required"),
 	}
 
 	// TODO Ask if there is an existing environment?
@@ -111,6 +115,10 @@ func (c *cmd) Prompt(ctx *ecso.CommandContext) error {
 	}
 
 	if err := ui.AskStringIfEmptyVar(&options.DNSZone, prompts.DNSZone, accountDefaults.DNSZone, validators.DNSZone); err != nil {
+		return err
+	}
+
+	if err := ui.AskStringIfEmptyVar(&options.DataDogAPIKey, prompts.DataDogAPIKey, accountDefaults.DataDogAPIKey, validators.DataDogAPIKey); err != nil {
 		return err
 	}
 

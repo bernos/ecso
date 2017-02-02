@@ -5,6 +5,7 @@ var templates = map[string]string{
 	"ecs-cluster.yaml":     clusterTemplate,
 	"load-balancers.yaml":  albTemplate,
 	"security-groups.yaml": securityGroupTemplate,
+	"dd-agent.yaml":        dataDogTemplate,
 }
 
 var stackTemplate = `
@@ -40,6 +41,10 @@ Parameters:
         Description: Select the DNS zone to use for service discovery
         Type: String
 
+    DataDogAPIKey:
+        Description: Please provide your datadog API key
+        Type: String
+
 Resources:
 
     SecurityGroups:
@@ -49,6 +54,14 @@ Resources:
             Parameters:
                 EnvironmentName: !Ref AWS::StackName
                 VPC: !Ref VPC
+
+    DataDogTaskDefinition:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: ./dd-agent.yaml
+            Parameters:
+                EnvironmentName: !Ref AWS::StackName
+                DataDogAPIKey: !Ref DataDogAPIKey
 
     ALB:
         Type: AWS::CloudFormation::Stack
@@ -230,7 +243,7 @@ Resources:
                     #!/bin/bash
                     echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
 
-                    yum install -y aws-cfn-bootstrap
+                    yum install -y aws-cfn-bootstrap aws-cli jq
 
                     /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration --configsets install_all
                     /opt/aws/bin/cfn-signal -e $? --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSAutoScalingGroup
@@ -242,6 +255,34 @@ Resources:
                         - install_cfn
                         - install_logs
                         - install_ecssd_agent
+                        - install_dd_agent
+
+                install_dd_agent:
+                    commands:
+                        01_start_ecs:
+                            command: "start ecs"
+                        02_install_dd_agent:
+                            command: "/usr/local/bin/install-dd-agent"
+
+                    files:
+                        "/usr/local/bin/install-dd-agent":
+                            mode: "000755"
+                            owner: root
+                            group: root
+                            content: !Sub |
+                                #!/bin/bash
+                                WAIT=0
+
+                                while [ $WAIT -ne 10 ] && [ -z "$metadata" ]; do
+                                    metadata=$(curl -s http://localhost:51678/v1/metadata)
+                                    sleep $(( WAIT++ ))
+                                done
+
+                                echo "$metadata" > /etc/metadata.txt
+
+                                instance_arn=$(cat /etc/metadata.txt | jq -r '. | .ContainerInstanceArn' | awk -F/ '{print $NF}' )
+
+                                echo "aws ecs start-task --cluster ${EnvironmentName} --task-definition ${EnvironmentName}-datadog-agent --container-instances $instance_arn --region ${AWS::Region}" >> /etc/rc.local
 
                 install_cfn:
                     files:
@@ -395,6 +436,7 @@ Resources:
                                 "ecs:Poll",
                                 "ecs:RegisterContainerInstance",
                                 "ecs:StartTelemetrySession",
+                                "ecs:StartTask",
                                 "ecs:Submit*",
                                 "logs:CreateLogGroup",
                                 "logs:CreateLogStream",
@@ -556,4 +598,108 @@ Outputs:
     LoadBalancerSecurityGroup:
         Description: A reference to the security group for load balancers
         Value: !Ref LoadBalancerSecurityGroup
+`
+
+var dataDogTemplate = `
+Parameters:
+    DataDogAPIKey:
+        Description: Please provide your datadog API key
+        Type: String
+
+    EnvironmentName:
+        Description: An environment name that will be prefixed to resource names
+        Type: String
+
+Resources:
+    TaskDefinition:
+        Type: AWS::ECS::TaskDefinition
+        Properties:
+            Family: !Sub ${EnvironmentName}-datadog-agent
+            Volumes:
+                - Name: docker_sock
+                  Host:
+                    SourcePath: /var/run/docker.sock
+                - Name: proc
+                  Host:
+                    SourcePath: /proc/
+                - Name: cgroup
+                  Host:
+                    SourcePath: /cgroup/
+            ContainerDefinitions:
+                - Name: dd-agent
+                  Essential: true
+                  Image: datadog/docker-dd-agent:latest
+                  Cpu: 10
+                  Memory: 128
+                  PortMappings:
+                    - HostPort: 8125
+                      ContainerPort: 8125
+                      Protocol: udp
+                  Environment:
+                    - Name: DD_API_KEY
+                      Value: !Ref DataDogAPIKey
+                    - Name: DD_TAGS
+                      Value: !Ref EnvironmentName
+                    - Name: NON_LOCAL_TRAFFIC
+                      Value: 1
+                    - Name: SERVICE_8125_NAME
+                      Value: !Sub datadog.${EnvironmentName}
+                  MountPoints:
+                    - ContainerPath: /var/run/docker.sock
+                      SourceVolume: docker_sock
+                    - ContainerPath: /host/sys/fs/cgroup
+                      SourceVolume: cgroup
+                      ReadOnly: true
+                    - ContainerPath: /host/proc
+                      SourceVolume: proc
+                      ReadOnly: true
+                  LogConfiguration:
+                    LogDriver: awslogs
+                    Options:
+                        awslogs-group: !Ref AWS::StackName
+                        awslogs-region: !Ref AWS::Region
+
+    CloudWatchLogsGroup:
+        Type: AWS::Logs::LogGroup
+        Properties:
+            LogGroupName: !Ref AWS::StackName
+            RetentionInDays: 30
+
+    # This IAM Role grants the service access to register/unregister with the
+    # Application Load Balancer (ALB). It is based on the default documented here:
+    # http://docs.aws.amazon.com/AmazonECS/latest/developerguide/service_IAM_role.html
+    ServiceRole:
+        Type: AWS::IAM::Role
+        Properties:
+            RoleName: !Sub ecs-service-${AWS::StackName}
+            Path: /
+            AssumeRolePolicyDocument: |
+                {
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Principal": { "Service": [ "ecs.amazonaws.com" ]},
+                        "Action": [ "sts:AssumeRole" ]
+                    }]
+                }
+            Policies:
+                - PolicyName: !Sub ecs-service-${AWS::StackName}
+                  PolicyDocument:
+                    {
+                        "Version": "2012-10-17",
+                        "Statement": [{
+                                "Effect": "Allow",
+                                "Action": [
+                                    "ec2:AuthorizeSecurityGroupIngress",
+                                    "ec2:Describe*",
+                                    "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
+                                    "elasticloadbalancing:Describe*",
+                                    "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
+                                    "elasticloadbalancing:DeregisterTargets",
+                                    "elasticloadbalancing:DescribeTargetGroups",
+                                    "elasticloadbalancing:DescribeTargetHealth",
+                                    "elasticloadbalancing:RegisterTargets"
+                                ],
+                                "Resource": "*"
+                        }]
+                    }
 `

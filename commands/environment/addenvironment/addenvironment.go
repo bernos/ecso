@@ -17,6 +17,7 @@ type Options struct {
 	InstanceType         string
 	Size                 int
 	DNSZone              string
+	DataDogAPIKey        string
 }
 
 func New(environmentName string, options ...func(*Options)) ecso.Command {
@@ -58,6 +59,7 @@ func (c *cmd) Execute(ctx *ecso.CommandContext) error {
 			"InstanceType":    c.options.InstanceType,
 			"DNSZone":         c.options.DNSZone,
 			"ClusterSize":     fmt.Sprintf("%d", c.options.Size),
+			"DataDogAPIKey":   c.options.DataDogAPIKey,
 		},
 		CloudFormationTags: map[string]string{
 			"environment": c.options.Name,

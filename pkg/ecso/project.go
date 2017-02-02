@@ -142,4 +142,5 @@ type AccountDefaults struct {
 	ALBSubnets      string
 	InstanceSubnets string
 	DNSZone         string
+	DataDogAPIKey   string
 }
