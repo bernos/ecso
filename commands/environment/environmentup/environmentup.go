@@ -109,7 +109,17 @@ func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, dryRun bool) (
 		cfnService = registry.CloudFormationService(cfg.Logger.PrefixPrintf("  "))
 	)
 
-	return cfnService.PackageAndDeploy(stackName, template, bucket, prefix, tags, params, dryRun)
+	exists, err := cfnService.StackExists(stackName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if exists {
+		return cfnService.PackageAndDeploy(stackName, template, bucket, prefix, tags, params, dryRun)
+	}
+
+	return cfnService.PackageAndCreate(stackName, template, bucket, prefix, tags, params, dryRun)
 }
 
 func ensureTemplates(env *ecso.Environment, log logfn) error {
