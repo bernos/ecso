@@ -30,9 +30,11 @@ type DeploymentResult struct {
 
 type CloudFormationService interface {
 	PackageAndDeploy(stackName, templateFile, bucket, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
+	PackageAndCreate(stackName, templateFile, bucket, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
 	Package(templateFile, bucket, prefix string) (string, error)
 	DeleteStack(serviceName string) error
 	Deploy(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error)
+	Create(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error)
 	StackExists(stackName string) (bool, error)
 	WaitForChangeset(changeset string, status ...string) (*cloudformation.DescribeChangeSetOutput, error)
 	GetChangeSet(changeset string) (*cloudformation.DescribeChangeSetOutput, error)
@@ -91,6 +93,17 @@ func (svc *cfnService) PackageAndDeploy(stackName, templateFile, bucket, prefix 
 
 }
 
+func (svc *cfnService) PackageAndCreate(stackName, templateFile, bucket, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error) {
+	templateBody, err := svc.Package(templateFile, bucket, prefix)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return svc.Create(templateBody, stackName, params, tags, dryRun)
+
+}
+
 func (svc *cfnService) Package(templateFile, bucket, prefix string) (string, error) {
 	// TODO: validate the template
 
@@ -110,6 +123,58 @@ func (svc *cfnService) Package(templateFile, bucket, prefix string) (string, err
 	}
 
 	return updateNestedTemplateURLs(string(templateBody), svc.region, bucket, prefix), nil
+}
+
+func (svc *cfnService) Create(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error) {
+	input := &cloudformation.CreateStackInput{
+		StackName:       aws.String(stackName),
+		DisableRollback: aws.Bool(true),
+		Parameters:      make([]*cloudformation.Parameter, 0),
+		Tags:            make([]*cloudformation.Tag, 0),
+		TemplateBody:    aws.String(templateBody),
+		Capabilities: []*string{
+			aws.String("CAPABILITY_NAMED_IAM"),
+			aws.String("CAPABILITY_IAM"),
+		},
+	}
+
+	for k, v := range params {
+		input.Parameters = append(input.Parameters, &cloudformation.Parameter{
+			ParameterKey:   aws.String(k),
+			ParameterValue: aws.String(v),
+		})
+	}
+
+	for k, v := range tags {
+		input.Tags = append(input.Tags, &cloudformation.Tag{
+			Key:   aws.String(k),
+			Value: aws.String(v),
+		})
+	}
+
+	resp, err := svc.cfnClient.CreateStack(input)
+
+	if err != nil {
+		return nil, err
+	}
+
+	result := &DeploymentResult{
+		StackID: *resp.StackId,
+	}
+
+	cancel := svc.LogStackEvents(*resp.StackId, func(ev *cloudformation.StackEvent, err error) {
+		if ev != nil {
+			svc.log("%s: %s\n", *ev.LogicalResourceId, *ev.ResourceStatus)
+		}
+	})
+
+	defer cancel()
+
+	svc.log("Waiting for stack creation to complete...\n")
+
+	return result, svc.cfnClient.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
+		StackName: resp.StackId,
+	})
 }
 
 func (svc *cfnService) Deploy(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error) {

@@ -13,7 +13,7 @@ services:
     image: nginx:latest
     mem_limit: 20000000
     ports:
-      - "0:80"
+      - "0:{{.Service.Port}}"
     volumes:
       - nginxdata:/usr/share/nginx/html/:ro
     command: /bin/bash -c "echo \"server { location / { root /usr/share/nginx/html; try_files \$$uri /index.html =404; } }\" > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"

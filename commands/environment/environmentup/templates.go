@@ -228,11 +228,11 @@ Resources:
             UserData:
                 "Fn::Base64": !Sub |
                     #!/bin/bash
-		    echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
+                    echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
 
                     yum install -y aws-cfn-bootstrap
 
-                    /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration
+                    /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration --configsets install_all
                     /opt/aws/bin/cfn-signal -e $? --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSAutoScalingGroup
 
         Metadata:
@@ -323,6 +323,11 @@ Resources:
                                 log_group_name = ${CloudWatchLogsGroup}
                                 log_stream_name = {instance_id}/cfn-wire.log
                                 datetime_format =
+                                [/var/log/ecssd_agent.log]
+                                file = /var/log/ecssd_agent.log
+                                log_group_name = ${CloudWatchLogsGroup}
+                                log_stream_name = {instance_id}/ecssd-agent.log
+                                datetime_format = %Y-%m-%dT%H:%M:%S%z
 
                     services:
                         sysvinit:
@@ -354,6 +359,7 @@ Resources:
                             mode: "000755"
                             owner: root
                             group: root
+
     # This IAM Role is attached to all of the ECS hosts. It is based on the default role
     # published here:
     # http://docs.aws.amazon.com/AmazonECS/latest/developerguide/instance_IAM_role.html
@@ -361,7 +367,6 @@ Resources:
     # You can add other IAM policy statements here to allow access from your ECS hosts
     # to other AWS services. Please note that this role will be used by ALL containers
     # running on the ECS host.
-
     ECSRole:
         Type: AWS::IAM::Role
         Properties:

@@ -46,7 +46,7 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		service.Port = cmd.options.Port
 	}
 
-	if err := writeFiles(project.Dir(), service); err != nil {
+	if err := writeFiles(project, service); err != nil {
 		return err
 	}
 
@@ -80,14 +80,16 @@ func New(name string, options ...func(*Options)) ecso.Command {
 	}
 }
 
-func writeFiles(projectDir string, service *ecso.Service) error {
+func writeFiles(project *ecso.Project, service *ecso.Service) error {
 	var (
-		composeFile        = filepath.Join(projectDir, service.ComposeFile)
-		cloudFormationFile = filepath.Join(projectDir, ".ecso/services", service.Name, "stack.yaml")
+		composeFile        = filepath.Join(project.Dir(), service.ComposeFile)
+		cloudFormationFile = filepath.Join(project.Dir(), ".ecso/services", service.Name, "stack.yaml")
 		templateData       = struct {
 			Service *ecso.Service
+			Project *ecso.Project
 		}{
 			Service: service,
+			Project: project,
 		}
 	)
 

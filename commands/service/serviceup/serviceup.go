@@ -190,6 +190,13 @@ func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecs
 				"awslogs-group":  aws.String(serviceStackOutputs["CloudWatchLogsGroup"]),
 			},
 		})
+
+		for _, p := range container.PortMappings {
+			container.Environment = append(container.Environment, &ecs.KeyValuePair{
+				Name:  aws.String(fmt.Sprintf("SERVICE_%d_NAME", *p.ContainerPort)),
+				Value: aws.String(fmt.Sprintf("%s.%s", service.Name, env.GetClusterName())),
+			})
+		}
 	}
 
 	resp, err := ecsClient.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
