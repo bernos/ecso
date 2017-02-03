@@ -116,7 +116,7 @@ func logOutputs(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.S
 	if service.Route != "" {
 		ctx.Config.Logger.Dt(
 			"Service URL",
-			fmt.Sprintf("%s%s", outputs["LoadBalancerUrl"], service.Route))
+			fmt.Sprintf("http://%s%s", outputs["RecordSet"], service.Route))
 	}
 
 	ctx.Config.Logger.Dt(
