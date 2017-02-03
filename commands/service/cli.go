@@ -6,6 +6,7 @@ import (
 	"github.com/bernos/ecso/commands/service/logs"
 	"github.com/bernos/ecso/commands/service/ls"
 	"github.com/bernos/ecso/commands/service/ps"
+	"github.com/bernos/ecso/commands/service/purgedns"
 	"github.com/bernos/ecso/commands/service/servicedown"
 	"github.com/bernos/ecso/commands/service/serviceup"
 	"github.com/bernos/ecso/pkg/ecso"
@@ -24,6 +25,7 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 			ps.CliCommand(dispatcher),
 			events.CliCommand(dispatcher),
 			logs.CliCommand(dispatcher),
+			purgedns.CliCommand(dispatcher),
 		},
 	}
 }

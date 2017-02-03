@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
+	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/aws/aws-sdk-go/service/route53/route53iface"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -23,6 +25,7 @@ type AWSClientRegistry struct {
 	s3API             s3iface.S3API
 	ecsAPI            ecsiface.ECSAPI
 	cloudWatchLogsAPI cloudwatchlogsiface.CloudWatchLogsAPI
+	route53           route53iface.Route53API
 
 	cloudFormationService services.CloudFormationService
 	ecsService            services.ECSService
@@ -53,6 +56,13 @@ func (r *AWSClientRegistry) ECSAPI() ecsiface.ECSAPI {
 		r.ecsAPI = ecs.New(r.session)
 	}
 	return r.ecsAPI
+}
+
+func (r *AWSClientRegistry) Route53API() route53iface.Route53API {
+	if r.route53 == nil {
+		r.route53 = route53.New(r.session)
+	}
+	return r.route53
 }
 
 func (r *AWSClientRegistry) S3API() s3iface.S3API {
