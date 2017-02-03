@@ -43,6 +43,8 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		ecsAPI     = registry.ECSAPI()
 		ecsService = registry.ECSService(log.PrefixPrintf("  "))
 		cfnService = registry.CloudFormationService(log.PrefixPrintf("  "))
+		r53Service = registry.Route53Service(log.PrefixPrintf("  "))
+		dnsName    = fmt.Sprintf("%s.%s.", service.Name, env.CloudFormationParameters["DNSZone"])
 	)
 
 	log.BannerBlue(
@@ -72,8 +74,16 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		}); err != nil {
 			return err
 		}
+
 	} else {
-		log.Infof("ECS service '%s' doesn't exists, nothing to clean up", service.GetECSServiceName())
+		log.Infof("ECS service '%s' doesn't exists, skipping ecs teardown", service.GetECSServiceName())
+	}
+
+	log.Printf("\n")
+	log.Infof("Deleting any SRV DNS records for %s...", dnsName)
+
+	if err := r53Service.DeleteResourceRecordSetsByName(dnsName, env.CloudFormationParameters["DNSZone"], "Deleted by ecso service down"); err != nil {
+		return err
 	}
 
 	log.Printf("\n")

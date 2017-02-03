@@ -29,6 +29,7 @@ type AWSClientRegistry struct {
 
 	cloudFormationService services.CloudFormationService
 	ecsService            services.ECSService
+	route53Service        services.Route53Service
 }
 
 func NewAWSClientRegistry(sess *session.Session) *AWSClientRegistry {
@@ -91,4 +92,11 @@ func (r *AWSClientRegistry) ECSService(log func(string, ...interface{})) service
 		r.ecsService = services.NewECSService(r.ECSAPI(), log)
 	}
 	return r.ecsService
+}
+
+func (r *AWSClientRegistry) Route53Service(log func(string, ...interface{})) services.Route53Service {
+	if r.route53Service == nil {
+		r.route53Service = services.NewRoute53Service(r.Route53API(), log)
+	}
+	return r.route53Service
 }

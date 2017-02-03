@@ -3,8 +3,6 @@ package purgedns
 import (
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/bernos/ecso/commands"
 	"github.com/bernos/ecso/pkg/ecso"
 
@@ -80,9 +78,11 @@ type command struct {
 
 func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	var (
+		log            = ctx.Config.Logger
 		env            = ctx.Project.Environments[cmd.options.Environment]
 		service        = ctx.Project.Services[cmd.options.Name]
 		serviceDNSName = fmt.Sprintf("%s.%s.", service.Name, env.GetClusterName())
+		zone           = fmt.Sprintf("%s.", env.CloudFormationParameters["DNSZone"])
 	)
 
 	registry, err := ctx.Config.GetAWSClientRegistry(env.Region)
@@ -91,37 +91,10 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	svc := registry.Route53API()
+	svc := registry.Route53Service(log.PrefixPrintf("  "))
 
-	zones, err := svc.ListHostedZonesByName(&route53.ListHostedZonesByNameInput{
-		DNSName: aws.String(env.CloudFormationParameters["DNSZone"] + "."),
-	})
+	return svc.DeleteResourceRecordSetsByName(serviceDNSName, zone, "Deleted by ecso service purge-dns")
 
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("%#v\n", zones)
-
-	for _, zone := range zones.HostedZones {
-		resp, err := svc.ListResourceRecordSets(&route53.ListResourceRecordSetsInput{
-			HostedZoneId: zone.Id,
-		})
-
-		if err != nil {
-			return err
-		}
-
-		for _, record := range resp.ResourceRecordSets {
-			fmt.Printf("Considering: %s\n", *record.Name)
-
-			if *record.Name == serviceDNSName {
-				fmt.Printf("DELETING...\n")
-			}
-		}
-	}
-
-	return nil
 }
 
 func (cmd *command) Validate(ctx *ecso.CommandContext) error {

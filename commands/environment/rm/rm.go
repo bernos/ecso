@@ -31,10 +31,13 @@ type command struct {
 
 func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	var (
-		log        = ctx.Config.Logger
-		env        = ctx.Project.Environments[cmd.options.Name]
-		registry   = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		cfnService = registry.CloudFormationService(log.PrefixPrintf("  "))
+		log            = ctx.Config.Logger
+		env            = ctx.Project.Environments[cmd.options.Name]
+		registry       = ctx.Config.MustGetAWSClientRegistry(env.Region)
+		cfnService     = registry.CloudFormationService(log.PrefixPrintf("  "))
+		r53Service     = registry.Route53Service(log.PrefixPrintf("  "))
+		zone           = fmt.Sprintf("%s.", env.CloudFormationParameters["DNSZone"])
+		datadogDNSName = fmt.Sprintf("%s.%s.%s", "datadog", env.GetClusterName(), zone)
 	)
 
 	log.BannerBlue("Removing '%s' environment", env.Name)
@@ -52,6 +55,13 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	log.Infof("Deleting Cloud Formation stack '%s'", env.GetCloudFormationStackName())
 
 	if err := cfnService.DeleteStack(env.GetCloudFormationStackName()); err != nil {
+		return err
+	}
+
+	log.Printf("\n")
+	log.Infof("Deleting %s SRV records", datadogDNSName)
+
+	if err := r53Service.DeleteResourceRecordSetsByName(datadogDNSName, zone, "Deleted by ecso environment rm"); err != nil {
 		return err
 	}
 
