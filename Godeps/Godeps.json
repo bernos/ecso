@@ -172,6 +172,16 @@
 			"Rev": "5f8c77604d405643d9bd8440d47b57bc40748824"
 		},
 		{
+			"ImportPath": "github.com/aws/aws-sdk-go/service/route53",
+			"Comment": "v1.6.17-2-g5f8c776",
+			"Rev": "5f8c77604d405643d9bd8440d47b57bc40748824"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/service/route53/route53iface",
+			"Comment": "v1.6.17-2-g5f8c776",
+			"Rev": "5f8c77604d405643d9bd8440d47b57bc40748824"
+		},
+		{
 			"ImportPath": "github.com/aws/aws-sdk-go/service/s3",
 			"Comment": "v1.6.17-2-g5f8c776",
 			"Rev": "5f8c77604d405643d9bd8440d47b57bc40748824"
