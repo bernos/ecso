@@ -68,6 +68,7 @@ Resources:
         Properties:
             TemplateURL: ./load-balancers.yaml
             Parameters:
+                DNSZone: !Ref DNSZone
                 EnvironmentName: !Ref AWS::StackName
                 VPC: !Ref VPC
                 Subnets: { "Fn::Join": [",", { "Ref": "ALBSubnets" } ] }
@@ -104,6 +105,13 @@ Outputs:
           Fn::GetAtt:
             - ECS
             - Outputs.Cluster
+
+    RecordSet:
+        Description: A reference to the DNS recordset
+        Value:
+          Fn::GetAtt:
+            - ALB
+            - Outputs.RecordSet
 
     LoadBalancer:
         Description: A reference to the application load balancer.
@@ -489,7 +497,20 @@ Parameters:
         Description: Select the Security Group to apply to the Applicaion Load Balancer
         Type: AWS::EC2::SecurityGroup::Id
 
+    DNSZone:
+        Description: Select the DNS zone the loadbalancer will be added to
+        Type: String
+
 Resources:
+    RecordSet:
+        Type: AWS::Route53::RecordSet
+        Properties:
+            Type: A
+            HostedZoneName: !Sub ${DNSZone}.
+            Name: !Sub ${EnvironmentName}.${DNSZone}
+            AliasTarget:
+                DNSName: !GetAtt LoadBalancer.DNSName
+                HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneID
 
     LoadBalancer:
         Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -525,6 +546,9 @@ Resources:
             Protocol: HTTP
 
 Outputs:
+    RecordSet:
+        Description: A reference to the DNS recordset
+        Value: !Ref RecordSet
 
     LoadBalancer:
         Description: A reference to the Application Load Balancer
@@ -639,7 +663,7 @@ Resources:
                     - Name: DD_API_KEY
                       Value: !Ref DataDogAPIKey
                     - Name: DD_TAGS
-                      Value: !Ref EnvironmentName
+                      Value: !Sub ecs-cluster:${EnvironmentName}
                     - Name: NON_LOCAL_TRAFFIC
                       Value: 1
                     - Name: SERVICE_8125_NAME
