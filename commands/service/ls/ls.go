@@ -2,12 +2,14 @@ package ls
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
 type Options struct {
@@ -45,7 +47,7 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	printServices(services, ctx.Config.Logger)
+	printServices(services)
 
 	return nil
 }
@@ -113,51 +115,21 @@ func getServices(env *ecso.Environment, ecsAPI ecsiface.ECSAPI) ([]*ecs.Service,
 	return services, nil
 }
 
-func printServices(services []*ecs.Service, log ecso.Logger) {
-	var (
-		pad             = 2
-		longestName     = len("SERVICE")
-		longestTaskName = len("TASK")
-	)
+func printServices(services []*ecs.Service) {
+	headers := []string{"SERVICE", "TASK", "DESIRED", "RUNNING", "STATUS"}
+	rows := make([]map[string]string, len(services))
 
-	for _, svc := range services {
-		name := *svc.ServiceName
-		task := taskDefinitionName(*svc.TaskDefinition)
-
-		if len(name) > longestName {
-			longestName = len(name)
-		}
-
-		if len(task) > longestTaskName {
-			longestTaskName = len(task)
+	for i, service := range services {
+		rows[i] = map[string]string{
+			"SERVICE": *service.ServiceName,
+			"TASK":    taskDefinitionName(*service.TaskDefinition),
+			"DESIRED": fmt.Sprintf("%d", *service.DesiredCount),
+			"RUNNING": fmt.Sprintf("%d", *service.RunningCount),
+			"STATUS":  *service.Status,
 		}
 	}
 
-	headerFormat := fmt.Sprintf(
-		"\n%%-%ds%%-%ds%%-%ds%%-%ds%%s\n",
-		longestName+pad,
-		longestTaskName+pad,
-		len("DESIRED")+pad,
-		len("RUNNING")+pad)
-
-	serviceFormat := fmt.Sprintf(
-		"%%-%ds%%-%ds%%-%dd%%-%dd%%s\n",
-		longestName+pad,
-		longestTaskName+pad,
-		len("DESIRED")+pad,
-		len("RUNNING")+pad)
-
-	log.Printf(headerFormat, "SERVICE", "TASK", "DESIRED", "RUNNING", "STATUS")
-
-	for _, svc := range services {
-		log.Printf(
-			serviceFormat,
-			*svc.ServiceName,
-			taskDefinitionName(*svc.TaskDefinition),
-			*svc.DesiredCount,
-			*svc.RunningCount,
-			*svc.Status)
-	}
+	ui.PrintTable(os.Stdout, headers, rows...)
 }
 
 func taskDefinitionName(arn string) string {

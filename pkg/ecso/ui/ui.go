@@ -3,6 +3,7 @@ package ui
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 
@@ -179,5 +180,41 @@ func ChoiceVar(dst *int, prompt string, choices []string) error {
 
 			return nil
 		}
+	}
+}
+
+func PrintTable(w io.Writer, headers []string, rows ...map[string]string) {
+	format := ""
+
+	for _, h := range headers {
+		l := len(h)
+
+		for _, r := range rows {
+			if v, ok := r[h]; ok && len(v) > l {
+				l = len(v)
+			}
+		}
+
+		format = format + fmt.Sprintf("%%-%ds  ", l)
+	}
+
+	format = format + "\n"
+
+	headerRow := make([]interface{}, len(headers))
+
+	for i, h := range headers {
+		headerRow[i] = h
+	}
+
+	fmt.Fprintf(w, format, headerRow...)
+
+	for _, row := range rows {
+		r := make([]interface{}, len(headers))
+
+		for i, h := range headers {
+			r[i] = row[h]
+		}
+
+		fmt.Fprintf(w, format, r...)
 	}
 }

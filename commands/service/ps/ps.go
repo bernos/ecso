@@ -2,6 +2,7 @@ package ps
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -87,7 +88,7 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	log.Printf("\n")
-	printRows(rows, log)
+	printRows(rows)
 	log.Printf("\n")
 
 	return nil
@@ -157,56 +158,8 @@ func rowsFromTask(task *ecs.Task, ecsAPI ecsiface.ECSAPI) ([]*row, error) {
 	return rows, nil
 }
 
-func printRows(rows []*row, log ecso.Logger) {
-
-	idWidth := 36
-	taskNameWidth := len("TASK NAME")
-	desiredStatusWidth := len("DESIRED STATUS")
-	currentStatusWidth := len("CURRENT STATUS")
-	containerWidth := len("CONTAINER")
-	imageWidth := len("IMAGE")
-	containerStatusWidth := len("STATUS")
-
-	for _, row := range rows {
-		if len(row.TaskName) > taskNameWidth {
-			taskNameWidth = len(row.TaskName)
-		}
-
-		if len(row.DesiredStatus) > desiredStatusWidth {
-			desiredStatusWidth = len(row.DesiredStatus)
-		}
-
-		if len(row.CurrentStatus) > currentStatusWidth {
-			currentStatusWidth = len(row.CurrentStatus)
-		}
-
-		if len(row.ContainerName) > containerWidth {
-			containerWidth = len(row.ContainerName)
-		}
-
-		if len(row.ImageName) > imageWidth {
-			imageWidth = len(row.ImageName)
-		}
-
-		if len(row.ContainerStatus) > containerStatusWidth {
-			containerStatusWidth = len(row.ContainerStatus)
-		}
-	}
-
-	headerFormat := fmt.Sprintf(
-		"%%-%ds  %%-%ds  %%-%ds  %%-%ds  %%-%ds  %%-%ds  %%-%ds  %%s\n",
-		containerWidth,
-		imageWidth,
-		containerStatusWidth,
-		taskNameWidth,
-		idWidth,
-		desiredStatusWidth,
-		currentStatusWidth)
-
-	rowFormat := headerFormat
-
-	log.Printf(
-		headerFormat,
+func printRows(rows []*row) {
+	headers := []string{
 		"CONTAINER",
 		"IMAGE",
 		"STATUS",
@@ -214,20 +167,25 @@ func printRows(rows []*row, log ecso.Logger) {
 		"CONTAINER INSTANCE",
 		"DESIRED STATUS",
 		"CURRENT STATUS",
-		"PORT")
-
-	for _, row := range rows {
-		log.Printf(
-			rowFormat,
-			row.ContainerName,
-			row.ImageName,
-			row.ContainerStatus,
-			row.TaskName,
-			row.ContainerInstance,
-			row.DesiredStatus,
-			row.CurrentStatus,
-			row.Port)
+		"PORT",
 	}
+
+	r := make([]map[string]string, len(rows))
+
+	for i, row := range rows {
+		r[i] = map[string]string{
+			"CONTAINER":          row.ContainerName,
+			"IMAGE":              row.ImageName,
+			"STATUS":             row.ContainerStatus,
+			"TASK NAME":          row.TaskName,
+			"CONTAINER INSTANCE": row.ContainerInstance,
+			"DESIRED STATUS":     row.DesiredStatus,
+			"CURRENT STATUS":     row.CurrentStatus,
+			"PORT":               row.Port,
+		}
+	}
+
+	ui.PrintTable(os.Stdout, headers, r...)
 }
 
 func getContainerImage(taskDefinitionArn, containerName string, ecsAPI ecsiface.ECSAPI) (string, error) {
