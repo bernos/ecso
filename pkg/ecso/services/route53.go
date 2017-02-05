@@ -49,7 +49,7 @@ func (svc *route53Service) DeleteResourceRecordSetsByName(name, zone, reason str
 					ResourceRecordSet: record,
 				})
 
-				svc.log("Deleting recordset %s", *record.Name)
+				svc.log("Deleting recordset %s\n", *record.Name)
 			}
 		}
 
@@ -63,6 +63,10 @@ func (svc *route53Service) DeleteResourceRecordSetsByName(name, zone, reason str
 			}); err != nil {
 				return err
 			}
+
+			svc.log("Done\n")
+		} else {
+			svc.log("No recordsets matching '%s' found\n", name)
 		}
 	}
 
