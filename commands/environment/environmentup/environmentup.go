@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/bernos/ecso/pkg/ecso"
-	"github.com/bernos/ecso/pkg/ecso/services"
+	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
@@ -38,12 +38,10 @@ type envUpCommand struct {
 
 func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		project  = ctx.Project
-		cfg      = ctx.Config
-		log      = cfg.Logger
-		env      = project.Environments[cmd.options.EnvironmentName]
-		registry = cfg.MustGetAWSClientRegistry(env.Region)
-		cfn      = registry.CloudFormationService(log.PrefixPrintf("  "))
+		project = ctx.Project
+		cfg     = ctx.Config
+		env     = project.Environments[cmd.options.EnvironmentName]
+		ecsoAPI = api.New(ctx.Config)
 	)
 
 	cfg.Logger.BannerBlue("Bringing up environment '%s'", env.Name)
@@ -56,11 +54,7 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	cfg.Logger.Infof("Deploying infrastructure Cloud Formation stack")
-
-	result, err := deployStack(ctx, env, cmd.options.DryRun)
-
-	if err != nil {
+	if err := ecsoAPI.EnvironmentUp(project, env, cmd.options.DryRun); err != nil {
 		return err
 	}
 
@@ -72,10 +66,23 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 
 	cfg.Logger.BannerGreen("Environment '%s' is up and running", env.Name)
 
-	cfg.Logger.Dt("Cloud Formation stack", util.CloudFormationConsoleURL(result.StackID, env.Region))
-	cfg.Logger.Dt("ECS Console", util.ClusterConsoleURL(env.GetClusterName(), env.Region))
+	return logEnvironmentDetails(ctx, env)
+}
 
-	return cfn.LogStackOutputs(env.GetCloudFormationStackName(), cfg.Logger.Dt)
+func logEnvironmentDetails(ctx *ecso.CommandContext, env *ecso.Environment) error {
+	var (
+		log        = ctx.Config.Logger
+		reg        = ctx.Config.MustGetAWSClientRegistry(env.Region)
+		cfn        = reg.CloudFormationService(log.PrefixPrintf("  "))
+		stack      = env.GetCloudFormationStackName()
+		cfnConsole = util.CloudFormationConsoleURL(stack, env.Region)
+		ecsConsole = util.ClusterConsoleURL(env.GetClusterName(), env.Region)
+	)
+
+	log.Dt("Cloud Formation console", cfnConsole)
+	log.Dt("ECS Console", ecsConsole)
+
+	return cfn.LogStackOutputs(stack, log.Dt)
 }
 
 func (cmd *envUpCommand) Validate(ctx *ecso.CommandContext) error {
@@ -96,31 +103,31 @@ func (cmd *envUpCommand) Prompt(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, dryRun bool) (*services.DeploymentResult, error) {
-	var (
-		cfg        = ctx.Config
-		stackName  = env.GetCloudFormationStackName()
-		template   = env.GetCloudFormationTemplateFile()
-		prefix     = env.GetCloudFormationBucketPrefix()
-		bucket     = env.CloudFormationBucket
-		params     = env.CloudFormationParameters
-		tags       = env.CloudFormationTags
-		registry   = cfg.MustGetAWSClientRegistry(env.Region)
-		cfnService = registry.CloudFormationService(cfg.Logger.PrefixPrintf("  "))
-	)
+// func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, dryRun bool) (*services.DeploymentResult, error) {
+// 	var (
+// 		cfg        = ctx.Config
+// 		stackName  = env.GetCloudFormationStackName()
+// 		template   = env.GetCloudFormationTemplateFile()
+// 		prefix     = env.GetCloudFormationBucketPrefix()
+// 		bucket     = env.CloudFormationBucket
+// 		params     = env.CloudFormationParameters
+// 		tags       = env.CloudFormationTags
+// 		registry   = cfg.MustGetAWSClientRegistry(env.Region)
+// 		cfnService = registry.CloudFormationService(cfg.Logger.PrefixPrintf("  "))
+// 	)
 
-	exists, err := cfnService.StackExists(stackName)
+// 	exists, err := cfnService.StackExists(stackName)
 
-	if err != nil {
-		return nil, err
-	}
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	if exists {
-		return cfnService.PackageAndDeploy(stackName, template, bucket, prefix, tags, params, dryRun)
-	}
+// 	if exists {
+// 		return cfnService.PackageAndDeploy(stackName, template, bucket, prefix, tags, params, dryRun)
+// 	}
 
-	return cfnService.PackageAndCreate(stackName, template, bucket, prefix, tags, params, dryRun)
-}
+// 	return cfnService.PackageAndCreate(stackName, template, bucket, prefix, tags, params, dryRun)
+// }
 
 func ensureTemplates(env *ecso.Environment, log logfn) error {
 	dst := env.GetCloudFormationTemplateDir()

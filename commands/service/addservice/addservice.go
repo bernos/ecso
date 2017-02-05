@@ -1,7 +1,6 @@
 package addservice
 
 import (
-	"fmt"
 	"path/filepath"
 	"text/template"
 
@@ -25,10 +24,6 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 		log     = ctx.Config.Logger
 		project = ctx.Project
 	)
-
-	if project.HasService(cmd.options.Name) {
-		return fmt.Errorf("Service '%s' already exists", cmd.options.Name)
-	}
 
 	service := &ecso.Service{
 		Name:         cmd.options.Name,

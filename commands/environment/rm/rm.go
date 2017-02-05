@@ -3,8 +3,8 @@ package rm
 import (
 	"fmt"
 
-	"github.com/bernos/ecso/commands/service/servicedown"
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/api"
 )
 
 type Options struct {
@@ -31,43 +31,21 @@ type command struct {
 
 func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	var (
-		log            = ctx.Config.Logger
-		env            = ctx.Project.Environments[cmd.options.Name]
-		registry       = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		cfnService     = registry.CloudFormationService(log.PrefixPrintf("  "))
-		r53Service     = registry.Route53Service(log.PrefixPrintf("  "))
-		zone           = fmt.Sprintf("%s.", env.CloudFormationParameters["DNSZone"])
-		datadogDNSName = fmt.Sprintf("%s.%s.%s", "datadog", env.GetClusterName(), zone)
+		log     = ctx.Config.Logger
+		project = ctx.Project
+		env     = ctx.Project.Environments[cmd.options.Name]
+		ecsoAPI = api.New(ctx.Config)
 	)
 
 	log.BannerBlue("Removing '%s' environment", env.Name)
 
-	for _, service := range ctx.Project.Services {
-		log.Infof("Removing '%s' service...", service.Name)
-
-		cmd := servicedown.New(service.Name, env.Name)
-
-		if err := cmd.Execute(ctx); err != nil {
-			return err
-		}
-	}
-
-	log.Infof("Deleting Cloud Formation stack '%s'", env.GetCloudFormationStackName())
-
-	if err := cfnService.DeleteStack(env.GetCloudFormationStackName()); err != nil {
+	if err := ecsoAPI.EnvironmentDown(project, env); err != nil {
 		return err
 	}
 
-	log.Printf("\n")
-	log.Infof("Deleting %s SRV records", datadogDNSName)
+	delete(project.Environments, cmd.options.Name)
 
-	if err := r53Service.DeleteResourceRecordSetsByName(datadogDNSName, zone, "Deleted by ecso environment rm"); err != nil {
-		return err
-	}
-
-	delete(ctx.Project.Environments, cmd.options.Name)
-
-	if err := ctx.Project.Save(); err != nil {
+	if err := project.Save(); err != nil {
 		return err
 	}
 

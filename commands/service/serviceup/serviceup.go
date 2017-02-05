@@ -2,14 +2,10 @@ package serviceup
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
-	"strconv"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/bernos/ecso/pkg/ecso"
-	"github.com/bernos/ecso/pkg/ecso/services"
+	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
@@ -40,39 +36,29 @@ func New(name, environment string, options ...func(*Options)) ecso.Command {
 
 func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	var (
-		cfg         = ctx.Config
-		log         = cfg.Logger
-		project     = ctx.Project
-		environment = ctx.Project.Environments[cmd.options.Environment]
-		service     = project.Services[cmd.options.Name]
+		cfg     = ctx.Config
+		log     = cfg.Logger
+		project = ctx.Project
+		env     = ctx.Project.Environments[cmd.options.Environment]
+		service = project.Services[cmd.options.Name]
+		ecsoAPI = api.New(cfg)
 	)
 
 	log.BannerBlue(
 		"Deploying service '%s' to the '%s' environment",
 		service.Name,
-		environment.Name)
+		env.Name)
 
-	// Setup env vars
-	if err := setEnv(project, environment, service); err != nil {
-		return err
-	}
-
-	// Deploy cfn stack
-	if err := deployStack(ctx, environment, service); err != nil {
-		return err
-	}
-
-	// Deploy the ecs service
-	if err := deployService(ctx, environment, service); err != nil {
+	if err := ecsoAPI.ServiceUp(project, env, service); err != nil {
 		return err
 	}
 
 	log.BannerGreen(
 		"Deployed service '%s' to the '%s' environment",
 		service.Name,
-		environment.Name)
+		env.Name)
 
-	return logOutputs(ctx, environment, service)
+	return logOutputs(ctx, env, service)
 }
 
 func (cmd *command) Prompt(ctx *ecso.CommandContext) error {
@@ -128,235 +114,235 @@ func logOutputs(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.S
 	return nil
 }
 
-func setEnv(project *ecso.Project, env *ecso.Environment, service *ecso.Service) error {
-	if err := util.AnyError(
-		os.Setenv("ECSO_ENVIRONMENT", env.Name),
-		os.Setenv("ECSO_AWS_REGION", env.Region),
-		os.Setenv("ECSO_CLUSTER_NAME", env.GetClusterName())); err != nil {
-		return err
-	}
+// func setEnv(project *ecso.Project, env *ecso.Environment, service *ecso.Service) error {
+// 	if err := util.AnyError(
+// 		os.Setenv("ECSO_ENVIRONMENT", env.Name),
+// 		os.Setenv("ECSO_AWS_REGION", env.Region),
+// 		os.Setenv("ECSO_CLUSTER_NAME", env.GetClusterName())); err != nil {
+// 		return err
+// 	}
 
-	// set any env vars from the service configuration for the current environment
-	for k, v := range service.Environments[env.Name].Env {
-		if err := os.Setenv(k, v); err != nil {
-			return err
-		}
-	}
+// 	// set any env vars from the service configuration for the current environment
+// 	for k, v := range service.Environments[env.Name].Env {
+// 		if err := os.Setenv(k, v); err != nil {
+// 			return err
+// 		}
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.Service) error {
-	var (
-		cfg = ctx.Config
-		log = cfg.Logger
+// func deployService(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.Service) error {
+// 	var (
+// 		cfg = ctx.Config
+// 		log = cfg.Logger
 
-		cluster        = env.GetClusterName()
-		stackName      = service.GetCloudFormationStackName(env)
-		taskName       = service.GetECSTaskDefinitionName(env)
-		ecsServiceName = service.GetECSServiceName()
+// 		cluster        = env.GetClusterName()
+// 		stackName      = service.GetCloudFormationStackName(env)
+// 		taskName       = service.GetECSTaskDefinitionName(env)
+// 		ecsServiceName = service.GetECSServiceName()
 
-		registry   = cfg.MustGetAWSClientRegistry(env.Region)
-		ecsClient  = registry.ECSAPI()
-		cfnService = registry.CloudFormationService(log.PrefixPrintf("  "))
-		ecsService = registry.ECSService(log.PrefixPrintf("  "))
-	)
+// 		registry   = cfg.MustGetAWSClientRegistry(env.Region)
+// 		ecsClient  = registry.ECSAPI()
+// 		cfnService = registry.CloudFormationService(log.PrefixPrintf("  "))
+// 		ecsService = registry.ECSService(log.PrefixPrintf("  "))
+// 	)
 
-	serviceStackOutputs, err := cfnService.GetStackOutputs(stackName)
+// 	serviceStackOutputs, err := cfnService.GetStackOutputs(stackName)
 
-	if err != nil {
-		return err
-	}
+// 	if err != nil {
+// 		return err
+// 	}
 
-	// TODO: fully qualify the path to the service compose file
-	// taskDefinition, err := ConvertToTaskDefinition(taskName, service.ComposeFile)
-	log.Printf("\n")
-	log.Infof("Converting '%s' to task definition...", service.ComposeFile)
+// 	// TODO: fully qualify the path to the service compose file
+// 	// taskDefinition, err := ConvertToTaskDefinition(taskName, service.ComposeFile)
+// 	log.Printf("\n")
+// 	log.Infof("Converting '%s' to task definition...", service.ComposeFile)
 
-	taskDefinition, err := service.GetECSTaskDefinition(env)
+// 	taskDefinition, err := service.GetECSTaskDefinition(env)
 
-	log.Printf("\n")
-	log.Infof("Registering ECS task definition '%s'...", taskName)
+// 	log.Printf("\n")
+// 	log.Infof("Registering ECS task definition '%s'...", taskName)
 
-	if err != nil {
-		return err
-	}
+// 	if err != nil {
+// 		return err
+// 	}
 
-	for _, container := range taskDefinition.ContainerDefinitions {
-		container.SetLogConfiguration(&ecs.LogConfiguration{
-			LogDriver: aws.String(ecs.LogDriverAwslogs),
-			Options: map[string]*string{
-				"awslogs-region": aws.String(env.Region),
-				"awslogs-group":  aws.String(serviceStackOutputs["CloudWatchLogsGroup"]),
-			},
-		})
+// 	for _, container := range taskDefinition.ContainerDefinitions {
+// 		container.SetLogConfiguration(&ecs.LogConfiguration{
+// 			LogDriver: aws.String(ecs.LogDriverAwslogs),
+// 			Options: map[string]*string{
+// 				"awslogs-region": aws.String(env.Region),
+// 				"awslogs-group":  aws.String(serviceStackOutputs["CloudWatchLogsGroup"]),
+// 			},
+// 		})
 
-		for _, p := range container.PortMappings {
-			container.Environment = append(container.Environment, &ecs.KeyValuePair{
-				Name:  aws.String(fmt.Sprintf("SERVICE_%d_NAME", *p.ContainerPort)),
-				Value: aws.String(fmt.Sprintf("%s.%s", service.Name, env.GetClusterName())),
-			})
-		}
-	}
+// 		for _, p := range container.PortMappings {
+// 			container.Environment = append(container.Environment, &ecs.KeyValuePair{
+// 				Name:  aws.String(fmt.Sprintf("SERVICE_%d_NAME", *p.ContainerPort)),
+// 				Value: aws.String(fmt.Sprintf("%s.%s", service.Name, env.GetClusterName())),
+// 			})
+// 		}
+// 	}
 
-	resp, err := ecsClient.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
-		ContainerDefinitions: taskDefinition.ContainerDefinitions,
-		Family:               taskDefinition.Family,
-		NetworkMode:          taskDefinition.NetworkMode,
-		PlacementConstraints: taskDefinition.PlacementConstraints,
-		TaskRoleArn:          taskDefinition.TaskRoleArn,
-		Volumes:              taskDefinition.Volumes,
-	})
+// 	resp, err := ecsClient.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
+// 		ContainerDefinitions: taskDefinition.ContainerDefinitions,
+// 		Family:               taskDefinition.Family,
+// 		NetworkMode:          taskDefinition.NetworkMode,
+// 		PlacementConstraints: taskDefinition.PlacementConstraints,
+// 		TaskRoleArn:          taskDefinition.TaskRoleArn,
+// 		Volumes:              taskDefinition.Volumes,
+// 	})
 
-	if err != nil {
-		return err
-	}
+// 	if err != nil {
+// 		return err
+// 	}
 
-	log.Printf(
-		"  Registered ECS task definition %s:%d\n\n",
-		*resp.TaskDefinition.Family,
-		*resp.TaskDefinition.Revision)
+// 	log.Printf(
+// 		"  Registered ECS task definition %s:%d\n\n",
+// 		*resp.TaskDefinition.Family,
+// 		*resp.TaskDefinition.Revision)
 
-	services, err := ecsClient.DescribeServices(&ecs.DescribeServicesInput{
-		Services: []*string{
-			aws.String(ecsServiceName),
-		},
-		Cluster: aws.String(cluster),
-	})
+// 	services, err := ecsClient.DescribeServices(&ecs.DescribeServicesInput{
+// 		Services: []*string{
+// 			aws.String(ecsServiceName),
+// 		},
+// 		Cluster: aws.String(cluster),
+// 	})
 
-	if err != nil {
-		return err
-	}
+// 	if err != nil {
+// 		return err
+// 	}
 
-	log.Infof("Deploying ECS service '%s'", ecsServiceName)
+// 	log.Infof("Deploying ECS service '%s'", ecsServiceName)
 
-	isCreate := true
+// 	isCreate := true
 
-	for _, s := range services.Services {
-		if *s.Status != "INACTIVE" {
-			isCreate = false
-		}
-	}
+// 	for _, s := range services.Services {
+// 		if *s.Status != "INACTIVE" {
+// 			isCreate = false
+// 		}
+// 	}
 
-	if isCreate {
-		log.Printf("  Creating new ecs service...\n")
+// 	if isCreate {
+// 		log.Printf("  Creating new ecs service...\n")
 
-		input := &ecs.CreateServiceInput{
-			DesiredCount:   aws.Int64(int64(service.DesiredCount)),
-			ServiceName:    aws.String(ecsServiceName),
-			TaskDefinition: resp.TaskDefinition.TaskDefinitionArn,
-			Cluster:        aws.String(cluster),
-			DeploymentConfiguration: &ecs.DeploymentConfiguration{
-				MaximumPercent:        aws.Int64(200),
-				MinimumHealthyPercent: aws.Int64(100),
-			},
-		}
+// 		input := &ecs.CreateServiceInput{
+// 			DesiredCount:   aws.Int64(int64(service.DesiredCount)),
+// 			ServiceName:    aws.String(ecsServiceName),
+// 			TaskDefinition: resp.TaskDefinition.TaskDefinitionArn,
+// 			Cluster:        aws.String(cluster),
+// 			DeploymentConfiguration: &ecs.DeploymentConfiguration{
+// 				MaximumPercent:        aws.Int64(200),
+// 				MinimumHealthyPercent: aws.Int64(100),
+// 			},
+// 		}
 
-		if len(service.Route) > 0 {
-			input.LoadBalancers = []*ecs.LoadBalancer{
-				{
-					ContainerName:  aws.String("web"),
-					ContainerPort:  aws.Int64(int64(service.Port)),
-					TargetGroupArn: aws.String(serviceStackOutputs["TargetGroup"]),
-				},
-			}
+// 		if len(service.Route) > 0 {
+// 			input.LoadBalancers = []*ecs.LoadBalancer{
+// 				{
+// 					ContainerName:  aws.String("web"),
+// 					ContainerPort:  aws.Int64(int64(service.Port)),
+// 					TargetGroupArn: aws.String(serviceStackOutputs["TargetGroup"]),
+// 				},
+// 			}
 
-			input.Role = aws.String(serviceStackOutputs["ServiceRole"])
-		}
+// 			input.Role = aws.String(serviceStackOutputs["ServiceRole"])
+// 		}
 
-		_, err := ecsClient.CreateService(input)
+// 		_, err := ecsClient.CreateService(input)
 
-		if err != nil {
-			return err
-		}
+// 		if err != nil {
+// 			return err
+// 		}
 
-		log.Printf("  Create successful\n")
-	} else {
-		log.Printf("  Updating existing ecs service...\n")
+// 		log.Printf("  Create successful\n")
+// 	} else {
+// 		log.Printf("  Updating existing ecs service...\n")
 
-		_, err := ecsClient.UpdateService(&ecs.UpdateServiceInput{
-			DesiredCount:   aws.Int64(int64(service.DesiredCount)),
-			Service:        aws.String(ecsServiceName),
-			TaskDefinition: resp.TaskDefinition.TaskDefinitionArn,
-			Cluster:        aws.String(cluster),
-			DeploymentConfiguration: &ecs.DeploymentConfiguration{
-				MaximumPercent:        aws.Int64(200),
-				MinimumHealthyPercent: aws.Int64(100),
-			},
-		})
+// 		_, err := ecsClient.UpdateService(&ecs.UpdateServiceInput{
+// 			DesiredCount:   aws.Int64(int64(service.DesiredCount)),
+// 			Service:        aws.String(ecsServiceName),
+// 			TaskDefinition: resp.TaskDefinition.TaskDefinitionArn,
+// 			Cluster:        aws.String(cluster),
+// 			DeploymentConfiguration: &ecs.DeploymentConfiguration{
+// 				MaximumPercent:        aws.Int64(200),
+// 				MinimumHealthyPercent: aws.Int64(100),
+// 			},
+// 		})
 
-		if err != nil {
-			return err
-		}
+// 		if err != nil {
+// 			return err
+// 		}
 
-		log.Printf("  Update successful\n")
-	}
+// 		log.Printf("  Update successful\n")
+// 	}
 
-	log.Printf("\n")
-	log.Infof("Waiting for service to become stable...")
+// 	log.Printf("\n")
+// 	log.Infof("Waiting for service to become stable...")
 
-	cancel := ecsService.LogServiceEvents(ecsServiceName, env.GetClusterName(), func(e *ecs.ServiceEvent, err error) {
-		if err == nil && e != nil {
-			log.Printf("  %s %s\n", *e.CreatedAt, *e.Message)
-		}
-	})
+// 	cancel := ecsService.LogServiceEvents(ecsServiceName, env.GetClusterName(), func(e *ecs.ServiceEvent, err error) {
+// 		if err == nil && e != nil {
+// 			log.Printf("  %s %s\n", *e.CreatedAt, *e.Message)
+// 		}
+// 	})
 
-	defer cancel()
+// 	defer cancel()
 
-	if err := ecsClient.WaitUntilServicesStable(&ecs.DescribeServicesInput{
-		Services: []*string{
-			aws.String(ecsServiceName),
-		},
-		Cluster: aws.String(cluster),
-	}); err != nil {
-		return err
-	}
+// 	if err := ecsClient.WaitUntilServicesStable(&ecs.DescribeServicesInput{
+// 		Services: []*string{
+// 			aws.String(ecsServiceName),
+// 		},
+// 		Cluster: aws.String(cluster),
+// 	}); err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.Service) error {
-	var (
-		cfg        = ctx.Config
-		log        = cfg.Logger
-		project    = ctx.Project
-		bucket     = env.CloudFormationBucket
-		stackName  = service.GetCloudFormationStackName(env)
-		prefix     = service.GetCloudFormationBucketPrefix(env)
-		registry   = cfg.MustGetAWSClientRegistry(env.Region)
-		template   = service.GetCloudFormationTemplateFile()
-		cfnService = registry.CloudFormationService(log.PrefixPrintf("  "))
-	)
+// func deployStack(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.Service) error {
+// 	var (
+// 		cfg        = ctx.Config
+// 		log        = cfg.Logger
+// 		project    = ctx.Project
+// 		bucket     = env.CloudFormationBucket
+// 		stackName  = service.GetCloudFormationStackName(env)
+// 		prefix     = service.GetCloudFormationBucketPrefix(env)
+// 		registry   = cfg.MustGetAWSClientRegistry(env.Region)
+// 		template   = service.GetCloudFormationTemplateFile()
+// 		cfnService = registry.CloudFormationService(log.PrefixPrintf("  "))
+// 	)
 
-	params, err := getCloudFormationParameters(cfnService, project, env, service)
+// 	params, err := getCloudFormationParameters(cfnService, project, env, service)
 
-	if err != nil {
-		return err
-	}
+// 	if err != nil {
+// 		return err
+// 	}
 
-	tags := getCloudFormationTags(project, env, service)
+// 	tags := getCloudFormationTags(project, env, service)
 
-	log.Infof("Deploying service cloudformartion stack '%s'...", stackName)
+// 	log.Infof("Deploying service cloudformartion stack '%s'...", stackName)
 
-	result, err := cfnService.PackageAndDeploy(
-		stackName,
-		template,
-		bucket,
-		prefix,
-		tags,
-		params,
-		false)
+// 	result, err := cfnService.PackageAndDeploy(
+// 		stackName,
+// 		template,
+// 		bucket,
+// 		prefix,
+// 		tags,
+// 		params,
+// 		false)
 
-	if err != nil {
-		return err
-	}
+// 	if err != nil {
+// 		return err
+// 	}
 
-	if !result.DidRequireUpdating {
-		log.Printf("  No updates were required to Cloud Formation stack '%s'\n", result.StackID)
-	}
+// 	if !result.DidRequireUpdating {
+// 		log.Printf("  No updates were required to Cloud Formation stack '%s'\n", result.StackID)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 func getTemplateDir(serviceName string) (string, error) {
 	wd, err := ecso.GetCurrentProjectDir()
@@ -368,43 +354,43 @@ func getTemplateDir(serviceName string) (string, error) {
 	return filepath.Join(wd, ".ecso", "services", serviceName), nil
 }
 
-func getCloudFormationParameters(cfnService services.CloudFormationService, project *ecso.Project, env *ecso.Environment, service *ecso.Service) (map[string]string, error) {
+// func getCloudFormationParameters(cfnService services.CloudFormationService, project *ecso.Project, env *ecso.Environment, service *ecso.Service) (map[string]string, error) {
 
-	outputs, err := cfnService.GetStackOutputs(fmt.Sprintf("%s-%s", project.Name, env.Name))
+// 	outputs, err := cfnService.GetStackOutputs(fmt.Sprintf("%s-%s", project.Name, env.Name))
 
-	if err != nil {
-		return nil, err
-	}
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	var params map[string]string
+// 	var params map[string]string
 
-	if len(service.Route) == 0 {
-		params = make(map[string]string)
-	} else {
-		params = map[string]string{
-			"VPC":           outputs["VPC"],
-			"Listener":      outputs["Listener"],
-			"Path":          service.Route,
-			"RoutePriority": strconv.Itoa(service.RoutePriority),
-		}
-	}
+// 	if len(service.Route) == 0 {
+// 		params = make(map[string]string)
+// 	} else {
+// 		params = map[string]string{
+// 			"VPC":           outputs["VPC"],
+// 			"Listener":      outputs["Listener"],
+// 			"Path":          service.Route,
+// 			"RoutePriority": strconv.Itoa(service.RoutePriority),
+// 		}
+// 	}
 
-	for k, v := range service.Environments[env.Name].CloudFormationParameters {
-		params[k] = v
-	}
+// 	for k, v := range service.Environments[env.Name].CloudFormationParameters {
+// 		params[k] = v
+// 	}
 
-	return params, nil
-}
+// 	return params, nil
+// }
 
-func getCloudFormationTags(project *ecso.Project, env *ecso.Environment, service *ecso.Service) map[string]string {
-	tags := map[string]string{
-		"project":     project.Name,
-		"environment": env.Name,
-	}
+// func getCloudFormationTags(project *ecso.Project, env *ecso.Environment, service *ecso.Service) map[string]string {
+// 	tags := map[string]string{
+// 		"project":     project.Name,
+// 		"environment": env.Name,
+// 	}
 
-	for k, v := range service.Tags {
-		tags[k] = v
-	}
+// 	for k, v := range service.Tags {
+// 		tags[k] = v
+// 	}
 
-	return tags
-}
+// 	return tags
+// }

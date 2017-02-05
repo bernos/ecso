@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/api"
 )
 
 type Options struct {
@@ -35,36 +34,20 @@ type command struct {
 
 func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	var (
-		cfg       = ctx.Config
-		service   = ctx.Project.Services[cmd.options.Name]
-		env       = ctx.Project.Environments[cmd.options.Environment]
-		log       = ctx.Config.Logger
-		registry  = cfg.MustGetAWSClientRegistry(env.Region)
-		cfn       = registry.CloudFormationService(log.PrefixPrintf("  "))
-		cwLogsAPI = registry.CloudWatchLogsAPI()
+		service = ctx.Project.Services[cmd.options.Name]
+		env     = ctx.Project.Environments[cmd.options.Environment]
+		log     = ctx.Config.Logger
+		ecsoAPI = api.New(ctx.Config)
 	)
 
-	outputs, err := cfn.GetStackOutputs(service.GetCloudFormationStackName(env))
+	events, err := ecsoAPI.ServiceLogs(ctx.Project, env, service)
 
 	if err != nil {
 		return err
 	}
 
-	logGroup := outputs["CloudWatchLogsGroup"]
-
-	if logGroup != "" {
-
-		resp, err := cwLogsAPI.FilterLogEvents(&cloudwatchlogs.FilterLogEventsInput{
-			LogGroupName: aws.String(logGroup),
-		})
-
-		if err != nil {
-			return err
-		}
-
-		for _, event := range resp.Events {
-			log.Printf("%-42s %s\n", time.Unix(*event.Timestamp/1000, *event.Timestamp%1000), *event.Message)
-		}
+	for _, event := range events {
+		log.Printf("%-42s %s\n", time.Unix(*event.Timestamp/1000, *event.Timestamp%1000), *event.Message)
 	}
 
 	return nil
