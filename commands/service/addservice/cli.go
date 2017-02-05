@@ -8,12 +8,10 @@ import (
 )
 
 var keys = struct {
-	Name         string
 	DesiredCount string
 	Route        string
 	Port         string
 }{
-	Name:         "name",
 	DesiredCount: "desired-count",
 	Route:        "route",
 	Port:         "port",
@@ -21,13 +19,11 @@ var keys = struct {
 
 func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	return cli.Command{
-		Name:  "add",
-		Usage: "Adds a new service to the project",
+		Name:        "add",
+		Usage:       "Adds a new service to the project",
+		Description: "TODO",
+		ArgsUsage:   "SERVICE",
 		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:  keys.Name,
-				Usage: "The name of the service",
-			},
 			cli.IntFlag{
 				Name:  keys.DesiredCount,
 				Usage: "The desired number of service instances",
@@ -46,7 +42,7 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func FromCliContext(c *cli.Context) (ecso.Command, error) {
-	return New(c.String(keys.Name), func(opt *Options) {
+	return New(c.Args().First(), func(opt *Options) {
 		opt.DesiredCount = c.Int(keys.DesiredCount)
 		opt.Route = c.String(keys.Route)
 		opt.Port = c.Int(keys.Port)
