@@ -45,6 +45,10 @@ func (s *Service) GetCloudFormationBucketPrefix(env *Environment) string {
 	return path.Join(base, "templates", "services", s.Name)
 }
 
+func (s *Service) GetCloudWatchLogGroupName(env *Environment) string {
+	return fmt.Sprintf("%s-%s-%s", s.project.Name, env.Name, s.Name)
+}
+
 func (s *Service) GetECSTaskDefinitionName(env *Environment) string {
 	return fmt.Sprintf("%s-%s-%s", s.project.Name, env.Name, s.Name)
 }

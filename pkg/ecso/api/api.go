@@ -1,6 +1,9 @@
 package api
 
-import "github.com/bernos/ecso/pkg/ecso"
+import (
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/bernos/ecso/pkg/ecso"
+)
 
 // env
 
@@ -18,14 +21,11 @@ import "github.com/bernos/ecso/pkg/ecso"
 type API interface {
 	EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun bool) error
 	EnvironmentDown(p *ecso.Project, env *ecso.Environment) error
-	// EnvironmentRemove()
 
 	ServiceUp(p *ecso.Project, env *ecso.Environment, s *ecso.Service) error
 	ServiceDown(p *ecso.Project, env *ecso.Environment, s *ecso.Service) error
-	// ServiceDown()
-
+	ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*cloudwatchlogs.FilteredLogEvent, error)
 	// ListTasks()
-	// ListServices()
 
 	// GetLogs()
 
