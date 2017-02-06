@@ -9,22 +9,18 @@ import (
 )
 
 var keys = struct {
-	Name        string
 	Environment string
 }{
-	Name:        "name",
 	Environment: "environment",
 }
 
 func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	return cli.Command{
-		Name:  "down",
-		Usage: "terminates a service",
+		Name:        "down",
+		Usage:       "terminates a service",
+		Description: "TODO",
+		ArgsUsage:   "SERVICE",
 		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:  keys.Name,
-				Usage: "The name of the service to terminate",
-			},
 			cli.StringFlag{
 				Name:   keys.Environment,
 				Usage:  "The environment to terminate the service from",
@@ -36,18 +32,18 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func FromCliContext(c *cli.Context) (ecso.Command, error) {
-	service := c.String(keys.Name)
+	service := c.Args().First()
 	env := c.String(keys.Environment)
 
 	if service == "" {
-		return nil, cmd.NewOptionRequiredError(keys.Name)
+		return nil, cmd.NewArgumentRequiredError("service")
 	}
 
 	if env == "" {
 		return nil, cmd.NewOptionRequiredError(keys.Environment)
 	}
 
-	return commands.NewServiceDownCommand(c.String(keys.Name), c.String(keys.Environment), func(opt *commands.ServiceDownOptions) {
+	return commands.NewServiceDownCommand(service, env, func(opt *commands.ServiceDownOptions) {
 		// TODO: populate options from c
 	}), nil
 }

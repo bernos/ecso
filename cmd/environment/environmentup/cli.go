@@ -1,6 +1,8 @@
 package environmentup
 
 import (
+	"os"
+
 	"github.com/bernos/ecso/cmd"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/commands"
@@ -8,23 +10,18 @@ import (
 )
 
 var keys = struct {
-	Name   string
 	DryRun string
 }{
-	Name:   "name",
 	DryRun: "dry-run",
 }
 
 func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	return cli.Command{
-		Name:  "up",
-		Usage: "Bring up the named environment",
+		Name:        "up",
+		Usage:       "Create/update an ecso environment",
+		Description: "TODO",
+		ArgsUsage:   "ENVIRONMENT",
 		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:   keys.Name,
-				Usage:  "The name of the environment to bring up. If the environment doesn't exist it will be created, otherwise it will be updated.",
-				EnvVar: "ECSO_ENVIRONMENT",
-			},
 			cli.BoolFlag{
 				Name:  keys.DryRun,
 				Usage: "If set, list pending changes, but do not execute the updates.",
@@ -35,10 +32,14 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func FromCliContext(c *cli.Context) (ecso.Command, error) {
-	env := c.String(keys.Name)
+	env := c.Args().First()
 
 	if env == "" {
-		return nil, cmd.NewOptionRequiredError(keys.Name)
+		env = os.Getenv("ECSO_ENVIRONMENT")
+	}
+
+	if env == "" {
+		return nil, cmd.NewArgumentRequiredError("environment")
 	}
 
 	return commands.NewEnvironmentUpCommand(env, func(opt *commands.EnvironmentUpOptions) {

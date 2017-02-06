@@ -1,6 +1,8 @@
 package rm
 
 import (
+	"os"
+
 	"github.com/bernos/ecso/cmd"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/commands"
@@ -9,23 +11,18 @@ import (
 )
 
 var keys = struct {
-	Name  string
 	Force string
 }{
-	Name:  "name",
 	Force: "force",
 }
 
 func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	return cli.Command{
-		Name:  "rm",
-		Usage: "Removes an entire environment",
+		Name:        "rm",
+		Usage:       "Removes an ecso environment",
+		Description: "TODO",
+		ArgsUsage:   "ENVIRONMENT",
 		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:   keys.Name,
-				Usage:  "The name of the environment to remove",
-				EnvVar: "ECSO_ENVIRONMENT",
-			},
 			cli.BoolFlag{
 				Name:  keys.Force,
 				Usage: "Required. Confirms the environment will be removed",
@@ -36,11 +33,15 @@ func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func FromCliContext(c *cli.Context) (ecso.Command, error) {
-	env := c.String(keys.Name)
 	force := c.Bool(keys.Force)
+	env := c.Args().First()
 
 	if env == "" {
-		return nil, cmd.NewOptionRequiredError(keys.Name)
+		env = os.Getenv("ECSO_ENVIRONMENT")
+	}
+
+	if env == "" {
+		return nil, cmd.NewArgumentRequiredError("environment")
 	}
 
 	if !force {
