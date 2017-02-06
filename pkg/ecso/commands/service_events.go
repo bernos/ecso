@@ -15,7 +15,7 @@ type ServiceEventsOptions struct {
 	Environment string
 }
 
-func NewServiceEventsCommands(name, env string, options ...func(*ServiceEventsOptions)) ecso.Command {
+func NewServiceEventsCommand(name, env string, options ...func(*ServiceEventsOptions)) ecso.Command {
 	o := &ServiceEventsOptions{
 		Name:        name,
 		Environment: env,
