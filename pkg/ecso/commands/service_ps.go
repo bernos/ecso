@@ -1,4 +1,4 @@
-package ps
+package commands
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
-type Options struct {
+type ServicePsOptions struct {
 	Name        string
 	Environment string
 }
@@ -30,8 +30,8 @@ type row struct {
 	Port              string
 }
 
-func New(name, env string, options ...func(*Options)) ecso.Command {
-	o := &Options{
+func NewServicePsCommand(name, env string, options ...func(*ServicePsOptions)) ecso.Command {
+	o := &ServicePsOptions{
 		Name:        name,
 		Environment: env,
 	}
@@ -40,16 +40,16 @@ func New(name, env string, options ...func(*Options)) ecso.Command {
 		option(o)
 	}
 
-	return &command{
+	return &servicePsCommand{
 		options: o,
 	}
 }
 
-type command struct {
-	options *Options
+type servicePsCommand struct {
+	options *ServicePsOptions
 }
 
-func (cmd *command) Execute(ctx *ecso.CommandContext) error {
+func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		service  = ctx.Project.Services[cmd.options.Name]
 		env      = ctx.Project.Environments[cmd.options.Environment]
@@ -94,11 +94,11 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *command) Prompt(ctx *ecso.CommandContext) error {
+func (cmd *servicePsCommand) Prompt(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *command) Validate(ctx *ecso.CommandContext) error {
+func (cmd *servicePsCommand) Validate(ctx *ecso.CommandContext) error {
 	opt := cmd.options
 
 	err := util.AnyError(

@@ -1,14 +1,14 @@
-package environmentup
+package templates
 
-var templates = map[string]string{
-	"stack.yaml":           stackTemplate,
-	"ecs-cluster.yaml":     clusterTemplate,
-	"load-balancers.yaml":  albTemplate,
-	"security-groups.yaml": securityGroupTemplate,
-	"dd-agent.yaml":        dataDogTemplate,
+var EnvironmentTemplates = map[string]string{
+	"stack.yaml":           environmentStackTemplate,
+	"ecs-cluster.yaml":     environmentClusterTemplate,
+	"load-balancers.yaml":  environmentALBTemplate,
+	"security-groups.yaml": environmentSecurityGroupTemplate,
+	"dd-agent.yaml":        environmentDataDogTemplate,
 }
 
-var stackTemplate = `
+var environmentStackTemplate = `
 Description: >
 
     This template deploys a highly available ECS cluster using an AutoScaling Group, with
@@ -135,7 +135,7 @@ Outputs:
             - Outputs.Listener
 `
 
-var clusterTemplate = `
+var environmentClusterTemplate = `
 Description: >
     This template deploys an ECS cluster to the provided VPC and subnets
     using an Auto Scaling Group
@@ -474,7 +474,7 @@ Outputs:
         Value: !Ref ECSCluster
 `
 
-var albTemplate = `
+var environmentALBTemplate = `
 Description: >
     This template deploys an Application Load Balancer that exposes our various ECS services.
     We create them it a seperate nested template, so it can be referenced by all of the other nested templates.
@@ -563,7 +563,7 @@ Outputs:
         Value: !Ref LoadBalancerListener
 `
 
-var securityGroupTemplate = `
+var environmentSecurityGroupTemplate = `
 Description: >
     This template contains the security groups required by our entire stack.
     We create them in a seperate nested template, so they can be referenced
@@ -624,7 +624,7 @@ Outputs:
         Value: !Ref LoadBalancerSecurityGroup
 `
 
-var dataDogTemplate = `
+var environmentDataDogTemplate = `
 Parameters:
     DataDogAPIKey:
         Description: Please provide your datadog API key

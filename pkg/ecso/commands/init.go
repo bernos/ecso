@@ -1,4 +1,4 @@
-package initcommand
+package commands
 
 import (
 	"fmt"
@@ -9,8 +9,12 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-func New(projectName string, options ...func(*Options)) ecso.Command {
-	o := &Options{
+type InitOptions struct {
+	ProjectName string
+}
+
+func NewInitCommand(projectName string, options ...func(*InitOptions)) ecso.Command {
+	o := &InitOptions{
 		ProjectName: projectName,
 	}
 
@@ -24,7 +28,7 @@ func New(projectName string, options ...func(*Options)) ecso.Command {
 }
 
 type initCommand struct {
-	options *Options
+	options *InitOptions
 }
 
 func (cmd *initCommand) Execute(ctx *ecso.CommandContext) error {

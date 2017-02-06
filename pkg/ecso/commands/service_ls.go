@@ -1,4 +1,4 @@
-package ls
+package commands
 
 import (
 	"fmt"
@@ -12,12 +12,12 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-type Options struct {
+type ServiceLsOptions struct {
 	Environment string
 }
 
-func New(env string, options ...func(*Options)) ecso.Command {
-	o := &Options{
+func NewServiceLsCommand(env string, options ...func(*ServiceLsOptions)) ecso.Command {
+	o := &ServiceLsOptions{
 		Environment: env,
 	}
 
@@ -25,16 +25,16 @@ func New(env string, options ...func(*Options)) ecso.Command {
 		option(o)
 	}
 
-	return &command{
+	return &serviceLsCommand{
 		options: o,
 	}
 }
 
-type command struct {
-	options *Options
+type serviceLsCommand struct {
+	options *ServiceLsOptions
 }
 
-func (cmd *command) Execute(ctx *ecso.CommandContext) error {
+func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		env      = ctx.Project.Environments[cmd.options.Environment]
 		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
@@ -52,11 +52,11 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *command) Prompt(ctx *ecso.CommandContext) error {
+func (cmd *serviceLsCommand) Prompt(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *command) Validate(ctx *ecso.CommandContext) error {
+func (cmd *serviceLsCommand) Validate(ctx *ecso.CommandContext) error {
 	opt := cmd.options
 
 	if opt.Environment == "" {

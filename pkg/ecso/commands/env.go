@@ -1,4 +1,4 @@
-package env
+package commands
 
 import (
 	"fmt"
@@ -8,14 +8,14 @@ import (
 )
 
 // Options for the env command
-type Options struct {
-	EnvironmentName string
-	Unset           bool
+type EnvOptions struct {
+	Environment string
+	Unset       bool
 }
 
-func New(environmentName string, options ...func(*Options)) ecso.Command {
-	o := &Options{
-		EnvironmentName: environmentName,
+func NewEnvCommand(environment string, options ...func(*EnvOptions)) ecso.Command {
+	o := &EnvOptions{
+		Environment: environment,
 	}
 
 	for _, option := range options {
@@ -28,7 +28,7 @@ func New(environmentName string, options ...func(*Options)) ecso.Command {
 }
 
 type envCommand struct {
-	options *Options
+	options *EnvOptions
 }
 
 func (cmd *envCommand) Execute(ctx *ecso.CommandContext) error {
@@ -41,17 +41,17 @@ func (cmd *envCommand) Execute(ctx *ecso.CommandContext) error {
 		if oldPS1 != "" {
 			fmt.Printf("export PS1=\"%s\"\n", oldPS1)
 		}
-	} else if cmd.options.EnvironmentName != "" {
-		if _, ok := ctx.Project.Environments[cmd.options.EnvironmentName]; ok {
+	} else if cmd.options.Environment != "" {
+		if _, ok := ctx.Project.Environments[cmd.options.Environment]; ok {
 
 			ps1 := os.Getenv("PS1")
 
 			if ps1 != "" {
-				fmt.Printf("export PS1=\"%s[ecso::%s:%s]> \"\n", ps1, ctx.Project.Name, cmd.options.EnvironmentName)
+				fmt.Printf("export PS1=\"%s[ecso::%s:%s]> \"\n", ps1, ctx.Project.Name, cmd.options.Environment)
 				fmt.Printf("export ECSO_OLD_PS1=\"%s\"\n", ps1)
 			}
 
-			fmt.Printf("export ECSO_ENVIRONMENT=%s\n", cmd.options.EnvironmentName)
+			fmt.Printf("export ECSO_ENVIRONMENT=%s\n", cmd.options.Environment)
 		}
 	}
 	return nil

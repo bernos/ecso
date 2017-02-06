@@ -1,4 +1,4 @@
-package rm
+package commands
 
 import (
 	"fmt"
@@ -7,12 +7,12 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/api"
 )
 
-type Options struct {
+type EnvironmentRmOptions struct {
 	Name string
 }
 
-func New(name string, options ...func(*Options)) ecso.Command {
-	o := &Options{
+func NewEnvironmentRmCommand(name string, options ...func(*EnvironmentRmOptions)) ecso.Command {
+	o := &EnvironmentRmOptions{
 		Name: name,
 	}
 
@@ -20,16 +20,16 @@ func New(name string, options ...func(*Options)) ecso.Command {
 		option(o)
 	}
 
-	return &command{
+	return &environmentRmCommand{
 		options: o,
 	}
 }
 
-type command struct {
-	options *Options
+type environmentRmCommand struct {
+	options *EnvironmentRmOptions
 }
 
-func (cmd *command) Execute(ctx *ecso.CommandContext) error {
+func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		log     = ctx.Config.Logger
 		project = ctx.Project
@@ -54,11 +54,11 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *command) Prompt(ctx *ecso.CommandContext) error {
+func (cmd *environmentRmCommand) Prompt(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *command) Validate(ctx *ecso.CommandContext) error {
+func (cmd *environmentRmCommand) Validate(ctx *ecso.CommandContext) error {
 	opt := cmd.options
 
 	if ctx.Project.Environments[opt.Name] == nil {

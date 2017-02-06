@@ -1,4 +1,4 @@
-package servicedown
+package commands
 
 import (
 	"fmt"
@@ -7,13 +7,13 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/api"
 )
 
-type Options struct {
+type ServiceDownOptions struct {
 	Name        string
 	Environment string
 }
 
-func New(name, environment string, options ...func(*Options)) ecso.Command {
-	o := &Options{
+func NewServiceDownCommand(name, environment string, options ...func(*ServiceDownOptions)) ecso.Command {
+	o := &ServiceDownOptions{
 		Name:        name,
 		Environment: environment,
 	}
@@ -22,16 +22,16 @@ func New(name, environment string, options ...func(*Options)) ecso.Command {
 		option(o)
 	}
 
-	return &command{
+	return &serviceDownCommand{
 		options: o,
 	}
 }
 
-type command struct {
-	options *Options
+type serviceDownCommand struct {
+	options *ServiceDownOptions
 }
 
-func (cmd *command) Execute(ctx *ecso.CommandContext) error {
+func (cmd *serviceDownCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		ecsoAPI = api.New(ctx.Config)
 		service = ctx.Project.Services[cmd.options.Name]
@@ -56,11 +56,11 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *command) Prompt(ctx *ecso.CommandContext) error {
+func (cmd *serviceDownCommand) Prompt(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *command) Validate(ctx *ecso.CommandContext) error {
+func (cmd *serviceDownCommand) Validate(ctx *ecso.CommandContext) error {
 	opt := cmd.options
 
 	if opt.Name == "" {

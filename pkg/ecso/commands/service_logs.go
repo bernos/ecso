@@ -1,4 +1,4 @@
-package logs
+package commands
 
 import (
 	"fmt"
@@ -8,13 +8,13 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/api"
 )
 
-type Options struct {
+type ServiceLogsOptions struct {
 	Name        string
 	Environment string
 }
 
-func New(name, environment string, options ...func(*Options)) ecso.Command {
-	o := &Options{
+func NewServiceLogsCommand(name, environment string, options ...func(*ServiceLogsOptions)) ecso.Command {
+	o := &ServiceLogsOptions{
 		Name:        name,
 		Environment: environment,
 	}
@@ -23,16 +23,16 @@ func New(name, environment string, options ...func(*Options)) ecso.Command {
 		option(o)
 	}
 
-	return &command{
+	return &serviceLogsCommand{
 		options: o,
 	}
 }
 
-type command struct {
-	options *Options
+type serviceLogsCommand struct {
+	options *ServiceLogsOptions
 }
 
-func (cmd *command) Execute(ctx *ecso.CommandContext) error {
+func (cmd *serviceLogsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		service = ctx.Project.Services[cmd.options.Name]
 		env     = ctx.Project.Environments[cmd.options.Environment]
@@ -53,7 +53,7 @@ func (cmd *command) Execute(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *command) Validate(ctx *ecso.CommandContext) error {
+func (cmd *serviceLogsCommand) Validate(ctx *ecso.CommandContext) error {
 	if cmd.options.Name == "" {
 		return fmt.Errorf("Name is required")
 	}
@@ -73,6 +73,6 @@ func (cmd *command) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *command) Prompt(ctx *ecso.CommandContext) error {
+func (cmd *serviceLogsCommand) Prompt(ctx *ecso.CommandContext) error {
 	return nil
 }

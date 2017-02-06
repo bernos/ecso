@@ -1,8 +1,8 @@
-package addservice
+package templates
 
 import "text/template"
 
-var webServiceComposeFileTemplate = template.Must(template.New("webServiceComposeFile").Parse(`
+var WebServiceComposeFileTemplate = template.Must(template.New("webServiceComposeFile").Parse(`
 version: '2'
 
 volumes:
@@ -25,7 +25,7 @@ services:
     command: sh -c "while true; do echo \"This is the {{.Service.Name}} service <p><pre>` + "`env`" + `</pre></p> \" > /nginx/index.html; sleep 3; done"
 `))
 
-var workerComposeFileTemplate = template.Must(template.New("workerComposeFile").Parse(`
+var WorkerComposeFileTemplate = template.Must(template.New("workerComposeFile").Parse(`
 version: '2'
 
 volumes:
@@ -40,7 +40,7 @@ services:
     command: sh -c "while true; do echo \"This is the {{.Service.Name}} service <p><pre>` + "`env`" + `</pre></p> \" > /nginx/index.html; sleep 3; done"
 `))
 
-var webServiceCloudFormationTemplate = template.Must(template.New("webServiceCloudFormationFile").Parse(`
+var WebServiceCloudFormationTemplate = template.Must(template.New("webServiceCloudFormationFile").Parse(`
 Parameters:
 
     VPC:
@@ -147,7 +147,7 @@ Outputs:
         Value: !Ref CloudWatchLogsGroup
 `))
 
-var workerCloudFormationTemplate = template.Must(template.New("workerCloudFormationFile").Parse(`
+var WorkerCloudFormationTemplate = template.Must(template.New("workerCloudFormationFile").Parse(`
 Resources:
 
     CloudWatchLogsGroup:
