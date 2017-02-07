@@ -3,7 +3,6 @@ package commands
 import (
 	"fmt"
 	"path/filepath"
-	"text/template"
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/templates"
@@ -133,22 +132,17 @@ func (cmd *serviceAddCommand) writeFiles(project *ecso.Project, service *ecso.Se
 		}
 	)
 
-	var composeFileTemplate *template.Template
-	var cloudFormationTemplate *template.Template
+	serviceTemplates := templates.WorkerServiceTemplates
 
 	if len(service.Route) > 0 {
-		composeFileTemplate = templates.WebServiceComposeFileTemplate
-		cloudFormationTemplate = templates.WebServiceCloudFormationTemplate
-	} else {
-		composeFileTemplate = templates.WorkerComposeFileTemplate
-		cloudFormationTemplate = templates.WorkerCloudFormationTemplate
+		serviceTemplates = templates.WebServiceTemplates
 	}
 
-	if err := util.WriteFileFromTemplate(composeFile, composeFileTemplate, templateData); err != nil {
+	if err := util.WriteFileFromTemplate(composeFile, serviceTemplates.DockerCompose, templateData); err != nil {
 		return err
 	}
 
-	if err := util.WriteFileFromTemplate(cloudFormationFile, cloudFormationTemplate, templateData); err != nil {
+	if err := util.WriteFileFromTemplate(cloudFormationFile, serviceTemplates.CloudFormation, templateData); err != nil {
 		return err
 	}
 

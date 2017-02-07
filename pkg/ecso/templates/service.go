@@ -2,6 +2,23 @@ package templates
 
 import "text/template"
 
+type ServiceTemplates struct {
+	DockerCompose  *template.Template
+	CloudFormation *template.Template
+}
+
+var (
+	WebServiceTemplates = ServiceTemplates{
+		DockerCompose:  WebServiceComposeFileTemplate,
+		CloudFormation: WebServiceCloudFormationTemplate,
+	}
+
+	WorkerServiceTemplates = ServiceTemplates{
+		DockerCompose:  WorkerComposeFileTemplate,
+		CloudFormation: WorkerCloudFormationTemplate,
+	}
+)
+
 var WebServiceComposeFileTemplate = template.Must(template.New("webServiceComposeFile").Parse(`
 version: '2'
 
