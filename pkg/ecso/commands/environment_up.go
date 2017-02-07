@@ -2,8 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path/filepath"
 
 	"github.com/bernos/ecso/pkg/ecso"
@@ -115,14 +113,8 @@ func (cmd *envUpCommand) ensureTemplates(env *ecso.Environment, logger ecso.Logg
 }
 
 func (cmd *envUpCommand) createCloudFormationTemplates(dst string, logger ecso.Logger) error {
-	logger.Infof("Copying infrastructure stack templates to %s", dst)
-	// TODO: make a util for this
-	if err := os.MkdirAll(dst, os.ModePerm); err != nil {
-		return err
-	}
-
-	for file, content := range templates.EnvironmentTemplates {
-		if err := ioutil.WriteFile(filepath.Join(dst, file), []byte(content), os.ModePerm); err != nil {
+	for file, tmpl := range templates.EnvironmentTemplates {
+		if err := util.WriteFileFromTemplate(filepath.Join(dst, file), tmpl, nil); err != nil {
 			return err
 		}
 	}
