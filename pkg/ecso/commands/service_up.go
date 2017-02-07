@@ -99,6 +99,8 @@ func logOutputs(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.S
 		return err
 	}
 
+	serviceOutputs, err := cfn.GetStackOutputs(service.GetCloudFormationStackName(env))
+
 	if service.Route != "" {
 		ctx.Config.Logger.Dt(
 			"Service URL",
@@ -107,7 +109,7 @@ func logOutputs(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.S
 
 	ctx.Config.Logger.Dt(
 		"Service console",
-		util.ServiceConsoleURL(service.GetECSServiceName(), env.GetClusterName(), env.Region))
+		util.ServiceConsoleURL(serviceOutputs["Service"], env.GetClusterName(), env.Region))
 
 	ctx.Config.Logger.Printf("\n")
 

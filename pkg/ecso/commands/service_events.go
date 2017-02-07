@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
@@ -41,10 +42,17 @@ func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext) error {
 		service    = ctx.Project.Services[cmd.options.Name]
 		registry   = ctx.Config.MustGetAWSClientRegistry(env.Region)
 		ecsService = registry.ECSService(log.PrefixPrintf("  "))
+		ecsoAPI    = api.New(ctx.Config)
 		count      = 0
 	)
 
-	cancel := ecsService.LogServiceEvents(service.GetECSServiceName(), env.GetClusterName(), func(e *ecs.ServiceEvent, err error) {
+	runningService, err := ecsoAPI.GetECSService(ctx.Project, env, service)
+
+	if err != nil || runningService == nil {
+		return err
+	}
+
+	cancel := ecsService.LogServiceEvents(*runningService.ServiceName, env.GetClusterName(), func(e *ecs.ServiceEvent, err error) {
 		if err != nil {
 			log.Errorf("%s\n", err.Error())
 		} else {

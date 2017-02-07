@@ -40,12 +40,21 @@ services:
     command: sh -c "while true; do echo \"This is the {{.Service.Name}} service <p><pre>` + "`env`" + `</pre></p> \" > /nginx/index.html; sleep 3; done"
 `))
 
+// TODO: Add service deployment configuration to the cfn template
 var WebServiceCloudFormationTemplate = template.Must(template.New("webServiceCloudFormationFile").Parse(`
 Parameters:
 
     VPC:
         Description: The VPC that the ECS cluster is deployed to
         Type: AWS::EC2::VPC::Id
+
+    Cluster:
+        Description: The name of the ECS cluster to deploy to
+        Type: String
+
+    DesiredCount:
+        Description: The number of instances of the service to run
+        Type: Number
 
     Listener:
         Description: The Application Load Balancer listener to register with
@@ -55,11 +64,35 @@ Parameters:
         Description: The path to register with the Application Load Balancer
         Type: String
 
+    Port:
+        Description: The container port to bind to the ALB
+        Type: String
+
     RoutePriority:
         Description: The priority of Load Balancer listener rule for this service
         Type: String
 
+    TaskDefinition:
+        Description: The ARN of the task definition for the service
+        Type: String
+
 Resources:
+
+    Service:
+        Type: AWS::ECS::Service
+        DependsOn: ListenerRule
+        Properties:
+            Cluster: !Ref Cluster
+            Role: !Ref ServiceRole
+            DesiredCount: !Ref DesiredCount
+            TaskDefinition: !Ref TaskDefinition
+            DeploymentConfiguration:
+                MaximumPercent: 200
+                MinimumHealthyPercent: 100
+            LoadBalancers:
+                - ContainerName: web
+                  ContainerPort: !Ref Port
+                  TargetGroupArn: !Ref TargetGroup
 
     CloudWatchLogsGroup:
         Type: AWS::Logs::LogGroup
@@ -145,10 +178,38 @@ Outputs:
     CloudWatchLogsGroup:
         Description: Reference to the cloudwatch logs group
         Value: !Ref CloudWatchLogsGroup
+
+    Service:
+        Description: Reference to the ecs service
+        Value: !Ref Service
 `))
 
+// TODO: Add service deployment configuration to the cfn template
 var WorkerCloudFormationTemplate = template.Must(template.New("workerCloudFormationFile").Parse(`
+Parameters:
+    Cluster:
+        Description: The name of the ECS cluster to deploy to
+        Type: String
+
+    DesiredCount:
+        Description: The number of instances of the service to run
+        Type: Number
+
+    TaskDefinition:
+        Description: The ARN of the task definition for the service
+        Type: String
+
 Resources:
+
+    Service:
+        Type: AWS::ECS::Service
+        Properties:
+            Cluster: !Ref Cluster
+            DesiredCount: !Ref DesiredCount
+            TaskDefinition: !Ref TaskDefinition
+            DeploymentConfiguration:
+                MaximumPercent: 200
+                MinimumHealthyPercent: 100
 
     CloudWatchLogsGroup:
         Type: AWS::Logs::LogGroup
@@ -200,4 +261,8 @@ Outputs:
     CloudWatchLogsGroup:
         Description: Reference to the cloudwatch logs group
         Value: !Ref CloudWatchLogsGroup
+
+    Service:
+        Description: Reference to the ecs service
+        Value: !Ref Service
 `))

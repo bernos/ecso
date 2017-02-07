@@ -53,10 +53,6 @@ func (s *Service) GetECSTaskDefinitionName(env *Environment) string {
 	return fmt.Sprintf("%s-%s-%s", s.project.Name, env.Name, s.Name)
 }
 
-func (s *Service) GetECSServiceName() string {
-	return fmt.Sprintf("%s", s.Name)
-}
-
 func (s *Service) GetECSTaskDefinition(env *Environment) (*ecs.TaskDefinition, error) {
 
 	name := s.GetECSTaskDefinitionName(env)
