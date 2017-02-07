@@ -7,7 +7,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/templates"
 	"github.com/bernos/ecso/pkg/ecso/ui"
-	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
 type ServiceAddOptions struct {
@@ -58,7 +57,15 @@ func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext) error {
 		service.Port = cmd.options.Port
 	}
 
-	if err := cmd.writeFiles(project, service); err != nil {
+	templateData := struct {
+		Service *ecso.Service
+		Project *ecso.Project
+	}{
+		Service: service,
+		Project: project,
+	}
+
+	if err := templates.WriteServiceFiles(project, service, templateData); err != nil {
 		return err
 	}
 
@@ -114,36 +121,6 @@ func (cmd *serviceAddCommand) Prompt(ctx *ecso.CommandContext) error {
 		if err := ui.AskIntIfEmptyVar(&opt.Port, prompts.Port, 80, portValidator()); err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-func (cmd *serviceAddCommand) writeFiles(project *ecso.Project, service *ecso.Service) error {
-	var (
-		composeFile        = filepath.Join(project.Dir(), service.ComposeFile)
-		cloudFormationFile = filepath.Join(project.Dir(), ".ecso/services", service.Name, "stack.yaml")
-		templateData       = struct {
-			Service *ecso.Service
-			Project *ecso.Project
-		}{
-			Service: service,
-			Project: project,
-		}
-	)
-
-	serviceTemplates := templates.WorkerServiceTemplates
-
-	if len(service.Route) > 0 {
-		serviceTemplates = templates.WebServiceTemplates
-	}
-
-	if err := util.WriteFileFromTemplate(composeFile, serviceTemplates.DockerCompose, templateData); err != nil {
-		return err
-	}
-
-	if err := util.WriteFileFromTemplate(cloudFormationFile, serviceTemplates.CloudFormation, templateData); err != nil {
-		return err
 	}
 
 	return nil

@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
@@ -47,7 +46,7 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		cfg.Logger.Infof("THIS IS A DRY RUN - no changes to the environment will be made.")
 	}
 
-	if err := cmd.ensureTemplates(env, cfg.Logger); err != nil {
+	if err := cmd.ensureTemplates(project, env, cfg.Logger); err != nil {
 		return err
 	}
 
@@ -100,7 +99,7 @@ func (cmd *envUpCommand) logEnvironmentDetails(ctx *ecso.CommandContext, env *ec
 	return cfn.LogStackOutputs(stack, log.Dt)
 }
 
-func (cmd *envUpCommand) ensureTemplates(env *ecso.Environment, logger ecso.Logger) error {
+func (cmd *envUpCommand) ensureTemplates(project *ecso.Project, env *ecso.Environment, logger ecso.Logger) error {
 	dst := env.GetCloudFormationTemplateDir()
 
 	exists, err := util.DirExists(dst)
@@ -109,15 +108,5 @@ func (cmd *envUpCommand) ensureTemplates(env *ecso.Environment, logger ecso.Logg
 		return err
 	}
 
-	return cmd.createCloudFormationTemplates(dst, logger)
-}
-
-func (cmd *envUpCommand) createCloudFormationTemplates(dst string, logger ecso.Logger) error {
-	for file, tmpl := range templates.EnvironmentTemplates {
-		if err := util.WriteFileFromTemplate(filepath.Join(dst, file), tmpl, nil); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return templates.WriteEnvironmentFiles(project, env, nil)
 }
