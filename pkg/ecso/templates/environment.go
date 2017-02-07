@@ -1,6 +1,8 @@
 package templates
 
-var EnvironmentTemplates = map[string]string{
+import "text/template"
+
+var EnvironmentTemplates = map[string]*template.Template{
 	"stack.yaml":           environmentStackTemplate,
 	"ecs-cluster.yaml":     environmentClusterTemplate,
 	"load-balancers.yaml":  environmentALBTemplate,
@@ -8,7 +10,7 @@ var EnvironmentTemplates = map[string]string{
 	"dd-agent.yaml":        environmentDataDogTemplate,
 }
 
-var environmentStackTemplate = `
+var environmentStackTemplate = template.Must(template.New("environmentStackTemplate").Parse(`
 Description: >
 
     This template deploys a highly available ECS cluster using an AutoScaling Group, with
@@ -133,12 +135,13 @@ Outputs:
           Fn::GetAtt:
             - ALB
             - Outputs.Listener
-`
+`))
 
-var environmentClusterTemplate = `
+var environmentClusterTemplate = template.Must(template.New("environmentClusterTemplate").Parse(`
 Description: >
     This template deploys an ECS cluster to the provided VPC and subnets
     using an Auto Scaling Group
+
 Parameters:
 
     EnvironmentName:
@@ -266,31 +269,35 @@ Resources:
                         - install_dd_agent
 
                 install_dd_agent:
-                    commands:
-                        01_start_ecs:
-                            command: "start ecs"
-                        02_install_dd_agent:
-                            command: "/usr/local/bin/install-dd-agent"
-
                     files:
-                        "/usr/local/bin/install-dd-agent":
-                            mode: "000755"
+                        "/etc/init/datadog-agent.conf":
+                            mode: "000644"
                             owner: root
                             group: root
                             content: !Sub |
-                                #!/bin/bash
-                                WAIT=0
+                                description "Amazon EC2 Container Service (start task on instance boot)"
+                                author "Amazon Web Services"
+                                start on started ecs
 
-                                while [ $WAIT -ne 10 ] && [ -z "$metadata" ]; do
-                                    metadata=$(curl -s http://localhost:51678/v1/metadata)
-                                    sleep $(( WAIT++ ))
-                                done
+                                script
+                                    exec 2>>/var/log/ecs/ecs-start-task.log
+                                    set -x
+                                    until curl -s http://localhost:51678/v1/metadata
+                                    do
+                                        sleep 1
+                                    done
 
-                                echo "$metadata" > /etc/metadata.txt
+                                    # Grab the container instance ARN and AWS region from instance metadata
+                                    instance_arn=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .ContainerInstanceArn' | awk -F/ '{print $NF}' )
+                                    cluster=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .Cluster' | awk -F/ '{print $NF}' )
+                                    region=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .ContainerInstanceArn' | awk -F: '{print $4}')
 
-                                instance_arn=$(cat /etc/metadata.txt | jq -r '. | .ContainerInstanceArn' | awk -F/ '{print $NF}' )
+                                    # Specify the task definition to run at launch
+                                    task_definition=${EnvironmentName}-datadog-agent
 
-                                echo "aws ecs start-task --cluster ${EnvironmentName} --task-definition ${EnvironmentName}-datadog-agent --container-instances $instance_arn --region ${AWS::Region}" >> /etc/rc.local
+                                    # Run the AWS CLI start-task command to start your task on this container instance
+                                    aws ecs start-task --cluster $cluster --task-definition $task_definition --container-instances $instance_arn --started-by $instance_arn --region $region
+                                end script
 
                 install_cfn:
                     files:
@@ -472,9 +479,9 @@ Outputs:
     Cluster:
         Description: A reference to the ECS cluster
         Value: !Ref ECSCluster
-`
+`))
 
-var environmentALBTemplate = `
+var environmentALBTemplate = template.Must(template.New("environmentALBTemplate").Parse(`
 Description: >
     This template deploys an Application Load Balancer that exposes our various ECS services.
     We create them it a seperate nested template, so it can be referenced by all of the other nested templates.
@@ -561,9 +568,9 @@ Outputs:
     Listener:
         Description: A reference to a port 80 listener
         Value: !Ref LoadBalancerListener
-`
+`))
 
-var environmentSecurityGroupTemplate = `
+var environmentSecurityGroupTemplate = template.Must(template.New("environmentSecurityGroupTemplate").Parse(`
 Description: >
     This template contains the security groups required by our entire stack.
     We create them in a seperate nested template, so they can be referenced
@@ -622,9 +629,9 @@ Outputs:
     LoadBalancerSecurityGroup:
         Description: A reference to the security group for load balancers
         Value: !Ref LoadBalancerSecurityGroup
-`
+`))
 
-var environmentDataDogTemplate = `
+var environmentDataDogTemplate = template.Must(template.New("environmentDataDogTemplate").Parse(`
 Parameters:
     DataDogAPIKey:
         Description: Please provide your datadog API key
@@ -726,4 +733,4 @@ Resources:
                                 "Resource": "*"
                         }]
                     }
-`
+`))
