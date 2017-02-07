@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/bernos/ecso/pkg/ecso"
 )
 
@@ -25,6 +26,8 @@ type API interface {
 	ServiceUp(p *ecso.Project, env *ecso.Environment, s *ecso.Service) error
 	ServiceDown(p *ecso.Project, env *ecso.Environment, s *ecso.Service) error
 	ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*cloudwatchlogs.FilteredLogEvent, error)
+
+	GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ecs.Service, error)
 	// ListTasks()
 
 	// GetLogs()

@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
@@ -57,11 +58,18 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 		rows     = make([]*row, 0)
 		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
 		ecsAPI   = registry.ECSAPI()
+		ecsoAPI  = api.New(ctx.Config)
 	)
+
+	runningService, err := ecsoAPI.GetECSService(ctx.Project, env, service)
+
+	if err != nil || runningService == nil {
+		return err
+	}
 
 	tasks, err := ecsAPI.ListTasks(&ecs.ListTasksInput{
 		Cluster:     aws.String(env.GetClusterName()),
-		ServiceName: aws.String(service.GetECSServiceName()),
+		ServiceName: runningService.ServiceName,
 	})
 
 	if err != nil {

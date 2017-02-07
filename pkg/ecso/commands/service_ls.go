@@ -98,6 +98,10 @@ func getServices(env *ecso.Environment, ecsAPI ecsiface.ECSAPI) ([]*ecs.Service,
 	}
 
 	for _, batch := range batches {
+		if len(batch) == 0 {
+			continue
+		}
+
 		desc, err := ecsAPI.DescribeServices(&ecs.DescribeServicesInput{
 			Services: batch,
 			Cluster:  aws.String(env.GetClusterName()),
