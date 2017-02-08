@@ -120,6 +120,13 @@ Resources:
 
 Outputs:
 
+    AlertsTopic:
+        Description: A reference to the alerts SNS topic
+        Value:
+          Fn::GetAtt:
+            - SNS
+            - Outputs.AlertsTopic
+
     VPC:
         Description: The VPC ID
         Value: !Ref VPC

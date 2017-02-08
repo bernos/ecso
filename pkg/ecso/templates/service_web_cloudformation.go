@@ -5,6 +5,10 @@ import "text/template"
 var webServiceCloudFormationTemplate = template.Must(template.New("webServiceCloudFormationFile").Parse(`
 Parameters:
 
+    AlertsTopic:
+        Description: The ARN of the SNS topic to send alarm notifications to
+        Type: String
+
     VPC:
         Description: The VPC that the ECS cluster is deployed to
         Type: AWS::EC2::VPC::Id
@@ -54,6 +58,26 @@ Resources:
                 - ContainerName: web
                   ContainerPort: !Ref Port
                   TargetGroupArn: !Ref TargetGroup
+
+    TaskCountAlarm:
+        Type: AWS::CloudWatch::Alarm
+        Properties:
+            AlarmName: !Sub ${Service}-task-count
+            AlarmDescription: Not enough tasks running
+            Namespace: AWS/ECS
+            MetricName: CPUUtilization
+            Statistic: SampleCount
+            Period: 120
+            EvaluationPeriods: 2
+            Threshold: !Ref DesiredCount
+            ComparisonOperator: LessThanThreshold
+            AlarmActions:
+                - !Ref AlertsTopic
+            Dimensions:
+                - Name: ClusterName
+                  Value: !Ref Cluster
+                - Name: ServiceName
+                  Value: !Sub ${Service.Name}
 
     CloudWatchLogsGroup:
         Type: AWS::Logs::LogGroup

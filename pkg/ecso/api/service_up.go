@@ -109,6 +109,7 @@ func getServiceStackParameters(cfn services.CloudFormationService, project *ecso
 
 	params := map[string]string{
 		"Cluster":        outputs["Cluster"],
+		"AlertsTopic":    outputs["AlertsTopic"],
 		"DesiredCount":   fmt.Sprintf("%d", service.DesiredCount),
 		"TaskDefinition": *taskDefinition.TaskDefinitionArn,
 	}
