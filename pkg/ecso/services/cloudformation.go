@@ -105,7 +105,9 @@ func (svc *cfnService) PackageAndCreate(stackName, templateFile, bucket, prefix 
 }
 
 func (svc *cfnService) Package(templateFile, bucket, prefix string) (string, error) {
-	// TODO: validate the template
+	if err := svc.validateTemplateFile(templateFile); err != nil {
+		return "", err
+	}
 
 	basedir := filepath.Dir(templateFile)
 	templateBody, err := ioutil.ReadFile(templateFile)
@@ -512,4 +514,22 @@ func updateNestedTemplateURLs(templateBody, region, bucket, prefix string) strin
 
 	// repl = "${1}TemplateURL: https://bucket/foo/$3"
 	return childTemplateRegexp.ReplaceAllString(templateBody, repl)
+}
+
+func (svc *cfnService) validateTemplate(body []byte) error {
+	_, err := svc.cfnClient.ValidateTemplate(&cloudformation.ValidateTemplateInput{
+		TemplateBody: aws.String(string(body)),
+	})
+
+	return err
+}
+
+func (svc *cfnService) validateTemplateFile(file string) error {
+	templateBody, err := ioutil.ReadFile(file)
+
+	if err != nil {
+		return err
+	}
+
+	return svc.validateTemplate(templateBody)
 }
