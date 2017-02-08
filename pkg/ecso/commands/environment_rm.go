@@ -31,7 +31,7 @@ type environmentRmCommand struct {
 
 func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		log     = ctx.Config.Logger
+		log     = ctx.Config.Logger()
 		project = ctx.Project
 		env     = ctx.Project.Environments[cmd.options.Name]
 		ecsoAPI = api.New(ctx.Config)

@@ -37,7 +37,7 @@ type serviceEventsCommand struct {
 
 func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		log        = ctx.Config.Logger
+		log        = ctx.Config.Logger()
 		env        = ctx.Project.Environments[cmd.options.Environment]
 		service    = ctx.Project.Services[cmd.options.Name]
 		registry   = ctx.Config.MustGetAWSClientRegistry(env.Region)

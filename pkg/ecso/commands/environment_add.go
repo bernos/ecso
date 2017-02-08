@@ -43,7 +43,7 @@ type environmentAddCommand struct {
 
 func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		log     = ctx.Config.Logger
+		log     = ctx.Config.Logger()
 		project = ctx.Project
 	)
 
@@ -86,7 +86,7 @@ func (c *environmentAddCommand) Validate(ctx *ecso.CommandContext) error {
 func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 
 	var (
-		log             = ctx.Config.Logger
+		log             = ctx.Config.Logger()
 		project         = ctx.Project
 		options         = c.options
 		cfg             = ctx.Config

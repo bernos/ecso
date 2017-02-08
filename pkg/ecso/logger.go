@@ -31,12 +31,12 @@ type Logger interface {
 	BannerBlue(format string, a ...interface{})
 	BannerGreen(format string, a ...interface{})
 	Errorf(format string, a ...interface{})
-	Fatalf(format string, a ...interface{})
 	Printf(format string, a ...interface{})
 	PrefixPrintf(prefix string) func(string, ...interface{})
 	Infof(format string, a ...interface{})
 	ErrWriter() io.Writer
 	Dt(label, content string)
+	Dl(items ...map[string]string)
 }
 
 func NewLogger(w io.Writer) Logger {
@@ -57,6 +57,14 @@ func (l *log) BannerGreen(format string, a ...interface{}) {
 
 func (l *log) Dt(label, content string) {
 	fmt.Fprintf(l.w, "  %s\n    %s\n", bold("%s:", label), content)
+}
+
+func (l *log) Dl(items ...map[string]string) {
+	for _, i := range items {
+		for k, v := range i {
+			l.Dt(k, v)
+		}
+	}
 }
 
 func (l *log) Errorf(format string, a ...interface{}) {

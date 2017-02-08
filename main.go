@@ -17,7 +17,7 @@ func main() {
 	prefs := MustLoadUserPreferences(ecso.LoadUserPreferences())
 	dispatcher := ecso.NewDispatcher(project, cfg, prefs)
 
-	cli.ErrWriter = cfg.Logger.ErrWriter()
+	cli.ErrWriter = cfg.Logger().ErrWriter()
 
 	app := cli.NewApp()
 	app.Name = "ecso"
@@ -40,23 +40,28 @@ func main() {
 	app.Run(os.Args)
 }
 
+func ExitWithError(err error, code int) {
+	log.Errorf(err.Error())
+	os.Exit(code)
+}
+
 func MustLoadConfig(cfg *ecso.Config, err error) *ecso.Config {
 	if err != nil {
-		log.Fatalf(err.Error())
+		ExitWithError(err, 1)
 	}
 	return cfg
 }
 
 func MustLoadUserPreferences(prefs *ecso.UserPreferences, err error) *ecso.UserPreferences {
 	if err != nil {
-		log.Fatalf(err.Error())
+		ExitWithError(err, 1)
 	}
 	return prefs
 }
 
 func MustLoadProject(project *ecso.Project, err error) *ecso.Project {
 	if err != nil {
-		log.Fatalf(err.Error())
+		ExitWithError(err, 1)
 	}
 	return project
 }

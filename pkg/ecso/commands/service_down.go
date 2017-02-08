@@ -36,7 +36,7 @@ func (cmd *serviceDownCommand) Execute(ctx *ecso.CommandContext) error {
 		ecsoAPI = api.New(ctx.Config)
 		service = ctx.Project.Services[cmd.options.Name]
 		env     = ctx.Project.Environments[cmd.options.Environment]
-		log     = ctx.Config.Logger
+		log     = ctx.Config.Logger()
 	)
 
 	log.BannerBlue(

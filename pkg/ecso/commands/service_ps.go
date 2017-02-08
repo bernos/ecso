@@ -54,7 +54,7 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		service  = ctx.Project.Services[cmd.options.Name]
 		env      = ctx.Project.Environments[cmd.options.Environment]
-		log      = ctx.Config.Logger
+		log      = ctx.Config.Logger()
 		rows     = make([]*row, 0)
 		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
 		ecsAPI   = registry.ECSAPI()

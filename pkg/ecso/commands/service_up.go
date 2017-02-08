@@ -37,7 +37,7 @@ type serviceUpCommand struct {
 func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		cfg     = ctx.Config
-		log     = cfg.Logger
+		log     = cfg.Logger()
 		project = ctx.Project
 		env     = ctx.Project.Environments[cmd.options.Environment]
 		service = project.Services[cmd.options.Name]
@@ -89,8 +89,9 @@ func (cmd *serviceUpCommand) Validate(ctx *ecso.CommandContext) error {
 
 func logOutputs(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.Service) error {
 	var (
+		log      = ctx.Config.Logger()
 		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		cfn      = registry.CloudFormationService(ctx.Config.Logger.PrefixPrintf("  "))
+		cfn      = registry.CloudFormationService(log.PrefixPrintf("  "))
 	)
 
 	outputs, err := cfn.GetStackOutputs(env.GetCloudFormationStackName())
@@ -101,17 +102,16 @@ func logOutputs(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.S
 
 	serviceOutputs, err := cfn.GetStackOutputs(service.GetCloudFormationStackName(env))
 
-	if service.Route != "" {
-		ctx.Config.Logger.Dt(
-			"Service URL",
-			fmt.Sprintf("http://%s%s", outputs["RecordSet"], service.Route))
+	items := map[string]string{
+		"Service Console": util.ServiceConsoleURL(serviceOutputs["Service"], env.GetClusterName(), env.Region),
 	}
 
-	ctx.Config.Logger.Dt(
-		"Service console",
-		util.ServiceConsoleURL(serviceOutputs["Service"], env.GetClusterName(), env.Region))
+	if service.Route != "" {
+		items["Service URL"] = fmt.Sprintf("http://%s%s", outputs["RecordSet"], service.Route)
+	}
 
-	ctx.Config.Logger.Printf("\n")
+	log.Dl(items)
+	log.Printf("\n")
 
 	return nil
 }

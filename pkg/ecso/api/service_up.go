@@ -61,12 +61,12 @@ func (api *api) setEnv(project *ecso.Project, env *ecso.Environment, service *ec
 func (api *api) deployServiceStack(reg *ecso.AWSClientRegistry, project *ecso.Project, env *ecso.Environment, service *ecso.Service, taskDefinition *ecs.TaskDefinition) error {
 	var (
 		cfg       = api.cfg
-		log       = cfg.Logger
+		log       = cfg.Logger()
 		bucket    = env.CloudFormationBucket
 		stackName = service.GetCloudFormationStackName(env)
 		prefix    = service.GetCloudFormationBucketPrefix(env)
 		template  = service.GetCloudFormationTemplateFile()
-		cfn       = reg.CloudFormationService(api.cfg.Logger.PrefixPrintf("  "))
+		cfn       = reg.CloudFormationService(log.PrefixPrintf("  "))
 	)
 
 	params, err := getServiceStackParameters(cfn, project, env, service, taskDefinition)
@@ -145,7 +145,7 @@ func getServiceStackTags(project *ecso.Project, env *ecso.Environment, service *
 func (api *api) registerECSTaskDefinition(reg *ecso.AWSClientRegistry, project *ecso.Project, env *ecso.Environment, service *ecso.Service) (*ecs.TaskDefinition, error) {
 	var (
 		cfg       = api.cfg
-		log       = cfg.Logger
+		log       = cfg.Logger()
 		taskName  = service.GetECSTaskDefinitionName(env)
 		ecsClient = reg.ECSAPI()
 	)

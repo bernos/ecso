@@ -33,7 +33,7 @@ type initCommand struct {
 
 func (cmd *initCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		log = ctx.Config.Logger
+		log = ctx.Config.Logger()
 	)
 
 	wd, err := ecso.GetCurrentProjectDir()
@@ -59,7 +59,7 @@ func (cmd *initCommand) Execute(ctx *ecso.CommandContext) error {
 }
 
 func (cmd *initCommand) Prompt(ctx *ecso.CommandContext) error {
-	log := ctx.Config.Logger
+	log := ctx.Config.Logger()
 
 	if ctx.Project != nil {
 		return fmt.Errorf("Found an existing project at %s.", ctx.Project.ProjectFile())
