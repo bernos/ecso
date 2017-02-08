@@ -45,6 +45,24 @@ Parameters:
         Default: ""
 
 Resources:
+    Alarms:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: ./alarms.yaml
+            Parameters:
+                EnvironmentName: !Ref AWS::StackName
+                Cluster:
+                    Fn::GetAtt:
+                    - ECS
+                    - Outputs.Cluster
+                AlertsTopic:
+                    Fn::GetAtt:
+                    - SNS
+                    - Outputs.AlertsTopic
+                LoadBalancer:
+                    Fn::GetAtt:
+                    - ALB
+                    - Outputs.LoadBalancer
 
     SNS:
         Type: AWS::CloudFormation::Stack
