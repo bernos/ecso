@@ -474,6 +474,11 @@ func (svc *cfnService) createBucket(bucket string) error {
 
 func (svc *cfnService) uploadChildTemplates(basedir, templateBody, bucket, prefix string, op func(string) (*os.File, error)) error {
 	for _, file := range findNestedTemplateFiles(templateBody) {
+
+		if err := svc.validateTemplateFile(filepath.Join(basedir, file)); err != nil {
+			return err
+		}
+
 		reader, err := op(filepath.Join(basedir, file))
 
 		if err != nil {
@@ -511,8 +516,6 @@ func findNestedTemplateFiles(templateBody string) []string {
 
 func updateNestedTemplateURLs(templateBody, region, bucket, prefix string) string {
 	repl := fmt.Sprintf("${1}TemplateURL: https://s3-%s.amazonaws.com/%s/%s/$3", region, bucket, prefix)
-
-	// repl = "${1}TemplateURL: https://bucket/foo/$3"
 	return childTemplateRegexp.ReplaceAllString(templateBody, repl)
 }
 
@@ -525,6 +528,7 @@ func (svc *cfnService) validateTemplate(body []byte) error {
 }
 
 func (svc *cfnService) validateTemplateFile(file string) error {
+	svc.log("Validating cloudformation template '%s'...", file)
 	templateBody, err := ioutil.ReadFile(file)
 
 	if err != nil {

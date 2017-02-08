@@ -1,6 +1,11 @@
 package api
 
-import "github.com/bernos/ecso/pkg/ecso"
+import (
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/services"
+)
 
 func (api *api) EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun bool) error {
 	var (
@@ -28,10 +33,29 @@ func (api *api) EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun boo
 		return err
 	}
 
+	var result *services.DeploymentResult
+
 	if exists {
-		_, err = cfn.PackageAndDeploy(stack, template, bucket, prefix, tags, params, dryRun)
+		result, err = cfn.PackageAndDeploy(stack, template, bucket, prefix, tags, params, dryRun)
 	} else {
-		_, err = cfn.PackageAndCreate(stack, template, bucket, prefix, tags, params, dryRun)
+		result, err = cfn.PackageAndCreate(stack, template, bucket, prefix, tags, params, dryRun)
+	}
+
+	if dryRun {
+		cfnAPI := reg.CloudFormationAPI()
+
+		resp, err := cfnAPI.DescribeChangeSet(&cloudformation.DescribeChangeSetInput{
+			ChangeSetName: aws.String(result.ChangeSetID),
+			StackName:     aws.String(result.StackID),
+		})
+
+		if err != nil {
+			return err
+		}
+
+		log.Printf("\n")
+		log.Infof("The following changes were detected:")
+		log.Printf("\n%s\n", resp)
 	}
 
 	return err
