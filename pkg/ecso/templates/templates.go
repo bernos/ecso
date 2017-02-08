@@ -21,6 +21,7 @@ func GetEnvironmentTemplates(project *ecso.Project, env *ecso.Environment) map[s
 		p("security-groups.yaml"): environmentSecurityGroupTemplate,
 		p("dd-agent.yaml"):        environmentDataDogTemplate,
 		p("sns.yaml"):             environmentSNSTemplate,
+		p("alarms.yaml"):          environmentAlarmsTemplate,
 	}
 }
 
