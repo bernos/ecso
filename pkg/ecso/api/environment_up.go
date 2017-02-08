@@ -9,7 +9,7 @@ import (
 
 func (api *api) EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun bool) error {
 	var (
-		log      = api.cfg.Logger
+		log      = api.cfg.Logger()
 		stack    = env.GetCloudFormationStackName()
 		template = env.GetCloudFormationTemplateFile()
 		prefix   = env.GetCloudFormationBucketPrefix()

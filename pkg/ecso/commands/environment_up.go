@@ -36,17 +36,18 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		project = ctx.Project
 		cfg     = ctx.Config
+		log     = cfg.Logger()
 		env     = project.Environments[cmd.options.EnvironmentName]
 		ecsoAPI = api.New(ctx.Config)
 	)
 
-	cfg.Logger.BannerBlue("Bringing up environment '%s'", env.Name)
+	log.BannerBlue("Bringing up environment '%s'", env.Name)
 
 	if cmd.options.DryRun {
-		cfg.Logger.Infof("THIS IS A DRY RUN - no changes to the environment will be made.")
+		log.Infof("THIS IS A DRY RUN - no changes to the environment will be made.")
 	}
 
-	if err := cmd.ensureTemplates(project, env, cfg.Logger); err != nil {
+	if err := cmd.ensureTemplates(project, env, log); err != nil {
 		return err
 	}
 
@@ -55,12 +56,12 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	if cmd.options.DryRun {
-		cfg.Logger.BannerGreen("Review the above changes and re-run the command without the --dry-run option to apply them")
+		log.BannerGreen("Review the above changes and re-run the command without the --dry-run option to apply them")
 
 		return nil
 	}
 
-	cfg.Logger.BannerGreen("Environment '%s' is up and running", env.Name)
+	log.BannerGreen("Environment '%s' is up and running", env.Name)
 
 	return cmd.logEnvironmentDetails(ctx, env)
 }
@@ -85,7 +86,7 @@ func (cmd *envUpCommand) Prompt(ctx *ecso.CommandContext) error {
 
 func (cmd *envUpCommand) logEnvironmentDetails(ctx *ecso.CommandContext, env *ecso.Environment) error {
 	var (
-		log        = ctx.Config.Logger
+		log        = ctx.Config.Logger()
 		reg        = ctx.Config.MustGetAWSClientRegistry(env.Region)
 		cfn        = reg.CloudFormationService(log.PrefixPrintf("  "))
 		stack      = env.GetCloudFormationStackName()
@@ -93,10 +94,18 @@ func (cmd *envUpCommand) logEnvironmentDetails(ctx *ecso.CommandContext, env *ec
 		ecsConsole = util.ClusterConsoleURL(env.GetClusterName(), env.Region)
 	)
 
-	log.Dt("Cloud Formation console", cfnConsole)
-	log.Dt("ECS Console", ecsConsole)
+	outputs, err := cfn.GetStackOutputs(stack)
 
-	return cfn.LogStackOutputs(stack, log.Dt)
+	if err != nil {
+		return err
+	}
+
+	log.Dl(map[string]string{
+		"Cloud Formation Console": cfnConsole,
+		"ECS Console":             ecsConsole,
+	}, outputs)
+
+	return nil
 }
 
 func (cmd *envUpCommand) ensureTemplates(project *ecso.Project, env *ecso.Environment, logger ecso.Logger) error {

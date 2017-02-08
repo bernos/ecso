@@ -37,7 +37,7 @@ type serviceAddCommand struct {
 
 func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		log     = ctx.Config.Logger
+		log     = ctx.Config.Logger()
 		project = ctx.Project
 	)
 

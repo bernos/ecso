@@ -1,6 +1,7 @@
 package ecso
 
 import (
+	"io"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -8,17 +9,26 @@ import (
 )
 
 type Config struct {
-	Logger Logger
+	l Logger
+	w io.Writer
 
 	// AWS client registries by region
 	awsClientRegistries map[string]*AWSClientRegistry
+}
+
+func (c *Config) Logger() Logger {
+	if c.l == nil {
+		c.l = NewLogger(c.w)
+	}
+	return c.l
 }
 
 func (c *Config) MustGetAWSClientRegistry(region string) *AWSClientRegistry {
 	reg, err := c.GetAWSClientRegistry(region)
 
 	if err != nil {
-		c.Logger.Fatalf("Failed to create AWSClientRegistry for region '%s': %s", region, err.Error())
+		c.Logger().Errorf("Failed to create AWSClientRegistry for region '%s': %s", region, err.Error())
+		os.Exit(1)
 	}
 
 	return reg
@@ -42,11 +52,9 @@ func (c *Config) GetAWSClientRegistry(region string) (*AWSClientRegistry, error)
 }
 
 func NewConfig(options ...func(*Config)) (*Config, error) {
-	log := NewLogger(os.Stdout)
-
 	cfg := &Config{
+		w:                   os.Stderr,
 		awsClientRegistries: make(map[string]*AWSClientRegistry),
-		Logger:              log,
 	}
 
 	for _, o := range options {
@@ -54,4 +62,11 @@ func NewConfig(options ...func(*Config)) (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func WriteOutputTo(w io.Writer) func(*Config) {
+	return func(c *Config) {
+		c.l = nil
+		c.w = w
+	}
 }

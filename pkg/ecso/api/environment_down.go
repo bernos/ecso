@@ -14,7 +14,7 @@ func (api *api) EnvironmentDown(p *ecso.Project, env *ecso.Environment) error {
 	}
 
 	var (
-		log            = api.cfg.Logger
+		log            = api.cfg.Logger()
 		cfnService     = reg.CloudFormationService(log.PrefixPrintf("  "))
 		r53Service     = reg.Route53Service(log.PrefixPrintf("  "))
 		zone           = fmt.Sprintf("%s.", env.CloudFormationParameters["DNSZone"])
