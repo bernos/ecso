@@ -39,7 +39,20 @@ Parameters:
         Description: Please provide your datadog API key
         Type: String
 
+    PagerDutyEndpoint:
+        Description: The url of PagerDuty service endpoint to notify
+        Type: String
+        Default: ""
+
 Resources:
+
+    SNS:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: ./sns.yaml
+            Parameters:
+                EnvironmentName: !Ref AWS::StackName
+                PagerDutyEndpoint: !Ref PagerDutyEndpoint
 
     SecurityGroups:
         Type: AWS::CloudFormation::Stack

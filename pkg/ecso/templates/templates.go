@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -8,16 +9,19 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 )
 
-var environmentTemplates = map[string]*template.Template{
-	"stack.yaml":           environmentStackTemplate,
-	"ecs-cluster.yaml":     environmentClusterTemplate,
-	"load-balancers.yaml":  environmentALBTemplate,
-	"security-groups.yaml": environmentSecurityGroupTemplate,
-	"dd-agent.yaml":        environmentDataDogTemplate,
-}
-
 func GetEnvironmentTemplates(project *ecso.Project, env *ecso.Environment) map[string]*template.Template {
-	return environmentTemplates
+	p := func(file string) string {
+		return filepath.Join(env.GetCloudFormationTemplateDir(), file)
+	}
+
+	return map[string]*template.Template{
+		p("stack.yaml"):           environmentStackTemplate,
+		p("ecs-cluster.yaml"):     environmentClusterTemplate,
+		p("load-balancers.yaml"):  environmentALBTemplate,
+		p("security-groups.yaml"): environmentSecurityGroupTemplate,
+		p("dd-agent.yaml"):        environmentDataDogTemplate,
+		p("sns.yaml"):             environmentSNSTemplate,
+	}
 }
 
 func GetServiceTemplates(project *ecso.Project, service *ecso.Service) map[string]*template.Template {
@@ -65,6 +69,7 @@ func WriteFiles(templateMap map[string]*template.Template, data interface{}) err
 
 // WriteEnvironmentFiles renders and writes project template files to disk
 func WriteEnvironmentFiles(project *ecso.Project, env *ecso.Environment, data interface{}) error {
+	fmt.Printf("WriteEnvironmentFiles\n")
 	return WriteFiles(GetEnvironmentTemplates(project, env), data)
 }
 
