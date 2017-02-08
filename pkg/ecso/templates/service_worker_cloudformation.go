@@ -4,6 +4,11 @@ import "text/template"
 
 var workerCloudFormationTemplate = template.Must(template.New("workerCloudFormationFile").Parse(`
 Parameters:
+
+    AlertsTopic:
+        Description: The ARN of the SNS topic to send alarm notifications to
+        Type: String
+
     Cluster:
         Description: The name of the ECS cluster to deploy to
         Type: String
@@ -27,6 +32,106 @@ Resources:
             DeploymentConfiguration:
                 MaximumPercent: 200
                 MinimumHealthyPercent: 100
+
+    TaskCountAlarm:
+        Type: AWS::CloudWatch::Alarm
+        Properties:
+            AlarmName: !Sub ${Service}-task-count
+            AlarmDescription: Not enough tasks running
+            Namespace: AWS/ECS
+            MetricName: CPUUtilization
+            Statistic: SampleCount
+            Period: 120
+            EvaluationPeriods: 2
+            Threshold: !Ref DesiredCount
+            ComparisonOperator: LessThanThreshold
+            AlarmActions:
+                - !Ref AlertsTopic
+            Dimensions:
+                - Name: ClusterName
+                  Value: !Ref Cluster
+                - Name: ServiceName
+                  Value: !Sub ${Service.Name}
+
+    CPUUtilizationAlarm:
+        Type: AWS::CloudWatch::Alarm
+        Properties:
+            AlarmName: !Sub ${Service}-alarm-cpu-utilisation
+            AlarmDescription: CPU utilisation is high
+            Namespace: AWS/ECS
+            MetricName: CPUUtilization
+            Statistic: Maximum
+            Period: 60
+            EvaluationPeriods: 2
+            Threshold: 80
+            ComparisonOperator: GreaterThanThreshold
+            AlarmActions:
+                - !Ref AlertsTopic
+            Dimensions:
+                - Name: ClusterName
+                  Value: !Ref Cluster
+                - Name: ServiceName
+                  Value: !Sub ${Service.Name}
+
+    CPUReservationAlarm:
+        Type: AWS::CloudWatch::Alarm
+        Properties:
+            AlarmName: !Sub ${Service}-alarm-cpu-reservation
+            AlarmDescription: Reserved CPU capcity is high
+            Namespace: AWS/ECS
+            MetricName: CPUReservation
+            Statistic: Maximum
+            Period: 60
+            EvaluationPeriods: 2
+            Threshold: 80
+            ComparisonOperator: GreaterThanThreshold
+            AlarmActions:
+                - !Ref AlertsTopic
+            Dimensions:
+                - Name: ClusterName
+                  Value: !Ref Cluster
+                - Name: ServiceName
+                  Value: !Sub ${Service.Name}
+
+    MemoryUtilizationAlarm:
+        Type: AWS::CloudWatch::Alarm
+        Properties:
+            AlarmName: !Sub ${Service}-alarm-memory-utilisation
+            AlarmDescription: Memory utilisation is high
+            Namespace: AWS/ECS
+            MetricName: MemoryUtilization
+            Statistic: Maximum
+            Period: 60
+            EvaluationPeriods: 2
+            Threshold: 80
+            ComparisonOperator: GreaterThanThreshold
+            AlarmActions:
+                - !Ref AlertsTopic
+            Dimensions:
+                - Name: ClusterName
+                  Value: !Ref Cluster
+                - Name: ServiceName
+                  Value: !Sub ${Service.Name}
+
+    MemoryReservationAlarm:
+        Type: AWS::CloudWatch::Alarm
+        Properties:
+            AlarmName: !Sub ${Service}-alarm-memory-reservation
+            AlarmDescription: Reserved memory capcity is high
+            Namespace: AWS/ECS
+            MetricName: MemoryReservation
+            Statistic: Maximum
+            Period: 60
+            EvaluationPeriods: 2
+            Threshold: 80
+            ComparisonOperator: GreaterThanThreshold
+            AlarmActions:
+                - !Ref AlertsTopic
+            Dimensions:
+                - Name: ClusterName
+                  Value: !Ref Cluster
+                - Name: ServiceName
+                  Value: !Sub ${Service.Name}
 
     CloudWatchLogsGroup:
         Type: AWS::Logs::LogGroup
