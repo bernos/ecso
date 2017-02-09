@@ -2,12 +2,6 @@ package commands
 
 import "github.com/bernos/ecso/pkg/ecso"
 
-var keys = struct {
-	Unset string
-}{
-	Unset: "unset",
-}
-
 type SkeletonOptions struct {
 	EnvironmentName string
 }

@@ -64,7 +64,15 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 
 	log.BannerGreen("Environment '%s' is up and running", env.Name)
 
-	return cmd.logEnvironmentDetails(ctx, env)
+	description, err := ecsoAPI.DescribeEnvironment(env)
+
+	if err != nil {
+		return err
+	}
+
+	log.Dl(description)
+
+	return nil
 }
 
 func (cmd *envUpCommand) Validate(ctx *ecso.CommandContext) error {

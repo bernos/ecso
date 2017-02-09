@@ -72,6 +72,7 @@ func NewEnvironmentCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 			NewEnvironmentAddCliCommand(dispatcher),
 			NewEnvironmentUpCliCommand(dispatcher),
 			NewEnvironmentRmCliCommand(dispatcher),
+			NewEnvironmentDescribeCliCommand(dispatcher),
 		},
 	}
 }
@@ -163,6 +164,32 @@ func NewEnvironmentAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 			},
 		},
 		Action: MakeAction(dispatcher, fromCliContext),
+	}
+}
+
+func NewEnvironmentDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+	fromCliContext := func(c *cli.Context) (ecso.Command, error) {
+		env := c.Args().First()
+
+		if env == "" {
+			env = os.Getenv("ECSO_ENVIRONMENT")
+		}
+
+		if env == "" {
+			return nil, NewArgumentRequiredError("environment")
+		}
+
+		return commands.NewEnvironmentDescribeCommand(env, func(opt *commands.EnvironmentDescribeOptions) {
+			// TODO: populate options from c
+		}), nil
+	}
+
+	return cli.Command{
+		Name:        "describe",
+		Usage:       "Describes an ecso environment",
+		Description: "TODO",
+		ArgsUsage:   "ENVIRONMENT",
+		Action:      MakeAction(dispatcher, fromCliContext),
 	}
 }
 
