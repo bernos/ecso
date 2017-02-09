@@ -14,7 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
-	"github.com/bernos/ecso/pkg/ecso/services"
 )
 
 type AWSClientRegistry struct {
@@ -26,10 +25,6 @@ type AWSClientRegistry struct {
 	ecsAPI            ecsiface.ECSAPI
 	cloudWatchLogsAPI cloudwatchlogsiface.CloudWatchLogsAPI
 	route53           route53iface.Route53API
-
-	cloudFormationService services.CloudFormationService
-	ecsService            services.ECSService
-	route53Service        services.Route53Service
 }
 
 func NewAWSClientRegistry(sess *session.Session) *AWSClientRegistry {
@@ -78,25 +73,4 @@ func (r *AWSClientRegistry) STSAPI() stsiface.STSAPI {
 		r.stsAPI = sts.New(r.session)
 	}
 	return r.stsAPI
-}
-
-func (r *AWSClientRegistry) CloudFormationService(log func(string, ...interface{})) services.CloudFormationService {
-	if r.cloudFormationService == nil {
-		r.cloudFormationService = services.NewCloudFormationService(*r.session.Config.Region, r.CloudFormationAPI(), r.S3API(), log)
-	}
-	return r.cloudFormationService
-}
-
-func (r *AWSClientRegistry) ECSService(log func(string, ...interface{})) services.ECSService {
-	if r.ecsService == nil {
-		r.ecsService = services.NewECSService(r.ECSAPI(), log)
-	}
-	return r.ecsService
-}
-
-func (r *AWSClientRegistry) Route53Service(log func(string, ...interface{})) services.Route53Service {
-	if r.route53Service == nil {
-		r.route53Service = services.NewRoute53Service(r.Route53API(), log)
-	}
-	return r.route53Service
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/services"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
@@ -41,7 +42,7 @@ func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext) error {
 		env        = ctx.Project.Environments[cmd.options.Environment]
 		service    = ctx.Project.Services[cmd.options.Name]
 		registry   = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		ecsService = registry.ECSService(log.PrefixPrintf("  "))
+		ecsService = services.NewECSService(registry.ECSAPI(), log.PrefixPrintf("  "))
 		ecsoAPI    = api.New(ctx.Config)
 		count      = 0
 	)

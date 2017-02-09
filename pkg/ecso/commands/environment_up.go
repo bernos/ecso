@@ -5,6 +5,7 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/services"
 	"github.com/bernos/ecso/pkg/ecso/templates"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
@@ -88,7 +89,7 @@ func (cmd *envUpCommand) logEnvironmentDetails(ctx *ecso.CommandContext, env *ec
 	var (
 		log        = ctx.Config.Logger()
 		reg        = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		cfn        = reg.CloudFormationService(log.PrefixPrintf("  "))
+		cfn        = services.NewCloudFormationService(env.Region, reg.CloudFormationAPI(), reg.S3API(), log.PrefixPrintf("  "))
 		stack      = env.GetCloudFormationStackName()
 		cfnConsole = util.CloudFormationConsoleURL(stack, env.Region)
 		ecsConsole = util.ClusterConsoleURL(env.GetClusterName(), env.Region)

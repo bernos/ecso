@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/services"
 )
 
 func (api *api) ServiceDown(project *ecso.Project, env *ecso.Environment, service *ecso.Service) error {
@@ -30,7 +31,7 @@ func (api *api) ServiceDown(project *ecso.Project, env *ecso.Environment, servic
 func (api *api) clearServiceDNSRecords(reg *ecso.AWSClientRegistry, env *ecso.Environment, service *ecso.Service) error {
 	var (
 		log        = api.cfg.Logger()
-		r53Service = reg.Route53Service(log.PrefixPrintf("  "))
+		r53Service = services.NewRoute53Service(reg.Route53API(), log.PrefixPrintf("  "))
 		dnsName    = fmt.Sprintf("%s.%s.", service.Name, env.CloudFormationParameters["DNSZone"])
 	)
 
@@ -49,7 +50,7 @@ func (api *api) deleteServiceStack(reg *ecso.AWSClientRegistry, env *ecso.Enviro
 	var (
 		log   = api.cfg.Logger()
 		stack = service.GetCloudFormationStackName(env)
-		cfn   = reg.CloudFormationService(log.PrefixPrintf("  "))
+		cfn   = services.NewCloudFormationService(env.Region, reg.CloudFormationAPI(), reg.S3API(), log.PrefixPrintf("  "))
 	)
 
 	log.Infof("Deleting cloud formation stack '%s'", stack)
