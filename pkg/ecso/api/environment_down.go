@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/helpers"
 )
 
 func (api *api) EnvironmentDown(p *ecso.Project, env *ecso.Environment) error {
@@ -15,8 +16,8 @@ func (api *api) EnvironmentDown(p *ecso.Project, env *ecso.Environment) error {
 
 	var (
 		log            = api.cfg.Logger()
-		cfnService     = reg.CloudFormationService(log.PrefixPrintf("  "))
-		r53Service     = reg.Route53Service(log.PrefixPrintf("  "))
+		cfnService     = helpers.NewCloudFormationService(env.Region, reg.CloudFormationAPI(), reg.S3API(), log.PrefixPrintf("  "))
+		r53Service     = helpers.NewRoute53Service(reg.Route53API(), log.PrefixPrintf("  "))
 		zone           = fmt.Sprintf("%s.", env.CloudFormationParameters["DNSZone"])
 		datadogDNSName = fmt.Sprintf("%s.%s.%s", "datadog", env.GetClusterName(), zone)
 	)

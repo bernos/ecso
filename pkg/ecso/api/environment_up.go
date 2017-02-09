@@ -4,7 +4,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/bernos/ecso/pkg/ecso"
-	"github.com/bernos/ecso/pkg/ecso/services"
+	"github.com/bernos/ecso/pkg/ecso/helpers"
 )
 
 func (api *api) EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun bool) error {
@@ -26,14 +26,14 @@ func (api *api) EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun boo
 
 	log.Infof("Deploying Cloud Formation stack for the '%s' environment", env.Name)
 
-	cfn := reg.CloudFormationService(log.PrefixPrintf("  "))
+	cfn := helpers.NewCloudFormationService(env.Region, reg.CloudFormationAPI(), reg.S3API(), log.PrefixPrintf("  "))
 	exists, err := cfn.StackExists(stack)
 
 	if err != nil {
 		return err
 	}
 
-	var result *services.DeploymentResult
+	var result *helpers.DeploymentResult
 
 	if exists {
 		result, err = cfn.PackageAndDeploy(stack, template, bucket, prefix, tags, params, dryRun)

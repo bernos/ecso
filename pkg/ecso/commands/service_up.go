@@ -6,6 +6,7 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/helpers"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
@@ -91,7 +92,7 @@ func logOutputs(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.S
 	var (
 		log      = ctx.Config.Logger()
 		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		cfn      = registry.CloudFormationService(log.PrefixPrintf("  "))
+		cfn      = helpers.NewCloudFormationService(env.Region, registry.CloudFormationAPI(), registry.S3API(), log.PrefixPrintf("  "))
 	)
 
 	outputs, err := cfn.GetStackOutputs(env.GetCloudFormationStackName())
@@ -123,5 +124,5 @@ func getTemplateDir(serviceName string) (string, error) {
 		return wd, err
 	}
 
-	return filepath.Join(wd, ".ecso", "services", serviceName), nil
+	return filepath.Join(wd, ".ecso", "helpers", serviceName), nil
 }

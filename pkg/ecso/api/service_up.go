@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/bernos/ecso/pkg/ecso"
-	"github.com/bernos/ecso/pkg/ecso/services"
+	"github.com/bernos/ecso/pkg/ecso/helpers"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
@@ -66,7 +66,7 @@ func (api *api) deployServiceStack(reg *ecso.AWSClientRegistry, project *ecso.Pr
 		stackName = service.GetCloudFormationStackName(env)
 		prefix    = service.GetCloudFormationBucketPrefix(env)
 		template  = service.GetCloudFormationTemplateFile()
-		cfn       = reg.CloudFormationService(log.PrefixPrintf("  "))
+		cfn       = helpers.NewCloudFormationService(env.Region, reg.CloudFormationAPI(), reg.S3API(), log.PrefixPrintf("  "))
 	)
 
 	params, err := getServiceStackParameters(cfn, project, env, service, taskDefinition)
@@ -99,7 +99,7 @@ func (api *api) deployServiceStack(reg *ecso.AWSClientRegistry, project *ecso.Pr
 	return nil
 }
 
-func getServiceStackParameters(cfn services.CloudFormationService, project *ecso.Project, env *ecso.Environment, service *ecso.Service, taskDefinition *ecs.TaskDefinition) (map[string]string, error) {
+func getServiceStackParameters(cfn helpers.CloudFormationService, project *ecso.Project, env *ecso.Environment, service *ecso.Service, taskDefinition *ecs.TaskDefinition) (map[string]string, error) {
 
 	outputs, err := cfn.GetStackOutputs(env.GetCloudFormationStackName())
 
@@ -175,7 +175,7 @@ func (api *api) registerECSTaskDefinition(reg *ecso.AWSClientRegistry, project *
 
 		// TODO probably don't automatically add service discovery env config
 		//      if people want to use service discover they can just add the
-		//      required env vars to the services docker-compose file. This is
+		//      required env vars to the helpers docker-compose file. This is
 		//      less magic and more flexible
 		for _, p := range container.PortMappings {
 			container.Environment = append(container.Environment, &ecs.KeyValuePair{
