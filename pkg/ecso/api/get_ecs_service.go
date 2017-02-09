@@ -6,7 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/bernos/ecso/pkg/ecso"
-	"github.com/bernos/ecso/pkg/ecso/services"
+	"github.com/bernos/ecso/pkg/ecso/helpers"
 )
 
 func (api *api) GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ecs.Service, error) {
@@ -18,7 +18,7 @@ func (api *api) GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Se
 
 	var (
 		log    = api.cfg.Logger()
-		cfn    = services.NewCloudFormationService(env.Region, reg.CloudFormationAPI(), reg.S3API(), log.PrefixPrintf("  "))
+		cfn    = helpers.NewCloudFormationService(env.Region, reg.CloudFormationAPI(), reg.S3API(), log.PrefixPrintf("  "))
 		ecsAPI = reg.ECSAPI()
 	)
 
