@@ -4,10 +4,6 @@ import "text/template"
 
 var environmentDataDogTemplate = template.Must(template.New("environmentDataDogTemplate").Parse(`
 Parameters:
-    DataDogAPIKey:
-        Description: Please provide your datadog API key
-        Type: String
-
     EnvironmentName:
         Description: An environment name that will be prefixed to resource names
         Type: String
@@ -38,8 +34,6 @@ Resources:
                       ContainerPort: 8125
                       Protocol: udp
                   Environment:
-                    - Name: DD_API_KEY
-                      Value: !Ref DataDogAPIKey
                     - Name: DD_TAGS
                       Value: !Sub ecs-cluster:${EnvironmentName}
                     - Name: NON_LOCAL_TRAFFIC

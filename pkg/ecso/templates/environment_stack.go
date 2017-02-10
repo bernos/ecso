@@ -38,6 +38,7 @@ Parameters:
     DataDogAPIKey:
         Description: Please provide your datadog API key
         Type: String
+        Default: ""
 
     PagerDutyEndpoint:
         Description: The url of PagerDuty service endpoint to notify
@@ -86,7 +87,6 @@ Resources:
             TemplateURL: ./dd-agent.yaml
             Parameters:
                 EnvironmentName: !Ref AWS::StackName
-                DataDogAPIKey: !Ref DataDogAPIKey
 
     ALB:
         Type: AWS::CloudFormation::Stack
@@ -112,6 +112,7 @@ Resources:
                 ClusterSize: !Ref ClusterSize
                 VPC: !Ref VPC
                 DNSZone: !Ref DNSZone
+                DataDogAPIKey: !Ref DataDogAPIKey
                 SecurityGroup:
                   Fn::GetAtt:
                   - SecurityGroups

@@ -1,7 +1,6 @@
 package templates
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -70,7 +69,6 @@ func WriteFiles(templateMap map[string]*template.Template, data interface{}) err
 
 // WriteEnvironmentFiles renders and writes project template files to disk
 func WriteEnvironmentFiles(project *ecso.Project, env *ecso.Environment, data interface{}) error {
-	fmt.Printf("WriteEnvironmentFiles\n")
 	return WriteFiles(GetEnvironmentTemplates(project, env), data)
 }
 
