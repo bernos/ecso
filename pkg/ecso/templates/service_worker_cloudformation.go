@@ -73,26 +73,6 @@ Resources:
                 - Name: ServiceName
                   Value: !Sub ${Service.Name}
 
-    CPUReservationAlarm:
-        Type: AWS::CloudWatch::Alarm
-        Properties:
-            AlarmName: !Sub ${Service}-alarm-cpu-reservation
-            AlarmDescription: Reserved CPU capcity is high
-            Namespace: AWS/ECS
-            MetricName: CPUReservation
-            Statistic: Maximum
-            Period: 60
-            EvaluationPeriods: 2
-            Threshold: 80
-            ComparisonOperator: GreaterThanThreshold
-            AlarmActions:
-                - !Ref AlertsTopic
-            Dimensions:
-                - Name: ClusterName
-                  Value: !Ref Cluster
-                - Name: ServiceName
-                  Value: !Sub ${Service.Name}
-
     MemoryUtilizationAlarm:
         Type: AWS::CloudWatch::Alarm
         Properties:
@@ -100,26 +80,6 @@ Resources:
             AlarmDescription: Memory utilisation is high
             Namespace: AWS/ECS
             MetricName: MemoryUtilization
-            Statistic: Maximum
-            Period: 60
-            EvaluationPeriods: 2
-            Threshold: 80
-            ComparisonOperator: GreaterThanThreshold
-            AlarmActions:
-                - !Ref AlertsTopic
-            Dimensions:
-                - Name: ClusterName
-                  Value: !Ref Cluster
-                - Name: ServiceName
-                  Value: !Sub ${Service.Name}
-
-    MemoryReservationAlarm:
-        Type: AWS::CloudWatch::Alarm
-        Properties:
-            AlarmName: !Sub ${Service}-alarm-memory-reservation
-            AlarmDescription: Reserved memory capcity is high
-            Namespace: AWS/ECS
-            MetricName: MemoryReservation
             Statistic: Maximum
             Period: 60
             EvaluationPeriods: 2

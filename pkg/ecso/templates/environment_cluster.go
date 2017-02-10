@@ -39,6 +39,11 @@ Parameters:
         Description: Select the DNS zone to use for service discovery
         Type: String
 
+    DataDogAPIKey:
+        Description: Please provide your datadog API key
+        Type: String
+        Default: ""
+
 Mappings:
 
     # These are the latest ECS optimized AMIs as of November 2016:
@@ -160,8 +165,13 @@ Resources:
                                     # Specify the task definition to run at launch
                                     task_definition=${EnvironmentName}-datadog-agent
 
-                                    # Run the AWS CLI start-task command to start your task on this container instance
-                                    aws ecs start-task --cluster $cluster --task-definition $task_definition --container-instances $instance_arn --started-by $instance_arn --region $region
+                                    # Set the datadog api key. If this is empty, we won't actually start the container
+                                    dd_api_key=${DataDogAPIKey}
+
+                                    if [ -n "$dd_api_key" ]; then
+                                        # Run the AWS CLI start-task command to start your task on this container instance
+                                        aws ecs start-task --cluster $cluster --task-definition $task_definition --container-instances $instance_arn --started-by $instance_arn --region $region --overrides "{\"containerOverrides\":[{\"name\":\"dd-agent\", \"environment\":[{\"name\":\"DD_API_KEY\",\"value\":\"$dd_api_key\"}]}]}"
+                                    fi
                                 end script
 
                 install_cfn:
