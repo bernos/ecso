@@ -218,3 +218,24 @@ func PrintTable(w io.Writer, headers []string, rows ...map[string]string) {
 		fmt.Fprintf(w, format, r...)
 	}
 }
+
+func PrintMap(w io.Writer, maps ...map[string]string) {
+	l := 0
+	items := make(map[string]string)
+
+	for _, m := range maps {
+		for k, v := range m {
+			if len(k) > l {
+				fmt.Printf("l:%s:%d\n", k, len(k))
+				l = len(k)
+			}
+			items[k] = v
+		}
+	}
+
+	labelFormat := fmt.Sprintf("%%%ds:", l)
+
+	for k, v := range items {
+		fmt.Fprintf(w, "%s %s\n", bold(labelFormat, k), v)
+	}
+}

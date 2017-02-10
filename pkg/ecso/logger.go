@@ -37,6 +37,7 @@ type Logger interface {
 	ErrWriter() io.Writer
 	Dt(label, content string)
 	Dl(items ...map[string]string)
+	Writer() io.Writer
 }
 
 func NewLogger(w io.Writer) Logger {
@@ -99,4 +100,8 @@ func (l *log) ErrWriter() io.Writer {
 	return writerFunc(func(p []byte) (n int, err error) {
 		return l.writeError(string(p))
 	})
+}
+
+func (l *log) Writer() io.Writer {
+	return l.w
 }

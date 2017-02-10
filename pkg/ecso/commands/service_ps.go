@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -96,7 +95,7 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	log.Printf("\n")
-	printRows(rows)
+	printRows(rows, log)
 	log.Printf("\n")
 
 	return nil
@@ -166,7 +165,7 @@ func rowsFromTask(task *ecs.Task, ecsAPI ecsiface.ECSAPI) ([]*row, error) {
 	return rows, nil
 }
 
-func printRows(rows []*row) {
+func printRows(rows []*row, log ecso.Logger) {
 	headers := []string{
 		"CONTAINER",
 		"IMAGE",
@@ -193,7 +192,7 @@ func printRows(rows []*row) {
 		}
 	}
 
-	ui.PrintTable(os.Stdout, headers, r...)
+	ui.PrintTable(log.Writer(), headers, r...)
 }
 
 func getContainerImage(taskDefinitionArn, containerName string, ecsAPI ecsiface.ECSAPI) (string, error) {

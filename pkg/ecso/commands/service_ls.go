@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -36,6 +35,7 @@ type serviceLsCommand struct {
 
 func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
+		log      = ctx.Config.Logger()
 		env      = ctx.Project.Environments[cmd.options.Environment]
 		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
 		ecsAPI   = registry.ECSAPI()
@@ -47,7 +47,7 @@ func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	printServices(services)
+	printServices(services, log)
 
 	return nil
 }
@@ -119,7 +119,7 @@ func getServices(env *ecso.Environment, ecsAPI ecsiface.ECSAPI) ([]*ecs.Service,
 	return services, nil
 }
 
-func printServices(services []*ecs.Service) {
+func printServices(services []*ecs.Service, log ecso.Logger) {
 	headers := []string{"SERVICE", "TASK", "DESIRED", "RUNNING", "STATUS"}
 	rows := make([]map[string]string, len(services))
 
@@ -133,7 +133,7 @@ func printServices(services []*ecs.Service) {
 		}
 	}
 
-	ui.PrintTable(os.Stdout, headers, rows...)
+	ui.PrintTable(log.Writer(), headers, rows...)
 }
 
 func taskDefinitionName(arn string) string {

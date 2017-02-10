@@ -300,6 +300,7 @@ func NewServiceCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 			NewServicePsCliCommand(dispatcher),
 			NewServiceEventsCliCommand(dispatcher),
 			NewServiceLogsCliCommand(dispatcher),
+			NewServiceDescribeCliCommand(dispatcher),
 		},
 	}
 }
@@ -340,6 +341,46 @@ func NewServiceAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 			cli.IntFlag{
 				Name:  keys.Port,
 				Usage: "If set, the loadbalancer will bind to this port of the web container in this service",
+			},
+		},
+		Action: MakeAction(dispatcher, fromCliContext),
+	}
+}
+
+func NewServiceDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+	keys := struct {
+		Environment string
+	}{
+		Environment: "environment",
+	}
+
+	fromCliContext := func(c *cli.Context) (ecso.Command, error) {
+		service := c.Args().First()
+		env := c.String(keys.Environment)
+
+		if service == "" {
+			return nil, NewArgumentRequiredError("service")
+		}
+
+		if env == "" {
+			return nil, NewOptionRequiredError(keys.Environment)
+		}
+
+		return commands.NewServiceDescribeCommand(service, env, func(opt *commands.ServiceDescribeOptions) {
+			// TODO: populate options from c
+		}), nil
+	}
+
+	return cli.Command{
+		Name:        "describe",
+		Usage:       "describes a service",
+		Description: "TODO",
+		ArgsUsage:   "SERVICE",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:   keys.Environment,
+				Usage:  "The environment to terminate the service from",
+				EnvVar: "ECSO_ENVIRONMENT",
 			},
 		},
 		Action: MakeAction(dispatcher, fromCliContext),
