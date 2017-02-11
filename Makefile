@@ -1,0 +1,62 @@
+VERSION     ?= 0.0.0
+BINARIES    := linux/amd64/ecso windows/amd64/ecso.exe darwin/amd64/ecso
+GITHUB_USER := bernos
+GITHUB_REPO := ecso
+RELEASE_DIR := bin/release
+UPLOAD_LIST := $(foreach file, $(BINARIES), $(file)_upload)
+
+NO_COLOR    := \033[0m
+OK_COLOR    := \033[32;01m
+ERROR_COLOR := \033[31;01m
+WARN_COLOR  := \033[33;01m
+
+all: $(BINARIES)
+
+clean:
+	@echo "\n$(OK_COLOR)====> Cleaning$(NO_COLOR)"
+	go clean ./... && rm -rf ./$(RELEASE_DIR)
+
+install: test
+	@echo "\n$(OK_COLOR)====> Installing$(NO_COLOR)"
+	go install -ldflags "-X main.version=$(VERSION)"
+
+test: deps
+	@echo "\n$(OK_COLOR)====> Running tests$(NO_COLOR)"
+	go test ./pkg/... ./cmd/...
+
+deps:
+	@echo "\n$(OK_COLOR)====> Fetching depenencies$(NO_COLOR)"
+	go get github.com/aktau/github-release
+
+tag:
+	@echo "\n$(OK_COLOR)====> Tagging v$(VERSION)$(NO_COLOR)"
+	git tag -a v$(VERSION) -m 'release $(VERSION)'
+
+release: tag $(BINARIES)
+	@echo "\n$(OK_COLOR)====> Releasing v$(VERSION)$(NO_COLOR)"
+	$(MAKE) .release GIT_TAG=$(shell git describe --abbrev=0 --tags)
+
+.release: .create-github-release $(UPLOAD_LIST)
+
+.create-github-release:
+	git push && git push --tags
+	github-release release \
+		-u $(GITHUB_USER) \
+		-r $(GITHUB_REPO) \
+		-t $(GIT_TAG) \
+		-n $(GIT_TAG)
+
+$(UPLOAD_LIST): %_upload:
+	github-release upload \
+		-u $(GITHUB_USER) \
+		-r $(GITHUB_REPO) \
+		-t $(GIT_TAG) \
+		-n $(subst /,-,$*) \
+		-f $(RELEASE_DIR)/$*
+
+$(BINARIES): osarch=$(subst /, ,$@)
+$(BINARIES): test
+	@echo "\n$(OK_COLOR)====> Building $@$(NO_COLOR)"
+	GOOS=$(word 1, $(osarch)) GOARCH=$(word 2, $(osarch)) go build -a -ldflags "-X main.version=$(VERSION)" -o $(RELEASE_DIR)/$@ main.go
+
+.PHONY: release tag test deps clean install
