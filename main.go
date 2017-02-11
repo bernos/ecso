@@ -9,7 +9,10 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
-var log = ecso.NewLogger(os.Stdout)
+var (
+	log     = ecso.NewLogger(os.Stdout)
+	version = "0.0.0"
+)
 
 func main() {
 	project := MustLoadProject(ecso.LoadCurrentProject())
@@ -22,7 +25,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "ecso"
 	app.Usage = "Manage Amazon ECS projects"
-	app.Version = "0.0.1"
+	app.Version = version
 	app.Authors = []cli.Author{
 		cli.Author{
 			Name:  "Brendan McMahon",
