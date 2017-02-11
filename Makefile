@@ -12,29 +12,32 @@ WARN_COLOR  := \033[33;01m
 
 all: $(BINARIES)
 
+build:
+	go build -o bin/local/ecso
+
 clean:
 	@echo "\n$(OK_COLOR)====> Cleaning$(NO_COLOR)"
 	go clean ./... && rm -rf ./$(RELEASE_DIR)
-
-install: test
-	@echo "\n$(OK_COLOR)====> Installing$(NO_COLOR)"
-	go install -ldflags "-X main.version=$(VERSION)"
-
-test: deps
-	@echo "\n$(OK_COLOR)====> Running tests$(NO_COLOR)"
-	go test ./pkg/... ./cmd/...
 
 deps:
 	@echo "\n$(OK_COLOR)====> Fetching depenencies$(NO_COLOR)"
 	go get github.com/aktau/github-release
 
-tag:
-	@echo "\n$(OK_COLOR)====> Tagging v$(VERSION)$(NO_COLOR)"
-	git tag -a v$(VERSION) -m 'release $(VERSION)'
+install: test
+	@echo "\n$(OK_COLOR)====> Installing$(NO_COLOR)"
+	go install -ldflags "-X main.version=$(VERSION)"
 
 release: tag $(BINARIES)
 	@echo "\n$(OK_COLOR)====> Releasing v$(VERSION)$(NO_COLOR)"
 	$(MAKE) .release GIT_TAG=$(shell git describe --abbrev=0 --tags)
+
+tag:
+	@echo "\n$(OK_COLOR)====> Tagging v$(VERSION)$(NO_COLOR)"
+	git tag -a v$(VERSION) -m 'release $(VERSION)'
+
+test: deps
+	@echo "\n$(OK_COLOR)====> Running tests$(NO_COLOR)"
+	go test ./pkg/... ./cmd/...
 
 .release: .create-github-release $(UPLOAD_LIST)
 
