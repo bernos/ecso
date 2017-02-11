@@ -1,7 +1,12 @@
 # ecso
-
-## Prerequisites
-- AWS cli
+ecso is a command line tool that provides high-level commands for building, deploying, running and monitoring projects on Amazon ECS. It's features include
+- Create and manage multiple project "environments", such as production, staging etc...
+- Out of the box setup of cloudwatch logs, service discovery using route53 DNS, CloudWatch alarms
+- Opt-in support for running datadog on all container instances in an environment
+- Develop and deploy services using regular Docker Compose files
+- Simple configuration via `.ecso/project.json`
+- No magic - ecso creates and outputs garden variety CloudFormation templates for everything under the hood. All ecso CloudFormation templates can be freely modified by hand, and can be deployed using tools other than ecso, such as the AWS cli or web console.
+- Don't want a monolithic repository with all your instructure and service in one place? ecso projects can easily span multiple repos: keep all your environment infrastructure in one repository, and each of your services in their own.
 
 ## Installing
 If you have a working go environment, just run `go install github.com/bernos/ecso`. Otherwise, download the appropriate binary from the releases page, and add it to your `$PATH`
