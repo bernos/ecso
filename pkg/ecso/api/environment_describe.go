@@ -8,18 +8,28 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
-func (api *api) DescribeEnvironment(env *ecso.Environment) (map[string]string, error) {
+type EnvironmentDescription struct {
+	Name                     string
+	CloudFormationConsoleURL string
+	CloudWatchLogsConsoleURL string
+	ECSConsoleURL            string
+	ECSClusterBaseURL        string
+	CloudFormationOutputs    map[string]string
+}
+
+func (api *api) DescribeEnvironment(env *ecso.Environment) (*EnvironmentDescription, error) {
 	var (
-		log        = api.cfg.Logger()
-		stack      = env.GetCloudFormationStackName()
-		cfnConsole = util.CloudFormationConsoleURL(stack, env.Region)
-		ecsConsole = util.ClusterConsoleURL(env.GetClusterName(), env.Region)
+		log         = api.cfg.Logger()
+		stack       = env.GetCloudFormationStackName()
+		cfnConsole  = util.CloudFormationConsoleURL(stack, env.Region)
+		ecsConsole  = util.ClusterConsoleURL(env.GetClusterName(), env.Region)
+		description = &EnvironmentDescription{Name: env.Name}
 	)
 
 	reg, err := api.cfg.GetAWSClientRegistry(env.Region)
 
 	if err != nil {
-		return nil, err
+		return description, err
 	}
 
 	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.PrefixPrintf("  "))
@@ -27,18 +37,17 @@ func (api *api) DescribeEnvironment(env *ecso.Environment) (map[string]string, e
 	outputs, err := cfn.GetStackOutputs(stack)
 
 	if err != nil {
-		return nil, err
+		return description, err
 	}
 
-	description := map[string]string{
-		"Environment Name":     env.Name,
-		"CloudFormation Stack": cfnConsole,
-		"ECS Cluster":          ecsConsole,
-		"Cluster Base URL":     fmt.Sprintf("http://%s", outputs["RecordSet"]),
-	}
+	description.CloudFormationOutputs = make(map[string]string)
+	description.CloudFormationConsoleURL = cfnConsole
+	description.ECSConsoleURL = ecsConsole
+	description.CloudWatchLogsConsoleURL = util.CloudWatchLogsConsoleURL(outputs["LogGroup"], env.Region)
+	description.ECSClusterBaseURL = fmt.Sprintf("http://%s", outputs["RecordSet"])
 
 	for k, v := range outputs {
-		description[k] = v
+		description.CloudFormationOutputs[k] = v
 	}
 
 	return description, nil

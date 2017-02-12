@@ -7,6 +7,8 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/fatih/color"
 )
 
@@ -226,16 +228,30 @@ func PrintMap(w io.Writer, maps ...map[string]string) {
 	for _, m := range maps {
 		for k, v := range m {
 			if len(k) > l {
-				fmt.Printf("l:%s:%d\n", k, len(k))
 				l = len(k)
 			}
 			items[k] = v
 		}
 	}
 
-	labelFormat := fmt.Sprintf("%%%ds:", l)
+	labelFormat := fmt.Sprintf("  %%%ds:", l)
 
 	for k, v := range items {
 		fmt.Fprintf(w, "%s %s\n", bold(labelFormat, k), v)
 	}
+}
+
+func PrintEnvironmentDescription(env *api.EnvironmentDescription, logger ecso.Logger) {
+	logger.BannerBlue("Details of the '%s' environment:", env.Name)
+
+	logger.Dl(map[string]string{
+		"CloudFormation console": env.CloudFormationConsoleURL,
+		"CloudWatch logs":        env.CloudWatchLogsConsoleURL,
+		"ECS console":            env.ECSConsoleURL,
+		"ECS base URL":           env.ECSClusterBaseURL,
+	})
+
+	logger.BannerBlue("CloudFormation Outputs:")
+	logger.Dl(env.CloudFormationOutputs)
+	logger.Printf("\n")
 }

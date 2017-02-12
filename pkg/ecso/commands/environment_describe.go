@@ -5,6 +5,7 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
 type EnvironmentDescribeOptions struct {
@@ -42,9 +43,7 @@ func (cmd *environmentDescribeCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	log.BannerGreen("Details of the '%s' environment", env.Name)
-	log.Dl(description)
-	log.Printf("\n")
+	ui.PrintEnvironmentDescription(description, log)
 
 	return nil
 }

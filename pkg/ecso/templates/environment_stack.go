@@ -160,6 +160,13 @@ Outputs:
             - ALB
             - Outputs.LoadBalancerUrl
 
+    LogGroup:
+        Description: A reference to the CloudWatch logs group
+        Value:
+          Fn::GetAtt:
+            - ECS
+            - Outputs.LogGroup
+
     Listener:
         Description: A reference to the port 80 listener
         Value:

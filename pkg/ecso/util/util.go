@@ -39,3 +39,7 @@ func ServiceConsoleURL(service, cluster, region string) string {
 func CloudFormationConsoleURL(stackID, region string) string {
 	return fmt.Sprintf("https://%s.console.aws.amazon.com/cloudformation/home?region=%s#/stack/detail?stackId=%s", region, region, url.QueryEscape(stackID))
 }
+
+func CloudWatchLogsConsoleURL(logGroup, region string) string {
+	return fmt.Sprintf("https://%s.console.aws.amazon.com/cloudwatch/home?region=%s#logStream:group=%s", region, region, logGroup)
+}

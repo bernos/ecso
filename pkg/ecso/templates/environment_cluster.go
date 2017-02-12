@@ -354,4 +354,8 @@ Outputs:
     Cluster:
         Description: A reference to the ECS cluster
         Value: !Ref ECSCluster
+
+    LogGroup:
+        Description: A reference to the CloudWatch logs group
+        Value: !Ref CloudWatchLogsGroup
 `))

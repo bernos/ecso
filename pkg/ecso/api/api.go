@@ -20,7 +20,7 @@ import (
 // service logs
 
 type API interface {
-	DescribeEnvironment(env *ecso.Environment) (map[string]string, error)
+	DescribeEnvironment(env *ecso.Environment) (*EnvironmentDescription, error)
 	DescribeService(env *ecso.Environment, service *ecso.Service) (map[string]string, error)
 
 	EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun bool) error

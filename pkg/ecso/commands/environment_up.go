@@ -7,6 +7,7 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/helpers"
 	"github.com/bernos/ecso/pkg/ecso/templates"
+	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
@@ -70,7 +71,7 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	log.Dl(description)
+	ui.PrintEnvironmentDescription(description, log)
 
 	return nil
 }
