@@ -63,8 +63,8 @@ type cfnHelper struct {
 	log       func(string, ...interface{})
 }
 
-func (svc *cfnHelper) GetStackOutputs(stackName string) (map[string]string, error) {
-	resp, err := svc.cfnClient.DescribeStacks(&cloudformation.DescribeStacksInput{
+func (h *cfnHelper) GetStackOutputs(stackName string) (map[string]string, error) {
+	resp, err := h.cfnClient.DescribeStacks(&cloudformation.DescribeStacksInput{
 		StackName: aws.String(stackName),
 	})
 
@@ -85,34 +85,34 @@ func (svc *cfnHelper) GetStackOutputs(stackName string) (map[string]string, erro
 	return outputs, nil
 }
 
-func (svc *cfnHelper) PackageAndDeploy(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error) {
-	templateBody, err := svc.Package(templateFile, prefix)
+func (h *cfnHelper) PackageAndDeploy(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error) {
+	templateBody, err := h.Package(templateFile, prefix)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return svc.Deploy(templateBody, stackName, params, tags, dryRun)
+	return h.Deploy(templateBody, stackName, params, tags, dryRun)
 
 }
 
-func (svc *cfnHelper) PackageAndCreate(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error) {
-	templateBody, err := svc.Package(templateFile, prefix)
+func (h *cfnHelper) PackageAndCreate(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error) {
+	templateBody, err := h.Package(templateFile, prefix)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return svc.Create(templateBody, stackName, params, tags, dryRun)
+	return h.Create(templateBody, stackName, params, tags, dryRun)
 
 }
 
-func (svc *cfnHelper) Package(templateFile, prefix string) (string, error) {
-	if err := svc.validateTemplateFile(templateFile); err != nil {
+func (h *cfnHelper) Package(templateFile, prefix string) (string, error) {
+	if err := h.validateTemplateFile(templateFile); err != nil {
 		return "", err
 	}
 
-	bucket, err := svc.getDefaultCloudFormationBucket()
+	bucket, err := h.getDefaultCloudFormationBucket()
 
 	if err != nil {
 		return "", err
@@ -125,18 +125,18 @@ func (svc *cfnHelper) Package(templateFile, prefix string) (string, error) {
 		return "", err
 	}
 
-	if err := svc.ensureBucket(bucket); err != nil {
+	if err := h.ensureBucket(bucket); err != nil {
 		return "", err
 	}
 
-	if err := svc.uploadChildTemplates(basedir, string(templateBody), bucket, prefix, os.Open); err != nil {
+	if err := h.uploadChildTemplates(basedir, string(templateBody), bucket, prefix, os.Open); err != nil {
 		return "", err
 	}
 
-	return updateNestedTemplateURLs(string(templateBody), svc.region, bucket, prefix), nil
+	return updateNestedTemplateURLs(string(templateBody), h.region, bucket, prefix), nil
 }
 
-func (svc *cfnHelper) Create(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error) {
+func (h *cfnHelper) Create(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error) {
 	input := &cloudformation.CreateStackInput{
 		StackName:       aws.String(stackName),
 		DisableRollback: aws.Bool(true),
@@ -163,7 +163,7 @@ func (svc *cfnHelper) Create(templateBody, stackName string, params, tags map[st
 		})
 	}
 
-	resp, err := svc.cfnClient.CreateStack(input)
+	resp, err := h.cfnClient.CreateStack(input)
 
 	if err != nil {
 		return nil, err
@@ -173,22 +173,22 @@ func (svc *cfnHelper) Create(templateBody, stackName string, params, tags map[st
 		StackID: *resp.StackId,
 	}
 
-	cancel := svc.LogStackEvents(*resp.StackId, func(ev *cloudformation.StackEvent, err error) {
+	cancel := h.LogStackEvents(*resp.StackId, func(ev *cloudformation.StackEvent, err error) {
 		if ev != nil {
-			svc.log("%s: %s\n", *ev.LogicalResourceId, *ev.ResourceStatus)
+			h.log("%s: %s\n", *ev.LogicalResourceId, *ev.ResourceStatus)
 		}
 	})
 
 	defer cancel()
 
-	svc.log("Waiting for stack creation to complete...\n")
+	h.log("Waiting for stack creation to complete...\n")
 
-	return result, svc.cfnClient.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
+	return result, h.cfnClient.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
 		StackName: resp.StackId,
 	})
 }
 
-func (svc *cfnHelper) Deploy(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error) {
+func (h *cfnHelper) Deploy(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error) {
 	input := &cloudformation.CreateChangeSetInput{
 		StackName:           aws.String(stackName),
 		ChangeSetName:       aws.String(fmt.Sprintf("%s-%d", stackName, time.Now().Unix())),
@@ -216,7 +216,7 @@ func (svc *cfnHelper) Deploy(templateBody, stackName string, params, tags map[st
 		})
 	}
 
-	exists, err := svc.StackExists(stackName)
+	exists, err := h.StackExists(stackName)
 
 	if err != nil {
 		return nil, err
@@ -224,15 +224,15 @@ func (svc *cfnHelper) Deploy(templateBody, stackName string, params, tags map[st
 
 	if exists {
 		input.ChangeSetType = aws.String("UPDATE")
-		svc.log("Updating existing '%s' cloudformation stack\n", stackName)
+		h.log("Updating existing '%s' cloudformation stack\n", stackName)
 	} else {
-		svc.log("Creating new '%s' cloudformation stack\n", stackName)
+		h.log("Creating new '%s' cloudformation stack\n", stackName)
 		input.ChangeSetType = aws.String("CREATE")
 	}
 
-	svc.log("Creating changeset...\n")
+	h.log("Creating changeset...\n")
 
-	changeset, err := svc.cfnClient.CreateChangeSet(input)
+	changeset, err := h.cfnClient.CreateChangeSet(input)
 
 	if err != nil {
 		return nil, err
@@ -244,22 +244,22 @@ func (svc *cfnHelper) Deploy(templateBody, stackName string, params, tags map[st
 		DidRequireUpdating: true,
 	}
 
-	svc.log("Waiting for changeset %s to be ready...\n", *changeset.Id)
+	h.log("Waiting for changeset %s to be ready...\n", *changeset.Id)
 
-	if changeSetDescription, err := svc.WaitForChangeset(*changeset.Id, cloudformation.ChangeSetStatusCreateComplete, cloudformation.ChangeSetStatusFailed); err != nil {
+	if changeSetDescription, err := h.WaitForChangeset(*changeset.Id, cloudformation.ChangeSetStatusCreateComplete, cloudformation.ChangeSetStatusFailed); err != nil {
 		return result, err
 	} else if len(changeSetDescription.Changes) == 0 {
 		result.DidRequireUpdating = false
 		return result, nil
 	}
 
-	svc.log("Created changeset %s\n", *changeset.Id)
+	h.log("Created changeset %s\n", *changeset.Id)
 
 	if dryRun {
 		return result, nil
 	}
 
-	if _, err := svc.cfnClient.ExecuteChangeSet(&cloudformation.ExecuteChangeSetInput{
+	if _, err := h.cfnClient.ExecuteChangeSet(&cloudformation.ExecuteChangeSetInput{
 		ChangeSetName: changeset.Id,
 		StackName:     changeset.StackId,
 	}); err != nil {
@@ -270,33 +270,33 @@ func (svc *cfnHelper) Deploy(templateBody, stackName string, params, tags map[st
 		StackName: aws.String(stackName),
 	}
 
-	cancel := svc.LogStackEvents(*changeset.StackId, func(ev *cloudformation.StackEvent, err error) {
+	cancel := h.LogStackEvents(*changeset.StackId, func(ev *cloudformation.StackEvent, err error) {
 		if ev != nil {
-			svc.log("%s: %s\n", *ev.LogicalResourceId, *ev.ResourceStatus)
+			h.log("%s: %s\n", *ev.LogicalResourceId, *ev.ResourceStatus)
 		}
 	})
 
 	defer cancel()
 
 	if exists {
-		svc.log("Waiting for stack update to complete...\n")
-		return result, svc.cfnClient.WaitUntilStackUpdateComplete(stack)
+		h.log("Waiting for stack update to complete...\n")
+		return result, h.cfnClient.WaitUntilStackUpdateComplete(stack)
 	} else {
-		svc.log("Waiting for stack creation to complete...\n")
-		return result, svc.cfnClient.WaitUntilStackCreateComplete(stack)
+		h.log("Waiting for stack creation to complete...\n")
+		return result, h.cfnClient.WaitUntilStackCreateComplete(stack)
 	}
 }
 
-func (svc *cfnHelper) GetChangeSet(changeset string) (*cloudformation.DescribeChangeSetOutput, error) {
+func (h *cfnHelper) GetChangeSet(changeset string) (*cloudformation.DescribeChangeSetOutput, error) {
 	params := &cloudformation.DescribeChangeSetInput{
 		ChangeSetName: aws.String(changeset),
 	}
 
-	return svc.cfnClient.DescribeChangeSet(params)
+	return h.cfnClient.DescribeChangeSet(params)
 }
 
-func (svc *cfnHelper) DeleteStack(stackName string) error {
-	_, err := svc.cfnClient.DeleteStack(&cloudformation.DeleteStackInput{
+func (h *cfnHelper) DeleteStack(stackName string) error {
+	_, err := h.cfnClient.DeleteStack(&cloudformation.DeleteStackInput{
 		StackName: aws.String(stackName),
 	})
 
@@ -304,22 +304,22 @@ func (svc *cfnHelper) DeleteStack(stackName string) error {
 		return err
 	}
 
-	cancel := svc.LogStackEvents(stackName, func(ev *cloudformation.StackEvent, err error) {
+	cancel := h.LogStackEvents(stackName, func(ev *cloudformation.StackEvent, err error) {
 		if ev != nil {
-			svc.log("%s: %s\n", *ev.LogicalResourceId, *ev.ResourceStatus)
+			h.log("%s: %s\n", *ev.LogicalResourceId, *ev.ResourceStatus)
 		}
 	})
 
 	defer cancel()
 
-	svc.log("Waiting for stack delete to complete...\n")
+	h.log("Waiting for stack delete to complete...\n")
 
-	return svc.cfnClient.WaitUntilStackDeleteComplete(&cloudformation.DescribeStacksInput{
+	return h.cfnClient.WaitUntilStackDeleteComplete(&cloudformation.DescribeStacksInput{
 		StackName: aws.String(stackName),
 	})
 }
 
-func (svc *cfnHelper) StackExists(stackName string) (bool, error) {
+func (h *cfnHelper) StackExists(stackName string) (bool, error) {
 	params := &cloudformation.ListStacksInput{
 		StackStatusFilter: []*string{
 			aws.String(cloudformation.StackStatusCreateComplete),
@@ -340,7 +340,7 @@ func (svc *cfnHelper) StackExists(stackName string) (bool, error) {
 
 	found := false
 
-	err := svc.cfnClient.ListStacksPages(params, func(page *cloudformation.ListStacksOutput, lastPage bool) bool {
+	err := h.cfnClient.ListStacksPages(params, func(page *cloudformation.ListStacksOutput, lastPage bool) bool {
 		for _, stack := range page.StackSummaries {
 			if *stack.StackName == stackName {
 				found = true
@@ -353,7 +353,7 @@ func (svc *cfnHelper) StackExists(stackName string) (bool, error) {
 	return found, err
 }
 
-func (svc *cfnHelper) WaitForChangeset(changeset string, status ...string) (*cloudformation.DescribeChangeSetOutput, error) {
+func (h *cfnHelper) WaitForChangeset(changeset string, status ...string) (*cloudformation.DescribeChangeSetOutput, error) {
 	params := &cloudformation.DescribeChangeSetInput{
 		ChangeSetName: aws.String(changeset),
 	}
@@ -362,7 +362,7 @@ func (svc *cfnHelper) WaitForChangeset(changeset string, status ...string) (*clo
 	timeout := time.Second * 60 * 20
 
 	for {
-		resp, err := svc.cfnClient.DescribeChangeSet(params)
+		resp, err := h.cfnClient.DescribeChangeSet(params)
 
 		if err != nil {
 			return resp, err
@@ -382,7 +382,7 @@ func (svc *cfnHelper) WaitForChangeset(changeset string, status ...string) (*clo
 	}
 }
 
-func (svc *cfnHelper) LogStackEvents(stackID string, logger func(*cloudformation.StackEvent, error)) (cancel func()) {
+func (h *cfnHelper) LogStackEvents(stackID string, logger func(*cloudformation.StackEvent, error)) (cancel func()) {
 	done := make(chan struct{})
 	ticker := time.NewTicker(time.Second * 5)
 
@@ -395,7 +395,7 @@ func (svc *cfnHelper) LogStackEvents(stackID string, logger func(*cloudformation
 		var lastEventID string
 
 		for {
-			resp, err := svc.cfnClient.DescribeStackEvents(params)
+			resp, err := h.cfnClient.DescribeStackEvents(params)
 
 			if err != nil {
 				logger(nil, err)
@@ -434,16 +434,16 @@ func (svc *cfnHelper) LogStackEvents(stackID string, logger func(*cloudformation
 	}
 }
 
-func (svc *cfnHelper) ensureBucket(bucket string) error {
+func (h *cfnHelper) ensureBucket(bucket string) error {
 	params := &s3.HeadBucketInput{
 		Bucket: aws.String(bucket), // Required
 	}
 
-	_, err := svc.s3Client.HeadBucket(params)
+	_, err := h.s3Client.HeadBucket(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() == "NotFound" {
-			return svc.createBucket(bucket)
+			return h.createBucket(bucket)
 		}
 
 		return err
@@ -452,25 +452,25 @@ func (svc *cfnHelper) ensureBucket(bucket string) error {
 	return nil
 }
 
-func (svc *cfnHelper) createBucket(bucket string) error {
+func (h *cfnHelper) createBucket(bucket string) error {
 	params := &s3.CreateBucketInput{
 		Bucket: aws.String(bucket), // Required
 		CreateBucketConfiguration: &s3.CreateBucketConfiguration{
-			LocationConstraint: aws.String(svc.region),
+			LocationConstraint: aws.String(h.region),
 		},
 	}
 
-	svc.log("Creating bucket '%s' in region '%s'\n", bucket, svc.region)
+	h.log("Creating bucket '%s' in region '%s'\n", bucket, h.region)
 
-	_, err := svc.s3Client.CreateBucket(params)
+	_, err := h.s3Client.CreateBucket(params)
 
 	return err
 }
 
-func (svc *cfnHelper) uploadChildTemplates(basedir, templateBody, bucket, prefix string, op func(string) (*os.File, error)) error {
+func (h *cfnHelper) uploadChildTemplates(basedir, templateBody, bucket, prefix string, op func(string) (*os.File, error)) error {
 	for _, file := range findNestedTemplateFiles(templateBody) {
 
-		if err := svc.validateTemplateFile(filepath.Join(basedir, file)); err != nil {
+		if err := h.validateTemplateFile(filepath.Join(basedir, file)); err != nil {
 			return err
 		}
 
@@ -488,9 +488,9 @@ func (svc *cfnHelper) uploadChildTemplates(basedir, templateBody, bucket, prefix
 			Body:   reader,
 		}
 
-		svc.log("Uploading template '%s' to 's3://%s/%s'\n", file, bucket, prefix)
+		h.log("Uploading template '%s' to 's3://%s/%s'\n", file, bucket, prefix)
 
-		if _, err := svc.uploader.Upload(params); err != nil {
+		if _, err := h.uploader.Upload(params); err != nil {
 			return err
 		}
 	}
@@ -514,31 +514,31 @@ func updateNestedTemplateURLs(templateBody, region, bucket, prefix string) strin
 	return childTemplateRegexp.ReplaceAllString(templateBody, repl)
 }
 
-func (svc *cfnHelper) validateTemplate(body []byte) error {
-	_, err := svc.cfnClient.ValidateTemplate(&cloudformation.ValidateTemplateInput{
+func (h *cfnHelper) validateTemplate(body []byte) error {
+	_, err := h.cfnClient.ValidateTemplate(&cloudformation.ValidateTemplateInput{
 		TemplateBody: aws.String(string(body)),
 	})
 
 	return err
 }
 
-func (svc *cfnHelper) validateTemplateFile(file string) error {
-	svc.log("Validating cloudformation template '%s'...", file)
+func (h *cfnHelper) validateTemplateFile(file string) error {
+	h.log("Validating cloudformation template '%s'...", file)
 	templateBody, err := ioutil.ReadFile(file)
 
 	if err != nil {
 		return err
 	}
 
-	return svc.validateTemplate(templateBody)
+	return h.validateTemplate(templateBody)
 }
 
-func (svc *cfnHelper) getDefaultCloudFormationBucket() (string, error) {
-	resp, err := svc.stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+func (h *cfnHelper) getDefaultCloudFormationBucket() (string, error) {
+	resp, err := h.stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 
 	if err != nil {
 		return "", err
 	}
 
-	return fmt.Sprintf("ecso-%s-%s", svc.region, *resp.Account), nil
+	return fmt.Sprintf("ecso-%s-%s", h.region, *resp.Account), nil
 }
