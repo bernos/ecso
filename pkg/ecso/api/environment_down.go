@@ -16,7 +16,7 @@ func (api *api) EnvironmentDown(p *ecso.Project, env *ecso.Environment) error {
 
 	var (
 		log            = api.cfg.Logger()
-		cfnService     = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.PrefixPrintf("  "))
+		cfnHelper      = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.PrefixPrintf("  "))
 		r53Helper      = helpers.NewRoute53Helper(reg.Route53API(), log.PrefixPrintf("  "))
 		zone           = fmt.Sprintf("%s.", env.CloudFormationParameters["DNSZone"])
 		datadogDNSName = fmt.Sprintf("%s.%s.%s", "datadog", env.GetClusterName(), zone)
@@ -31,7 +31,7 @@ func (api *api) EnvironmentDown(p *ecso.Project, env *ecso.Environment) error {
 	log.Printf("\n")
 	log.Infof("Deleting environment Cloud Formation stack '%s'", env.GetCloudFormationStackName())
 
-	if err := cfnService.DeleteStack(env.GetCloudFormationStackName()); err != nil {
+	if err := cfnHelper.DeleteStack(env.GetCloudFormationStackName()); err != nil {
 		return err
 	}
 
