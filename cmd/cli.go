@@ -73,6 +73,7 @@ func NewEnvironmentCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 			NewEnvironmentUpCliCommand(dispatcher),
 			NewEnvironmentRmCliCommand(dispatcher),
 			NewEnvironmentDescribeCliCommand(dispatcher),
+			NewEnvironmentDownCliCommand(dispatcher),
 		},
 	}
 }
@@ -173,6 +174,7 @@ func NewEnvironmentDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 		if env == "" {
 			env = os.Getenv("ECSO_ENVIRONMENT")
+
 		}
 
 		if env == "" {
@@ -193,6 +195,49 @@ func NewEnvironmentDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
+func NewEnvironmentDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+
+	keys := struct {
+		Force string
+	}{
+		Force: "force",
+	}
+
+	fromCliContext := func(c *cli.Context) (ecso.Command, error) {
+		force := c.Bool(keys.Force)
+		env := c.Args().First()
+
+		if env == "" {
+			env = os.Getenv("ECSO_ENVIRONMENT")
+		}
+
+		if env == "" {
+			return nil, NewArgumentRequiredError("environment")
+		}
+
+		if !force {
+			return nil, NewOptionRequiredError(keys.Force)
+		}
+
+		return commands.NewEnvironmentDownCommand(env, func(opt *commands.EnvironmentDownOptions) {
+			// TODO: populate options from c
+		}), nil
+	}
+
+	return cli.Command{
+		Name:        "down",
+		Usage:       "Stops an ecso environment",
+		Description: "TODO",
+		ArgsUsage:   "ENVIRONMENT",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  keys.Force,
+				Usage: "Required. Confirms the environment will be stopped",
+			},
+		},
+		Action: MakeAction(dispatcher, fromCliContext),
+	}
+}
 func NewEnvironmentRmCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 	keys := struct {
