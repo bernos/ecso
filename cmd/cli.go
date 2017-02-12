@@ -80,14 +80,13 @@ func NewEnvironmentCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 func NewEnvironmentAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	keys := struct {
-		Name                 string
-		VPCID                string
-		CloudFormationBucket string
-		ALBSubnets           string
-		InstanceSubnets      string
-		InstanceType         string
-		Region               string
-		Size                 string
+		Name            string
+		VPCID           string
+		ALBSubnets      string
+		InstanceSubnets string
+		InstanceType    string
+		Region          string
+		Size            string
 	}{
 		Name:            "name",
 		VPCID:           "vpc",
@@ -100,10 +99,6 @@ func NewEnvironmentAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 	fromCliContext := func(c *cli.Context) (ecso.Command, error) {
 		return commands.NewEnvironmentAddCommand(c.Args().First(), func(opt *commands.EnvironmentAddOptions) {
-			if c.String(keys.CloudFormationBucket) != "" {
-				opt.CloudFormationBucket = c.String(keys.CloudFormationBucket)
-			}
-
 			if c.String(keys.VPCID) != "" {
 				opt.VPCID = c.String(keys.VPCID)
 			}
@@ -135,10 +130,6 @@ func NewEnvironmentAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 		Usage:     "Add a new environment to the project",
 		ArgsUsage: "[environment]",
 		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:  keys.CloudFormationBucket,
-				Usage: "The S3 bucket that ecso will upload cloud formation templates for this environment to. If this bucket does not exist, ecso will create it.",
-			},
 			cli.StringFlag{
 				Name:  keys.VPCID,
 				Usage: "The vpc to create the environment in",

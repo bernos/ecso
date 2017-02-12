@@ -10,17 +10,16 @@ import (
 )
 
 type EnvironmentAddOptions struct {
-	Name                 string
-	CloudFormationBucket string
-	VPCID                string
-	ALBSubnets           string
-	InstanceSubnets      string
-	Region               string
-	Account              string
-	InstanceType         string
-	Size                 int
-	DNSZone              string
-	DataDogAPIKey        string
+	Name            string
+	VPCID           string
+	ALBSubnets      string
+	InstanceSubnets string
+	Region          string
+	Account         string
+	InstanceType    string
+	Size            int
+	DNSZone         string
+	DataDogAPIKey   string
 }
 
 func NewEnvironmentAddCommand(environmentName string, options ...func(*EnvironmentAddOptions)) ecso.Command {
@@ -52,9 +51,8 @@ func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	project.AddEnvironment(&ecso.Environment{
-		Name:                 c.options.Name,
-		Region:               c.options.Region,
-		CloudFormationBucket: c.options.CloudFormationBucket,
+		Name:   c.options.Name,
+		Region: c.options.Region,
 		CloudFormationParameters: map[string]string{
 			"VPC":             c.options.VPCID,
 			"InstanceSubnets": c.options.InstanceSubnets,
@@ -100,7 +98,6 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 		Name            string
 		Region          string
 		VPC             string
-		Bucket          string
 		ALBSubnets      string
 		InstanceSubnets string
 		InstanceType    string
@@ -111,7 +108,6 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 		Name:            "What is the name of your environment?",
 		Region:          "Which AWS region will the environment be deployed to?",
 		VPC:             "Which VPC would you like to create the environment in?",
-		Bucket:          "Which S3 bucket would you like to use to store CloudFormation templates used by ecso?",
 		ALBSubnets:      "Which subnets would you like to deploy the load balancer to?",
 		InstanceSubnets: "Which subnets would you like to deploy the ECS container instances to?",
 		InstanceType:    "What type of instances would you like to add to the ECS cluster?",
@@ -124,7 +120,6 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 		Name            func(string) error
 		Region          func(string) error
 		VPC             func(string) error
-		Bucket          func(string) error
 		ALBSubnets      func(string) error
 		InstanceSubnets func(string) error
 		InstanceType    func(string) error
@@ -135,7 +130,6 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 		Name:            environmentNameValidator(ctx.Project),
 		Region:          ui.ValidateRequired("Region is required"),
 		VPC:             ui.ValidateRequired("VPC is required"),
-		Bucket:          ui.ValidateRequired("Bucket is required"),
 		ALBSubnets:      ui.ValidateRequired("ALB subnets are required"),
 		InstanceSubnets: ui.ValidateRequired("Instance subnets are required"),
 		InstanceType:    ui.ValidateRequired("Instance type is required"),
@@ -165,10 +159,6 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 	}
 
 	if err := ui.AskStringIfEmptyVar(&options.VPCID, prompts.VPC, accountDefaults.VPCID, validators.VPC); err != nil {
-		return err
-	}
-
-	if err := ui.AskStringIfEmptyVar(&options.CloudFormationBucket, prompts.Bucket, getDefaultCloudFormationBucket(options.Account, options.Region), validators.Bucket); err != nil {
 		return err
 	}
 
@@ -210,14 +200,6 @@ func environmentNameValidator(p *ecso.Project) func(string) error {
 		}
 		return nil
 	}
-}
-
-func getDefaultCloudFormationBucket(account, region string) string {
-	if account == "" || region == "" {
-		return ""
-	}
-
-	return fmt.Sprintf("ecso-%s-%s", region, account)
 }
 
 func getCurrentAWSAccount(svc stsiface.STSAPI) string {

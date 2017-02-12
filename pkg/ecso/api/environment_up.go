@@ -13,7 +13,6 @@ func (api *api) EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun boo
 		stack    = env.GetCloudFormationStackName()
 		template = env.GetCloudFormationTemplateFile()
 		prefix   = env.GetCloudFormationBucketPrefix()
-		bucket   = env.CloudFormationBucket
 		tags     = env.CloudFormationTags
 		params   = env.CloudFormationParameters
 	)
@@ -26,7 +25,7 @@ func (api *api) EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun boo
 
 	log.Infof("Deploying Cloud Formation stack for the '%s' environment", env.Name)
 
-	cfn := helpers.NewCloudFormationService(env.Region, reg.CloudFormationAPI(), reg.S3API(), log.PrefixPrintf("  "))
+	cfn := helpers.NewCloudFormationService(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.PrefixPrintf("  "))
 	exists, err := cfn.StackExists(stack)
 
 	if err != nil {
@@ -36,9 +35,9 @@ func (api *api) EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun boo
 	var result *helpers.DeploymentResult
 
 	if exists {
-		result, err = cfn.PackageAndDeploy(stack, template, bucket, prefix, tags, params, dryRun)
+		result, err = cfn.PackageAndDeploy(stack, template, prefix, tags, params, dryRun)
 	} else {
-		result, err = cfn.PackageAndCreate(stack, template, bucket, prefix, tags, params, dryRun)
+		result, err = cfn.PackageAndCreate(stack, template, prefix, tags, params, dryRun)
 	}
 
 	if dryRun {

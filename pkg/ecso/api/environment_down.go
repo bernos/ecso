@@ -16,7 +16,7 @@ func (api *api) EnvironmentDown(p *ecso.Project, env *ecso.Environment) error {
 
 	var (
 		log            = api.cfg.Logger()
-		cfnService     = helpers.NewCloudFormationService(env.Region, reg.CloudFormationAPI(), reg.S3API(), log.PrefixPrintf("  "))
+		cfnService     = helpers.NewCloudFormationService(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.PrefixPrintf("  "))
 		r53Service     = helpers.NewRoute53Service(reg.Route53API(), log.PrefixPrintf("  "))
 		zone           = fmt.Sprintf("%s.", env.CloudFormationParameters["DNSZone"])
 		datadogDNSName = fmt.Sprintf("%s.%s.%s", "datadog", env.GetClusterName(), zone)

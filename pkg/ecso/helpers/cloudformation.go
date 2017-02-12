@@ -16,6 +16,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 )
 
 var (
@@ -29,9 +31,9 @@ type DeploymentResult struct {
 }
 
 type CloudFormationService interface {
-	PackageAndDeploy(stackName, templateFile, bucket, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
-	PackageAndCreate(stackName, templateFile, bucket, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
-	Package(templateFile, bucket, prefix string) (string, error)
+	PackageAndDeploy(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
+	PackageAndCreate(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
+	Package(templateFile, prefix string) (string, error)
 	DeleteStack(serviceName string) error
 	Deploy(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error)
 	Create(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error)
@@ -41,11 +43,12 @@ type CloudFormationService interface {
 	GetStackOutputs(stackName string) (map[string]string, error)
 }
 
-func NewCloudFormationService(region string, cfnClient cloudformationiface.CloudFormationAPI, s3Client s3iface.S3API, log func(string, ...interface{})) CloudFormationService {
+func NewCloudFormationService(region string, cfnClient cloudformationiface.CloudFormationAPI, s3Client s3iface.S3API, stsClient stsiface.STSAPI, log func(string, ...interface{})) CloudFormationService {
 	return &cfnService{
 		region:    region,
 		cfnClient: cfnClient,
 		s3Client:  s3Client,
+		stsClient: stsClient,
 		uploader:  s3manager.NewUploaderWithClient(s3Client),
 		log:       log,
 	}
@@ -56,6 +59,7 @@ type cfnService struct {
 	cfnClient cloudformationiface.CloudFormationAPI
 	uploader  *s3manager.Uploader
 	s3Client  s3iface.S3API
+	stsClient stsiface.STSAPI
 	log       func(string, ...interface{})
 }
 
@@ -81,8 +85,8 @@ func (svc *cfnService) GetStackOutputs(stackName string) (map[string]string, err
 	return outputs, nil
 }
 
-func (svc *cfnService) PackageAndDeploy(stackName, templateFile, bucket, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error) {
-	templateBody, err := svc.Package(templateFile, bucket, prefix)
+func (svc *cfnService) PackageAndDeploy(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error) {
+	templateBody, err := svc.Package(templateFile, prefix)
 
 	if err != nil {
 		return nil, err
@@ -92,8 +96,8 @@ func (svc *cfnService) PackageAndDeploy(stackName, templateFile, bucket, prefix 
 
 }
 
-func (svc *cfnService) PackageAndCreate(stackName, templateFile, bucket, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error) {
-	templateBody, err := svc.Package(templateFile, bucket, prefix)
+func (svc *cfnService) PackageAndCreate(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error) {
+	templateBody, err := svc.Package(templateFile, prefix)
 
 	if err != nil {
 		return nil, err
@@ -103,8 +107,14 @@ func (svc *cfnService) PackageAndCreate(stackName, templateFile, bucket, prefix 
 
 }
 
-func (svc *cfnService) Package(templateFile, bucket, prefix string) (string, error) {
+func (svc *cfnService) Package(templateFile, prefix string) (string, error) {
 	if err := svc.validateTemplateFile(templateFile); err != nil {
+		return "", err
+	}
+
+	bucket, err := svc.getDefaultCloudFormationBucket()
+
+	if err != nil {
 		return "", err
 	}
 
@@ -521,4 +531,14 @@ func (svc *cfnService) validateTemplateFile(file string) error {
 	}
 
 	return svc.validateTemplate(templateBody)
+}
+
+func (svc *cfnService) getDefaultCloudFormationBucket() (string, error) {
+	resp, err := svc.stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("ecso-%s-%s", svc.region, *resp.Account), nil
 }

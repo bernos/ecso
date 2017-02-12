@@ -92,7 +92,7 @@ func logOutputs(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.S
 	var (
 		log      = ctx.Config.Logger()
 		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		cfn      = helpers.NewCloudFormationService(env.Region, registry.CloudFormationAPI(), registry.S3API(), log.PrefixPrintf("  "))
+		cfn      = helpers.NewCloudFormationService(env.Region, registry.CloudFormationAPI(), registry.S3API(), registry.STSAPI(), log.PrefixPrintf("  "))
 	)
 
 	outputs, err := cfn.GetStackOutputs(env.GetCloudFormationStackName())
