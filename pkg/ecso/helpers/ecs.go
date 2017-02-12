@@ -9,23 +9,23 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 )
 
-type ECSService interface {
+type ECSHelper interface {
 	LogServiceEvents(service, cluster string, logger func(*ecs.ServiceEvent, error)) (cancel func())
 }
 
-func NewECSService(ecsClient ecsiface.ECSAPI, log func(string, ...interface{})) ECSService {
-	return &ecsService{
+func NewECSHelper(ecsClient ecsiface.ECSAPI, log func(string, ...interface{})) ECSHelper {
+	return &ecsHelper{
 		ecsClient: ecsClient,
 		log:       log,
 	}
 }
 
-type ecsService struct {
+type ecsHelper struct {
 	ecsClient ecsiface.ECSAPI
 	log       func(string, ...interface{})
 }
 
-func (svc *ecsService) LogServiceEvents(service, cluster string, logger func(*ecs.ServiceEvent, error)) (cancel func()) {
+func (h *ecsHelper) LogServiceEvents(service, cluster string, logger func(*ecs.ServiceEvent, error)) (cancel func()) {
 	done := make(chan struct{})
 	ticker := time.NewTicker(time.Second * 5)
 
@@ -41,7 +41,7 @@ func (svc *ecsService) LogServiceEvents(service, cluster string, logger func(*ec
 		var lastEventID string
 
 		for {
-			resp, err := svc.ecsClient.DescribeServices(params)
+			resp, err := h.ecsClient.DescribeServices(params)
 
 			if err != nil {
 				logger(nil, err)

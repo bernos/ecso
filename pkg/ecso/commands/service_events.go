@@ -38,13 +38,13 @@ type serviceEventsCommand struct {
 
 func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		log        = ctx.Config.Logger()
-		env        = ctx.Project.Environments[cmd.options.Environment]
-		service    = ctx.Project.Services[cmd.options.Name]
-		registry   = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		ecsService = helpers.NewECSService(registry.ECSAPI(), log.PrefixPrintf("  "))
-		ecsoAPI    = api.New(ctx.Config)
-		count      = 0
+		log       = ctx.Config.Logger()
+		env       = ctx.Project.Environments[cmd.options.Environment]
+		service   = ctx.Project.Services[cmd.options.Name]
+		registry  = ctx.Config.MustGetAWSClientRegistry(env.Region)
+		ecsHelper = helpers.NewECSHelper(registry.ECSAPI(), log.PrefixPrintf("  "))
+		ecsoAPI   = api.New(ctx.Config)
+		count     = 0
 	)
 
 	runningService, err := ecsoAPI.GetECSService(ctx.Project, env, service)
@@ -53,7 +53,7 @@ func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	cancel := ecsService.LogServiceEvents(*runningService.ServiceName, env.GetClusterName(), func(e *ecs.ServiceEvent, err error) {
+	cancel := ecsHelper.LogServiceEvents(*runningService.ServiceName, env.GetClusterName(), func(e *ecs.ServiceEvent, err error) {
 		if err != nil {
 			log.Errorf("%s\n", err.Error())
 		} else {
