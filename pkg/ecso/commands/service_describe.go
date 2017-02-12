@@ -47,9 +47,7 @@ func (cmd *serviceDecribeCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	log.BannerGreen("Details of the '%s' service", service.Name)
-	log.Dl(description)
-	log.Printf("\n")
+	ui.PrintServiceDescription(description, log)
 
 	return nil
 }

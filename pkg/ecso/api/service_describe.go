@@ -8,7 +8,16 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
-func (api *api) DescribeService(env *ecso.Environment, service *ecso.Service) (map[string]string, error) {
+type ServiceDescription struct {
+	Name                     string
+	URL                      string
+	CloudFormationConsoleURL string
+	CloudWatchLogsConsoleURL string
+	ECSConsoleURL            string
+	CloudFormationOutputs    map[string]string
+}
+
+func (api *api) DescribeService(env *ecso.Environment, service *ecso.Service) (*ServiceDescription, error) {
 	var (
 		log = api.cfg.Logger()
 	)
@@ -33,17 +42,21 @@ func (api *api) DescribeService(env *ecso.Environment, service *ecso.Service) (m
 		return nil, err
 	}
 
-	items := map[string]string{
-		"Service Console": util.ServiceConsoleURL(serviceOutputs["Service"], env.GetClusterName(), env.Region),
+	desc := &ServiceDescription{
+		Name:                     service.Name,
+		ECSConsoleURL:            util.ServiceConsoleURL(serviceOutputs["Service"], env.GetClusterName(), env.Region),
+		CloudFormationConsoleURL: util.CloudFormationConsoleURL(service.GetCloudFormationStackName(env), env.Region),
+		CloudWatchLogsConsoleURL: util.CloudWatchLogsConsoleURL(serviceOutputs["CloudWatchLogsGroup"], env.Region),
+		CloudFormationOutputs:    make(map[string]string),
 	}
 
 	if service.Route != "" {
-		items["Service URL"] = fmt.Sprintf("http://%s%s", envOutputs["RecordSet"], service.Route)
+		desc.URL = fmt.Sprintf("http://%s%s", envOutputs["RecordSet"], service.Route)
 	}
 
 	for k, v := range serviceOutputs {
-		items[k] = v
+		desc.CloudFormationOutputs[k] = v
 	}
 
-	return items, nil
+	return desc, nil
 }

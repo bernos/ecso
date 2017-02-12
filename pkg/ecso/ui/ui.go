@@ -255,3 +255,23 @@ func PrintEnvironmentDescription(env *api.EnvironmentDescription, logger ecso.Lo
 	logger.Dl(env.CloudFormationOutputs)
 	logger.Printf("\n")
 }
+
+func PrintServiceDescription(service *api.ServiceDescription, logger ecso.Logger) {
+	logger.BannerBlue("Details of the '%s' service:", service.Name)
+
+	logger.Dl(map[string]string{
+		"CloudFormation console": service.CloudFormationConsoleURL,
+		"CloudWatch logs":        service.CloudWatchLogsConsoleURL,
+		"ECS console":            service.ECSConsoleURL,
+	})
+
+	if service.URL != "" {
+		logger.Dl(map[string]string{
+			"Service URL": service.URL,
+		})
+	}
+
+	logger.BannerBlue("CloudFormation Outputs:")
+	logger.Dl(service.CloudFormationOutputs)
+	logger.Printf("\n")
+}

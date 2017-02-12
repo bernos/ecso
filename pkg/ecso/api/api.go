@@ -21,7 +21,7 @@ import (
 
 type API interface {
 	DescribeEnvironment(env *ecso.Environment) (*EnvironmentDescription, error)
-	DescribeService(env *ecso.Environment, service *ecso.Service) (map[string]string, error)
+	DescribeService(env *ecso.Environment, service *ecso.Service) (*ServiceDescription, error)
 
 	EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun bool) error
 	EnvironmentDown(p *ecso.Project, env *ecso.Environment) error

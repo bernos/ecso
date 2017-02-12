@@ -6,7 +6,6 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/helpers"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
@@ -59,7 +58,15 @@ func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext) error {
 		service.Name,
 		env.Name)
 
-	return logOutputs(ctx, env, service)
+	description, err := ecsoAPI.DescribeService(env, service)
+
+	if err != nil {
+		return err
+	}
+
+	ui.PrintServiceDescription(description, log)
+
+	return nil
 }
 
 func (cmd *serviceUpCommand) Prompt(ctx *ecso.CommandContext) error {
@@ -84,35 +91,6 @@ func (cmd *serviceUpCommand) Validate(ctx *ecso.CommandContext) error {
 	if _, ok := ctx.Project.Environments[opt.Environment]; !ok {
 		return fmt.Errorf("Environment '%s' not found", opt.Environment)
 	}
-
-	return nil
-}
-
-func logOutputs(ctx *ecso.CommandContext, env *ecso.Environment, service *ecso.Service) error {
-	var (
-		log      = ctx.Config.Logger()
-		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		cfn      = helpers.NewCloudFormationHelper(env.Region, registry.CloudFormationAPI(), registry.S3API(), registry.STSAPI(), log.PrefixPrintf("  "))
-	)
-
-	outputs, err := cfn.GetStackOutputs(env.GetCloudFormationStackName())
-
-	if err != nil {
-		return err
-	}
-
-	serviceOutputs, err := cfn.GetStackOutputs(service.GetCloudFormationStackName(env))
-
-	items := map[string]string{
-		"Service Console": util.ServiceConsoleURL(serviceOutputs["Service"], env.GetClusterName(), env.Region),
-	}
-
-	if service.Route != "" {
-		items["Service URL"] = fmt.Sprintf("http://%s%s", outputs["RecordSet"], service.Route)
-	}
-
-	log.Dl(items)
-	log.Printf("\n")
 
 	return nil
 }
