@@ -6,24 +6,24 @@ import (
 	"github.com/aws/aws-sdk-go/service/route53/route53iface"
 )
 
-type Route53Service interface {
+type Route53Helper interface {
 	DeleteResourceRecordSetsByName(name, zone, reason string) error
 }
 
-func NewRoute53Service(route53API route53iface.Route53API, log func(string, ...interface{})) Route53Service {
-	return &route53Service{
+func NewRoute53Helper(route53API route53iface.Route53API, log func(string, ...interface{})) Route53Helper {
+	return &route53Helper{
 		route53API: route53API,
 		log:        log,
 	}
 }
 
-type route53Service struct {
+type route53Helper struct {
 	route53API route53iface.Route53API
 	log        func(string, ...interface{})
 }
 
-func (svc *route53Service) DeleteResourceRecordSetsByName(name, zone, reason string) error {
-	zones, err := svc.route53API.ListHostedZonesByName(&route53.ListHostedZonesByNameInput{
+func (h *route53Helper) DeleteResourceRecordSetsByName(name, zone, reason string) error {
+	zones, err := h.route53API.ListHostedZonesByName(&route53.ListHostedZonesByNameInput{
 		DNSName: aws.String(zone),
 	})
 
@@ -32,7 +32,7 @@ func (svc *route53Service) DeleteResourceRecordSetsByName(name, zone, reason str
 	}
 
 	for _, zone := range zones.HostedZones {
-		resp, err := svc.route53API.ListResourceRecordSets(&route53.ListResourceRecordSetsInput{
+		resp, err := h.route53API.ListResourceRecordSets(&route53.ListResourceRecordSetsInput{
 			HostedZoneId: zone.Id,
 		})
 
@@ -49,12 +49,12 @@ func (svc *route53Service) DeleteResourceRecordSetsByName(name, zone, reason str
 					ResourceRecordSet: record,
 				})
 
-				svc.log("Deleting recordset %s\n", *record.Name)
+				h.log("Deleting recordset %s\n", *record.Name)
 			}
 		}
 
 		if len(changes) > 0 {
-			if _, err := svc.route53API.ChangeResourceRecordSets(&route53.ChangeResourceRecordSetsInput{
+			if _, err := h.route53API.ChangeResourceRecordSets(&route53.ChangeResourceRecordSetsInput{
 				HostedZoneId: zone.Id,
 				ChangeBatch: &route53.ChangeBatch{
 					Comment: aws.String(reason),
@@ -64,9 +64,9 @@ func (svc *route53Service) DeleteResourceRecordSetsByName(name, zone, reason str
 				return err
 			}
 
-			svc.log("Done\n")
+			h.log("Done\n")
 		} else {
-			svc.log("No recordsets matching '%s' found\n", name)
+			h.log("No recordsets matching '%s' found\n", name)
 		}
 	}
 

@@ -17,7 +17,7 @@ func (api *api) EnvironmentDown(p *ecso.Project, env *ecso.Environment) error {
 	var (
 		log            = api.cfg.Logger()
 		cfnService     = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.PrefixPrintf("  "))
-		r53Service     = helpers.NewRoute53Service(reg.Route53API(), log.PrefixPrintf("  "))
+		r53Helper      = helpers.NewRoute53Helper(reg.Route53API(), log.PrefixPrintf("  "))
 		zone           = fmt.Sprintf("%s.", env.CloudFormationParameters["DNSZone"])
 		datadogDNSName = fmt.Sprintf("%s.%s.%s", "datadog", env.GetClusterName(), zone)
 	)
@@ -38,7 +38,7 @@ func (api *api) EnvironmentDown(p *ecso.Project, env *ecso.Environment) error {
 	log.Printf("\n")
 	log.Infof("Deleting %s SRV records", datadogDNSName)
 
-	return r53Service.DeleteResourceRecordSetsByName(
+	return r53Helper.DeleteResourceRecordSetsByName(
 		datadogDNSName,
 		zone,
 		"Deleted by ecso environment rm")

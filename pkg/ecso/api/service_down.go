@@ -30,14 +30,14 @@ func (api *api) ServiceDown(project *ecso.Project, env *ecso.Environment, servic
 
 func (api *api) clearServiceDNSRecords(reg *ecso.AWSClientRegistry, env *ecso.Environment, service *ecso.Service) error {
 	var (
-		log        = api.cfg.Logger()
-		r53Service = helpers.NewRoute53Service(reg.Route53API(), log.PrefixPrintf("  "))
-		dnsName    = fmt.Sprintf("%s.%s.", service.Name, env.CloudFormationParameters["DNSZone"])
+		log       = api.cfg.Logger()
+		r53Helper = helpers.NewRoute53Helper(reg.Route53API(), log.PrefixPrintf("  "))
+		dnsName   = fmt.Sprintf("%s.%s.", service.Name, env.CloudFormationParameters["DNSZone"])
 	)
 
 	log.Infof("Deleting any SRV DNS records for %s...", dnsName)
 
-	if err := r53Service.DeleteResourceRecordSetsByName(dnsName, env.CloudFormationParameters["DNSZone"], "Deleted by ecso service down"); err != nil {
+	if err := r53Helper.DeleteResourceRecordSetsByName(dnsName, env.CloudFormationParameters["DNSZone"], "Deleted by ecso service down"); err != nil {
 		return err
 	}
 
