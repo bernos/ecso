@@ -97,7 +97,7 @@ func (cmd *envUpCommand) logEnvironmentDetails(ctx *ecso.CommandContext, env *ec
 	var (
 		log        = ctx.Config.Logger()
 		reg        = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		cfn        = helpers.NewCloudFormationService(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.PrefixPrintf("  "))
+		cfn        = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.PrefixPrintf("  "))
 		stack      = env.GetCloudFormationStackName()
 		cfnConsole = util.CloudFormationConsoleURL(stack, env.Region)
 		ecsConsole = util.ClusterConsoleURL(env.GetClusterName(), env.Region)

@@ -50,7 +50,7 @@ func (api *api) deleteServiceStack(reg *ecso.AWSClientRegistry, env *ecso.Enviro
 	var (
 		log   = api.cfg.Logger()
 		stack = service.GetCloudFormationStackName(env)
-		cfn   = helpers.NewCloudFormationService(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.PrefixPrintf("  "))
+		cfn   = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.PrefixPrintf("  "))
 	)
 
 	log.Infof("Deleting cloud formation stack '%s'", stack)
