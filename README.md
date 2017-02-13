@@ -14,7 +14,9 @@ deploying, running and monitoring projects on Amazon ECS. It's features include
   freely modified by hand, and can be deployed using tools other than ecso, 
   such as the AWS cli or web console.
 - Don't want a monolithic repository with all your instructure and service in 
-  one place? ecso projects can easily span multiple repos: keep all your environment infrastructure in one repository, and each of your services in their own.
+  one place? ecso projects can easily span multiple repos: keep all your 
+  environment infrastructure in one repository, and each of your services in 
+  their own.
 
 ## Installing
 If you have a working go environment, just run 
@@ -64,6 +66,33 @@ ecso service logs my-service --environment my-environment
 
 # Finally, to stop all running services, and destory the environment run
 ecso environment rm my-environment --force
+```
+
+## Configuration defaults
+Remembering VPC and subnet IDs and other details can be annoying. You can store
+per-account settings for ecso environments in ~/.ecso.json and ecso will use
+these settings as defaults, based on AWS account you are signed into when 
+running ecso. Just copy, paste and edit the following json to ~/.ecso.json
+
+```json
+{
+    "AccountDefaults": {
+        "aws-numeric-account-id-here": {
+            "VPCID": "vpc-abc123",
+            "ALBSubnets": "subnet-abc123,subnet-abc456,subnet-abc789",
+            "InstanceSubnets": "subnet-def123,subnet-def456,subnet-def789",
+            "DNSZone": "connect.dev.outfra.xyz",
+            "DataDogAPIKey": "sjkado9dfajkcoisn"
+        },
+        "another-aws-numeric-account-id-here": {
+            "VPCID": "vpc-abc123",
+            "ALBSubnets": "subnet-abc123,subnet-abc456,subnet-abc789",
+            "InstanceSubnets": "subnet-def123,subnet-def456,subnet-def789",
+            "DNSZone": "connect.dev.outfra.xyz",
+            "DataDogAPIKey": "sjkado9dfajkcoisn"
+        }
+    }
+}
 ```
 
 # Building ecso
