@@ -72,7 +72,7 @@ func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	log.BannerGreen("Successfully added environment '%s' to the project", c.options.Name)
+	ui.BannerGreen(log, "Successfully added environment '%s' to the project", c.options.Name)
 	log.Printf("Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.options.Name)
 
 	return nil
@@ -141,7 +141,7 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 
 	// TODO Ask if there is an existing environment?
 	// If yes, then ask for the cfn stack id and collect outputs
-	log.BannerBlue("Adding a new environment to the %s project", project.Name)
+	ui.BannerBlue(log, "Adding a new environment to the %s project", project.Name)
 
 	if account := getCurrentAWSAccount(stsAPI); options.Account == "" {
 		options.Account = account

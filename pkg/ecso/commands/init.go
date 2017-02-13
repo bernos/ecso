@@ -53,7 +53,7 @@ func (cmd *initCommand) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	log.Infof("Created project file at %s", project.ProjectFile())
-	log.BannerGreen("Successfully created project '%s'.", project.Name)
+	ui.BannerGreen(log, "Successfully created project '%s'.", project.Name)
 
 	return nil
 }
@@ -65,7 +65,7 @@ func (cmd *initCommand) Prompt(ctx *ecso.CommandContext) error {
 		return fmt.Errorf("Found an existing project at %s.", ctx.Project.ProjectFile())
 	}
 
-	log.BannerBlue("Creating a new ecso project")
+	ui.BannerBlue(log, "Creating a new ecso project")
 
 	wd, err := ecso.GetCurrentProjectDir()
 

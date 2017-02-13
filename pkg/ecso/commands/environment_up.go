@@ -43,7 +43,7 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		ecsoAPI = api.New(ctx.Config)
 	)
 
-	log.BannerBlue("Bringing up environment '%s'", env.Name)
+	ui.BannerBlue(log, "Bringing up environment '%s'", env.Name)
 
 	if cmd.options.DryRun {
 		log.Infof("THIS IS A DRY RUN - no changes to the environment will be made.")
@@ -58,12 +58,12 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	if cmd.options.DryRun {
-		log.BannerGreen("Review the above changes and re-run the command without the --dry-run option to apply them")
+		ui.BannerGreen(log, "Review the above changes and re-run the command without the --dry-run option to apply them")
 
 		return nil
 	}
 
-	log.BannerGreen("Environment '%s' is up and running", env.Name)
+	ui.BannerGreen(log, "Environment '%s' is up and running", env.Name)
 
 	description, err := ecsoAPI.DescribeEnvironment(env)
 

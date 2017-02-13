@@ -28,8 +28,6 @@ func (w writerFunc) Write(p []byte) (n int, err error) {
 }
 
 type Logger interface {
-	BannerBlue(format string, a ...interface{})
-	BannerGreen(format string, a ...interface{})
 	Errorf(format string, a ...interface{})
 	Printf(format string, a ...interface{})
 	PrefixPrintf(prefix string) func(string, ...interface{})
@@ -46,14 +44,6 @@ func NewLogger(w io.Writer) Logger {
 
 type log struct {
 	w io.Writer
-}
-
-func (l *log) BannerBlue(format string, a ...interface{}) {
-	fmt.Fprintf(l.w, "\n%s\n\n", blueBold(format, a...))
-}
-
-func (l *log) BannerGreen(format string, a ...interface{}) {
-	fmt.Fprintf(l.w, "\n%s\n\n", greenBold(format, a...))
 }
 
 func (l *log) Dt(label, content string) {

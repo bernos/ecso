@@ -5,6 +5,7 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
 type ServiceDownOptions struct {
@@ -39,7 +40,8 @@ func (cmd *serviceDownCommand) Execute(ctx *ecso.CommandContext) error {
 		log     = ctx.Config.Logger()
 	)
 
-	log.BannerBlue(
+	ui.BannerBlue(
+		log,
 		"Terminating the '%s' service in the '%s' environment",
 		service.Name,
 		env.Name)
@@ -48,7 +50,8 @@ func (cmd *serviceDownCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	log.BannerGreen(
+	ui.BannerGreen(
+		log,
 		"Successfully terminated the '%s' service in the '%s' environment",
 		service.Name,
 		env.Name)

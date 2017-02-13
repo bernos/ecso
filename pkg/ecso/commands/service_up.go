@@ -44,7 +44,8 @@ func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext) error {
 		ecsoAPI = api.New(cfg)
 	)
 
-	log.BannerBlue(
+	ui.BannerBlue(
+		log,
 		"Deploying service '%s' to the '%s' environment",
 		service.Name,
 		env.Name)
@@ -53,7 +54,8 @@ func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	log.BannerGreen(
+	ui.BannerGreen(
+		log,
 		"Deployed service '%s' to the '%s' environment",
 		service.Name,
 		env.Name)

@@ -5,6 +5,7 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
 type EnvironmentDownOptions struct {
@@ -37,13 +38,13 @@ func (cmd *environmentDownCommand) Execute(ctx *ecso.CommandContext) error {
 		ecsoAPI = api.New(ctx.Config)
 	)
 
-	log.BannerBlue("Stopping '%s' environment", env.Name)
+	ui.BannerBlue(log, "Stopping '%s' environment", env.Name)
 
 	if err := ecsoAPI.EnvironmentDown(project, env); err != nil {
 		return err
 	}
 
-	log.BannerGreen("Successfully stopped '%s' environment", env.Name)
+	ui.BannerGreen(log, "Successfully stopped '%s' environment", env.Name)
 
 	return nil
 }

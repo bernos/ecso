@@ -5,6 +5,7 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
 type EnvironmentRmOptions struct {
@@ -37,7 +38,7 @@ func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext) error {
 		ecsoAPI = api.New(ctx.Config)
 	)
 
-	log.BannerBlue("Removing '%s' environment", env.Name)
+	ui.BannerBlue(log, "Removing '%s' environment", env.Name)
 
 	if err := ecsoAPI.EnvironmentDown(project, env); err != nil {
 		return err
@@ -49,7 +50,7 @@ func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	log.BannerGreen("Successfully removed '%s' environment", env.Name)
+	ui.BannerGreen(log, "Successfully removed '%s' environment", env.Name)
 
 	return nil
 }

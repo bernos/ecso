@@ -13,8 +13,16 @@ import (
 )
 
 var (
-	bold = color.New(color.Bold).SprintfFunc()
-	warn = color.New(color.FgRed).SprintFunc()
+	bold     = color.New(color.Bold).SprintfFunc()
+	warn     = color.New(color.FgRed).SprintFunc()
+	blue     = color.New(color.FgBlue).SprintfFunc()
+	blueBold = color.New(color.FgBlue, color.Bold).SprintfFunc()
+
+	green     = color.New(color.FgGreen).SprintfFunc()
+	greenBold = color.New(color.FgGreen, color.Bold).SprintfFunc()
+
+	red     = color.New(color.FgRed).SprintfFunc()
+	redBold = color.New(color.FgRed, color.Bold).SprintfFunc()
 )
 
 func ValidateIntBetween(min, max int) func(int) error {
@@ -242,7 +250,7 @@ func PrintMap(w io.Writer, maps ...map[string]string) {
 }
 
 func PrintEnvironmentDescription(env *api.EnvironmentDescription, logger ecso.Logger) {
-	logger.BannerBlue("Details of the '%s' environment:", env.Name)
+	BannerBlue(logger, "Details of the '%s' environment:", env.Name)
 
 	logger.Dl(map[string]string{
 		"CloudFormation console": env.CloudFormationConsoleURL,
@@ -251,13 +259,13 @@ func PrintEnvironmentDescription(env *api.EnvironmentDescription, logger ecso.Lo
 		"ECS base URL":           env.ECSClusterBaseURL,
 	})
 
-	logger.BannerBlue("CloudFormation Outputs:")
+	BannerBlue(logger, "CloudFormation Outputs:")
 	logger.Dl(env.CloudFormationOutputs)
 	logger.Printf("\n")
 }
 
 func PrintServiceDescription(service *api.ServiceDescription, logger ecso.Logger) {
-	logger.BannerBlue("Details of the '%s' service:", service.Name)
+	BannerBlue(logger, "Details of the '%s' service:", service.Name)
 
 	logger.Dl(map[string]string{
 		"CloudFormation console": service.CloudFormationConsoleURL,
@@ -271,7 +279,15 @@ func PrintServiceDescription(service *api.ServiceDescription, logger ecso.Logger
 		})
 	}
 
-	logger.BannerBlue("CloudFormation Outputs:")
+	BannerBlue(logger, "CloudFormation Outputs:")
 	logger.Dl(service.CloudFormationOutputs)
 	logger.Printf("\n")
+}
+
+func BannerBlue(l ecso.Logger, format string, a ...interface{}) {
+	l.Printf("\n%s\n\n", blueBold(format, a...))
+}
+
+func BannerGreen(l ecso.Logger, format string, a ...interface{}) {
+	l.Printf("\n%s\n\n", greenBold(format, a...))
 }

@@ -75,7 +75,7 @@ func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	log.BannerGreen("Service '%s' added successfully. Now run `ecso service up --name %s --environment <environment>` to deploy", cmd.options.Name, cmd.options.Name)
+	ui.BannerGreen(log, "Service '%s' added successfully. Now run `ecso service up --name %s --environment <environment>` to deploy", cmd.options.Name, cmd.options.Name)
 
 	return nil
 }
