@@ -21,7 +21,7 @@ deploying, running and monitoring projects on Amazon ECS. It's features include
 ## Installing
 If you have a working go environment, just run 
 `go install github.com/bernos/ecso`. Otherwise, download the appropriate binary 
-from the releases page, and add it to your `$PATH`
+from the [release page](https://github.com/bernos/ecso/releases/latest), and add it to your `$PATH`
 
 ## Quick start
 
