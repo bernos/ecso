@@ -1,4 +1,4 @@
-VERSION     ?= 0.0.0
+VERSION     ?= 0.0.1
 BINARIES    := linux/amd64/ecso windows/amd64/ecso.exe darwin/amd64/ecso
 GITHUB_USER := bernos
 GITHUB_REPO := ecso

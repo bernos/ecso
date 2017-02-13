@@ -47,7 +47,7 @@ func (cmd *envCommand) Execute(ctx *ecso.CommandContext) error {
 			ps1 := os.Getenv("PS1")
 
 			if ps1 != "" {
-				fmt.Printf("export PS1=\"%s[ecso::%s:%s]> \"\n", ps1, ctx.Project.Name, cmd.options.Environment)
+				fmt.Printf("export PS1=\"%s $(tput setaf 2)[ecso::%s:%s]:$(tput sgr0) \"\n", ps1, ctx.Project.Name, cmd.options.Environment)
 				fmt.Printf("export ECSO_OLD_PS1=\"%s\"\n", ps1)
 			}
 
