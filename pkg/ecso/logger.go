@@ -33,8 +33,6 @@ type Logger interface {
 	PrefixPrintf(prefix string) func(string, ...interface{})
 	Infof(format string, a ...interface{})
 	ErrWriter() io.Writer
-	Dt(label, content string)
-	Dl(items ...map[string]string)
 	Writer() io.Writer
 }
 
@@ -44,18 +42,6 @@ func NewLogger(w io.Writer) Logger {
 
 type log struct {
 	w io.Writer
-}
-
-func (l *log) Dt(label, content string) {
-	fmt.Fprintf(l.w, "  %s\n    %s\n", bold("%s:", label), content)
-}
-
-func (l *log) Dl(items ...map[string]string) {
-	for _, i := range items {
-		for k, v := range i {
-			l.Dt(k, v)
-		}
-	}
 }
 
 func (l *log) Errorf(format string, a ...interface{}) {

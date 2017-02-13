@@ -5,7 +5,6 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/helpers"
 	"github.com/bernos/ecso/pkg/ecso/templates"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
@@ -91,30 +90,6 @@ func (cmd *envUpCommand) Validate(ctx *ecso.CommandContext) error {
 }
 
 func (cmd *envUpCommand) Prompt(ctx *ecso.CommandContext) error {
-	return nil
-}
-
-func (cmd *envUpCommand) logEnvironmentDetails(ctx *ecso.CommandContext, env *ecso.Environment) error {
-	var (
-		log        = ctx.Config.Logger()
-		reg        = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		cfn        = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.PrefixPrintf("  "))
-		stack      = env.GetCloudFormationStackName()
-		cfnConsole = util.CloudFormationConsoleURL(stack, env.Region)
-		ecsConsole = util.ClusterConsoleURL(env.GetClusterName(), env.Region)
-	)
-
-	outputs, err := cfn.GetStackOutputs(stack)
-
-	if err != nil {
-		return err
-	}
-
-	log.Dl(map[string]string{
-		"Cloud Formation Console": cfnConsole,
-		"ECS Console":             ecsConsole,
-	}, outputs)
-
 	return nil
 }
 
