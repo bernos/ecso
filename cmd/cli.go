@@ -52,8 +52,8 @@ func NewEnvCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 	return cli.Command{
 		Name:      "env",
-		Usage:     "Output shell environment configuration for an ecso environment",
-		ArgsUsage: "[environment]",
+		Usage:     "Display the commands to set up the default environment for the ecso cli tool",
+		ArgsUsage: "ENVIRONMENT",
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  keys.Unset,
@@ -128,7 +128,7 @@ func NewEnvironmentAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	return cli.Command{
 		Name:      "add",
 		Usage:     "Add a new environment to the project",
-		ArgsUsage: "[environment]",
+		ArgsUsage: "[ENVIRONMENT]",
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  keys.VPCID,
@@ -178,11 +178,10 @@ func NewEnvironmentDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 
 	return cli.Command{
-		Name:        "describe",
-		Usage:       "Describes an ecso environment",
-		Description: "TODO",
-		ArgsUsage:   "ENVIRONMENT",
-		Action:      MakeAction(dispatcher, fromCliContext),
+		Name:      "describe",
+		Usage:     "Describes an ecso environment",
+		ArgsUsage: "ENVIRONMENT",
+		Action:    MakeAction(dispatcher, fromCliContext),
 	}
 }
 
@@ -217,8 +216,8 @@ func NewEnvironmentDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 	return cli.Command{
 		Name:        "down",
-		Usage:       "Stops an ecso environment",
-		Description: "TODO",
+		Usage:       "Terminates an ecso environment",
+		Description: "Any services running in the environment will be terminated first. See the description of 'ecso service down' for details. Once all running services have been terminated, the environment Cloud Formation stack will be deleted, and any DNS entries removed.",
 		ArgsUsage:   "ENVIRONMENT",
 		Flags: []cli.Flag{
 			cli.BoolFlag{
@@ -229,6 +228,7 @@ func NewEnvironmentDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 		Action: MakeAction(dispatcher, fromCliContext),
 	}
 }
+
 func NewEnvironmentRmCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 	keys := struct {
@@ -261,7 +261,7 @@ func NewEnvironmentRmCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	return cli.Command{
 		Name:        "rm",
 		Usage:       "Removes an ecso environment",
-		Description: "TODO",
+		Description: "Terminates an environment if it is running, and also deletes the environment configuration from the .ecso/project.json file",
 		ArgsUsage:   "ENVIRONMENT",
 		Flags: []cli.Flag{
 			cli.BoolFlag{
@@ -298,8 +298,8 @@ func NewEnvironmentUpCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 	return cli.Command{
 		Name:        "up",
-		Usage:       "Create/update an ecso environment",
-		Description: "TODO",
+		Usage:       "Deploys the infrastructure for an ecso environment",
+		Description: "All ecso environment infrastructure deployments are managed by CloudFormation. CloudFormation templates for environment infrastructure are stored at .ecso/infrastructure/templates, and are created the first time that `ecso environment up` is run. These templates can be safely edited by hand.",
 		ArgsUsage:   "ENVIRONMENT",
 		Flags: []cli.Flag{
 			cli.BoolFlag{
@@ -317,10 +317,11 @@ func NewInitCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 
 	return cli.Command{
-		Name:      "init",
-		Usage:     "Initialise a new ecso project",
-		ArgsUsage: "[project]",
-		Action:    MakeAction(dispatcher, fromCliContext, ecso.SkipEnsureProjectExists()),
+		Name:        "init",
+		Usage:       "Initialise a new ecso project",
+		Description: "Creates a new ecso project configuration file at .ecso/project.json. The initial project contains no environments or services. The project configuration file can be safely endited by hand, but it is usually easier to user the ecso cli tool to add new services and environments to the project.",
+		ArgsUsage:   "[PROJECT]",
+		Action:      MakeAction(dispatcher, fromCliContext, ecso.SkipEnsureProjectExists()),
 	}
 }
 
@@ -363,7 +364,7 @@ func NewServiceAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	return cli.Command{
 		Name:        "add",
 		Usage:       "Adds a new service to the project",
-		Description: "TODO",
+		Description: "The .ecso/project.json file will be updated with configuration settings for the new service. CloudFormation templates for the service and supporting resources are created in the .ecso/services/SERVICE dir, and can be safely edited by hand. An initial docker compose file will be created at ./services/SERVICE/docker-compose.yaml.",
 		ArgsUsage:   "SERVICE",
 		Flags: []cli.Flag{
 			cli.IntFlag{
@@ -409,13 +410,13 @@ func NewServiceDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 	return cli.Command{
 		Name:        "describe",
-		Usage:       "describes a service",
-		Description: "TODO",
+		Usage:       "Lists details of a deployed service",
+		Description: "Returns detailed information about a deployed service. If the service has not been deployed to the environment an error will be returned",
 		ArgsUsage:   "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:   keys.Environment,
-				Usage:  "The environment to terminate the service from",
+				Usage:  "The environment to query",
 				EnvVar: "ECSO_ENVIRONMENT",
 			},
 		},
@@ -450,7 +451,7 @@ func NewServiceDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	return cli.Command{
 		Name:        "down",
 		Usage:       "terminates a service",
-		Description: "TODO",
+		Description: "The service will be scaled down, then deleted. The service's CloudFormation stack will be deleted, and any DNS records removed.",
 		ArgsUsage:   "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
@@ -490,8 +491,9 @@ func NewServiceEventsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 
 	return cli.Command{
-		Name:  "events",
-		Usage: "List events for a service",
+		Name:      "events",
+		Usage:     "List ECS events for a service",
+		ArgsUsage: "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  keys.Name,
@@ -532,10 +534,9 @@ func NewServiceLogsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 
 	return cli.Command{
-		Name:        "logs",
-		Usage:       "output service logs",
-		Description: "TODO",
-		ArgsUsage:   "SERVICE",
+		Name:      "logs",
+		Usage:     "output service logs",
+		ArgsUsage: "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:   keys.Environment,
@@ -605,10 +606,9 @@ func NewServicePsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 
 	return cli.Command{
-		Name:        "ps",
-		Usage:       "Show running tasks for a service",
-		Description: "TODO",
-		ArgsUsage:   "SERVICE",
+		Name:      "ps",
+		Usage:     "Show running tasks for a service",
+		ArgsUsage: "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:   keys.Environment,
@@ -647,7 +647,7 @@ func NewServiceUpCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	return cli.Command{
 		Name:        "up",
 		Usage:       "Deploy a service",
-		Description: "TODO",
+		Description: "The service's docker-compose file will be transformed into an ECS task definition, and registered with ECS. The service CloudFormation template will be deployed. Service deployment policies and constraints can be set in the service CloudFormation templates. By default a rolling deployment is performed, with the number of services running at any time equal to at least the desired service count, and at most 200% of the desired service count.",
 		ArgsUsage:   "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
