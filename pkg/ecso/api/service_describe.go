@@ -28,7 +28,7 @@ func (api *api) DescribeService(env *ecso.Environment, service *ecso.Service) (*
 		return nil, err
 	}
 
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.PrefixPrintf("  "))
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child().Printf)
 
 	envOutputs, err := cfn.GetStackOutputs(env.GetCloudFormationStackName())
 

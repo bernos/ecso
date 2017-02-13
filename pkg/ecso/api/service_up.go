@@ -65,7 +65,7 @@ func (api *api) deployServiceStack(reg *ecso.AWSClientRegistry, project *ecso.Pr
 		stackName = service.GetCloudFormationStackName(env)
 		prefix    = service.GetCloudFormationBucketPrefix(env)
 		template  = service.GetCloudFormationTemplateFile()
-		cfn       = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.PrefixPrintf("  "))
+		cfn       = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child().Printf)
 	)
 
 	params, err := getServiceStackParameters(cfn, project, env, service, taskDefinition)

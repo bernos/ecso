@@ -3,7 +3,6 @@ package ecso
 import (
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/fatih/color"
 )
@@ -28,30 +27,29 @@ func (w writerFunc) Write(p []byte) (n int, err error) {
 }
 
 type Logger interface {
+	Child() Logger
 	Errorf(format string, a ...interface{})
 	Printf(format string, a ...interface{})
-	PrefixPrintf(prefix string) func(string, ...interface{})
 	Infof(format string, a ...interface{})
 	ErrWriter() io.Writer
 	Writer() io.Writer
 }
 
 func NewLogger(w io.Writer) Logger {
-	return &log{w}
+	return &log{w, ""}
 }
 
 type log struct {
-	w io.Writer
+	w      io.Writer
+	prefix string
+}
+
+func (l *log) Child() Logger {
+	return &log{l.w, l.prefix + "  "}
 }
 
 func (l *log) Errorf(format string, a ...interface{}) {
 	l.writeError(fmt.Sprintf(format, a))
-}
-
-func (l *log) Fatalf(format string, a ...interface{}) {
-	l.Errorf(format, a...)
-	fmt.Printf(format, a...)
-	os.Exit(1)
 }
 
 func (l *log) Infof(format string, a ...interface{}) {
@@ -60,12 +58,6 @@ func (l *log) Infof(format string, a ...interface{}) {
 
 func (l *log) Printf(format string, a ...interface{}) {
 	fmt.Fprintf(l.w, format, a...)
-}
-
-func (l *log) PrefixPrintf(prefix string) func(string, ...interface{}) {
-	return func(format string, a ...interface{}) {
-		fmt.Fprintf(l.w, prefix+format, a...)
-	}
 }
 
 func (l *log) writeError(msg string) (n int, err error) {
