@@ -26,9 +26,9 @@ func (api *api) EnvironmentDown(p *ecso.Project, env *ecso.Environment) error {
 		if err := api.ServiceDown(p, env, service); err != nil {
 			return err
 		}
+		log.Printf("\n")
 	}
 
-	log.Printf("\n")
 	log.Infof("Deleting environment Cloud Formation stack '%s'", env.GetCloudFormationStackName())
 
 	if err := cfnHelper.DeleteStack(env.GetCloudFormationStackName()); err != nil {

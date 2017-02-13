@@ -73,6 +73,7 @@ func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	log.BannerGreen("Successfully added environment '%s' to the project", c.options.Name)
+	log.Printf("Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.options.Name)
 
 	return nil
 }

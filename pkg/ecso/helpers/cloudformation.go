@@ -523,7 +523,7 @@ func (h *cfnHelper) validateTemplate(body []byte) error {
 }
 
 func (h *cfnHelper) validateTemplateFile(file string) error {
-	h.log("Validating cloudformation template '%s'...", file)
+	h.log("Validating cloudformation template '%s'...\n", file)
 	templateBody, err := ioutil.ReadFile(file)
 
 	if err != nil {

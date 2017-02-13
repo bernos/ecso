@@ -35,13 +35,11 @@ func (api *api) clearServiceDNSRecords(reg *ecso.AWSClientRegistry, env *ecso.En
 		dnsName   = fmt.Sprintf("%s.%s.", service.Name, env.CloudFormationParameters["DNSZone"])
 	)
 
-	log.Infof("Deleting any SRV DNS records for %s...", dnsName)
+	log.Infof("Deleting any service SRV DNS records for %s...", dnsName)
 
 	if err := r53Helper.DeleteResourceRecordSetsByName(dnsName, env.CloudFormationParameters["DNSZone"], "Deleted by ecso service down"); err != nil {
 		return err
 	}
-
-	log.Printf("  Done\n")
 
 	return nil
 }
