@@ -20,8 +20,9 @@ deploying, running and monitoring projects on Amazon ECS. It's features include
 
 ## Installing
 If you have a working go environment, just run 
-`go install github.com/bernos/ecso`. Otherwise, download the appropriate binary 
-from the releases page, and add it to your `$PATH`
+`go get github.com/bernos/ecso`. Otherwise, download the appropriate binary 
+from the [release page](https://github.com/bernos/ecso/releases/latest), and 
+add it to your `$PATH`
 
 ## Quick start
 
@@ -38,10 +39,12 @@ ecso init
 # required details, such as VPC, subnets and so forth.
 ecso environment add my-environment
 
-# Now, create the resources for your new environment in AWS. For details of 
-# what is created, see the cloudformation templates that ecso generates at 
-# .ecso/infrastructure/templates. These cloudformation templates can also be 
-# safely edited by hand, to customise your ecso infrastructure.
+# Now, create the resources for your new environment in AWS. Before running the
+# `environment up` command, make sure that you have valid AWS credentials in
+# your shell environment. For details of what is created, see the cloudformation 
+# templates that ecso generates at .ecso/infrastructure/templates. These 
+# cloudformation templates can also be safely edited by hand, to customise your
+# ecso infrastructure.
 ecso environment up my-environment
 
 # Create a new ecso service. This will update .ecso/project.json with 
