@@ -107,9 +107,9 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 	}{
 		Name:            "What is the name of your environment?",
 		Region:          "Which AWS region will the environment be deployed to?",
-		VPC:             "Which VPC would you like to create the environment in?",
-		ALBSubnets:      "Which subnets would you like to deploy the load balancer to?",
-		InstanceSubnets: "Which subnets would you like to deploy the ECS container instances to?",
+		VPC:             "Which VPC would you like to create the environment in (provide the VPC id)?",
+		ALBSubnets:      "Which subnets would you like to deploy the load balancer to (provide a comma separated list of subnet ids)?",
+		InstanceSubnets: "Which subnets would you like to deploy the ECS container instances to (provide a comma separated list of subnet ids)?",
 		InstanceType:    "What type of instances would you like to add to the ECS cluster?",
 		Size:            "How many instances would you like to add to the ECS cluster?",
 		DNSZone:         "Which DNS zone would you like to use for service discovery?",
