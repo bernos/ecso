@@ -4,22 +4,23 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/aws/aws-sdk-go/service/route53/route53iface"
+	"github.com/bernos/ecso/pkg/ecso"
 )
 
 type Route53Helper interface {
 	DeleteResourceRecordSetsByName(name, zone, reason string) error
 }
 
-func NewRoute53Helper(route53API route53iface.Route53API, log func(string, ...interface{})) Route53Helper {
+func NewRoute53Helper(route53API route53iface.Route53API, logger ecso.Logger) Route53Helper {
 	return &route53Helper{
 		route53API: route53API,
-		log:        log,
+		logger:     logger,
 	}
 }
 
 type route53Helper struct {
 	route53API route53iface.Route53API
-	log        func(string, ...interface{})
+	logger     ecso.Logger
 }
 
 func (h *route53Helper) DeleteResourceRecordSetsByName(name, zone, reason string) error {
@@ -49,7 +50,7 @@ func (h *route53Helper) DeleteResourceRecordSetsByName(name, zone, reason string
 					ResourceRecordSet: record,
 				})
 
-				h.log("Deleting recordset %s\n", *record.Name)
+				h.logger.Printf("Deleting recordset %s\n", *record.Name)
 			}
 		}
 
@@ -64,9 +65,9 @@ func (h *route53Helper) DeleteResourceRecordSetsByName(name, zone, reason string
 				return err
 			}
 
-			h.log("Done\n")
+			h.logger.Printf("Done\n")
 		} else {
-			h.log("No recordsets matching '%s' found\n", name)
+			h.logger.Printf("No recordsets matching '%s' found\n", name)
 		}
 	}
 

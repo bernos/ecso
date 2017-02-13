@@ -7,22 +7,23 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
+	"github.com/bernos/ecso/pkg/ecso"
 )
 
 type ECSHelper interface {
 	LogServiceEvents(service, cluster string, logger func(*ecs.ServiceEvent, error)) (cancel func())
 }
 
-func NewECSHelper(ecsClient ecsiface.ECSAPI, log func(string, ...interface{})) ECSHelper {
+func NewECSHelper(ecsClient ecsiface.ECSAPI, logger ecso.Logger) ECSHelper {
 	return &ecsHelper{
 		ecsClient: ecsClient,
-		log:       log,
+		logger:    logger,
 	}
 }
 
 type ecsHelper struct {
 	ecsClient ecsiface.ECSAPI
-	log       func(string, ...interface{})
+	logger    ecso.Logger
 }
 
 func (h *ecsHelper) LogServiceEvents(service, cluster string, logger func(*ecs.ServiceEvent, error)) (cancel func()) {

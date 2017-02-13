@@ -18,7 +18,7 @@ func (api *api) GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Se
 
 	var (
 		log    = api.cfg.Logger()
-		cfn    = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child().Printf)
+		cfn    = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child())
 		ecsAPI = reg.ECSAPI()
 	)
 

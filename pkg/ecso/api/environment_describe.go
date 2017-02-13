@@ -32,7 +32,7 @@ func (api *api) DescribeEnvironment(env *ecso.Environment) (*EnvironmentDescript
 		return description, err
 	}
 
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child().Printf)
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child())
 
 	outputs, err := cfn.GetStackOutputs(stack)
 

@@ -31,7 +31,7 @@ func (api *api) ServiceDown(project *ecso.Project, env *ecso.Environment, servic
 func (api *api) clearServiceDNSRecords(reg *ecso.AWSClientRegistry, env *ecso.Environment, service *ecso.Service) error {
 	var (
 		log       = api.cfg.Logger()
-		r53Helper = helpers.NewRoute53Helper(reg.Route53API(), log.Child().Printf)
+		r53Helper = helpers.NewRoute53Helper(reg.Route53API(), log.Child())
 		dnsName   = fmt.Sprintf("%s.%s.", service.Name, env.CloudFormationParameters["DNSZone"])
 	)
 
@@ -48,7 +48,7 @@ func (api *api) deleteServiceStack(reg *ecso.AWSClientRegistry, env *ecso.Enviro
 	var (
 		log   = api.cfg.Logger()
 		stack = service.GetCloudFormationStackName(env)
-		cfn   = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child().Printf)
+		cfn   = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child())
 	)
 
 	log.Infof("Deleting cloud formation stack '%s'", stack)

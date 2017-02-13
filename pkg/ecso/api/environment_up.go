@@ -25,7 +25,7 @@ func (api *api) EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun boo
 
 	log.Infof("Deploying Cloud Formation stack for the '%s' environment", env.Name)
 
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child().Printf)
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child())
 	exists, err := cfn.StackExists(stack)
 
 	if err != nil {
