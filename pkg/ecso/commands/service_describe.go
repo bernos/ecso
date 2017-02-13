@@ -47,7 +47,7 @@ func (cmd *serviceDecribeCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.PrintServiceDescription(description, log)
+	ui.PrintServiceDescription(log, description)
 
 	return nil
 }

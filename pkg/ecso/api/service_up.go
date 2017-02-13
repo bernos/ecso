@@ -150,7 +150,6 @@ func (api *api) registerECSTaskDefinition(reg *ecso.AWSClientRegistry, project *
 
 	// TODO: fully qualify the path to the service compose file
 	// taskDefinition, err := ConvertToTaskDefinition(taskName, service.ComposeFile)
-	log.Printf("\n")
 	log.Infof("Converting '%s' to task definition...", service.ComposeFile)
 
 	taskDefinition, err := service.GetECSTaskDefinition(env)

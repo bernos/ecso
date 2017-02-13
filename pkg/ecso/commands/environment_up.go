@@ -70,7 +70,7 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.PrintEnvironmentDescription(description, log)
+	ui.PrintEnvironmentDescription(log, description)
 
 	return nil
 }

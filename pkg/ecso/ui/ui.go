@@ -3,7 +3,6 @@ package ui
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 
@@ -24,34 +23,6 @@ var (
 	red     = color.New(color.FgRed).SprintfFunc()
 	redBold = color.New(color.FgRed, color.Bold).SprintfFunc()
 )
-
-func ValidateIntBetween(min, max int) func(int) error {
-	return func(v int) error {
-		if v < min || v > max {
-			return fmt.Errorf("A value between %d and %d is required", min, max)
-		}
-		return nil
-	}
-}
-
-func ValidateAny() func(string) error {
-	return func(v string) error {
-		return nil
-	}
-}
-
-func ValidateNotEmpty(msg string) func(string) error {
-	return func(v string) error {
-		if v == "" {
-			return fmt.Errorf(msg)
-		}
-		return nil
-	}
-}
-
-func ValidateRequired(name string) func(string) error {
-	return ValidateNotEmpty(fmt.Sprintf("%s is required.", name))
-}
 
 func AskString(prompt, def string, validate func(string) error) (string, error) {
 	str := ""
@@ -193,7 +164,7 @@ func ChoiceVar(dst *int, prompt string, choices []string) error {
 	}
 }
 
-func PrintTable(w io.Writer, headers []string, rows ...map[string]string) {
+func PrintTable(logger ecso.Logger, headers []string, rows ...map[string]string) {
 	format := ""
 
 	for _, h := range headers {
@@ -216,7 +187,7 @@ func PrintTable(w io.Writer, headers []string, rows ...map[string]string) {
 		headerRow[i] = h
 	}
 
-	fmt.Fprintf(w, format, headerRow...)
+	logger.Printf(format, headerRow...)
 
 	for _, row := range rows {
 		r := make([]interface{}, len(headers))
@@ -225,11 +196,11 @@ func PrintTable(w io.Writer, headers []string, rows ...map[string]string) {
 			r[i] = row[h]
 		}
 
-		fmt.Fprintf(w, format, r...)
+		logger.Printf(format, r...)
 	}
 }
 
-func PrintMap(w io.Writer, maps ...map[string]string) {
+func PrintMap(logger ecso.Logger, maps ...map[string]string) {
 	l := 0
 	items := make(map[string]string)
 
@@ -245,11 +216,11 @@ func PrintMap(w io.Writer, maps ...map[string]string) {
 	labelFormat := fmt.Sprintf("  %%%ds:", l)
 
 	for k, v := range items {
-		fmt.Fprintf(w, "%s %s\n", bold(labelFormat, k), v)
+		logger.Printf("%s %s\n", bold(labelFormat, k), v)
 	}
 }
 
-func PrintEnvironmentDescription(env *api.EnvironmentDescription, logger ecso.Logger) {
+func PrintEnvironmentDescription(logger ecso.Logger, env *api.EnvironmentDescription) {
 	childLogger := logger.Child()
 
 	BannerBlue(logger, "Details of the '%s' environment:", env.Name)
@@ -266,7 +237,7 @@ func PrintEnvironmentDescription(env *api.EnvironmentDescription, logger ecso.Lo
 	logger.Printf("\n")
 }
 
-func PrintServiceDescription(service *api.ServiceDescription, logger ecso.Logger) {
+func PrintServiceDescription(logger ecso.Logger, service *api.ServiceDescription) {
 	childLogger := logger.Child()
 
 	BannerBlue(logger, "Details of the '%s' service:", service.Name)
@@ -288,23 +259,23 @@ func PrintServiceDescription(service *api.ServiceDescription, logger ecso.Logger
 	logger.Printf("\n")
 }
 
-func BannerBlue(l ecso.Logger, format string, a ...interface{}) {
-	l.Printf("\n%s\n\n", blueBold(format, a...))
+func BannerBlue(logger ecso.Logger, format string, a ...interface{}) {
+	logger.Printf("\n%s\n\n", blueBold(format, a...))
 }
 
-func BannerGreen(l ecso.Logger, format string, a ...interface{}) {
-	l.Printf("\n%s\n\n", greenBold(format, a...))
+func BannerGreen(logger ecso.Logger, format string, a ...interface{}) {
+	logger.Printf("\n%s\n\n", greenBold(format, a...))
 }
 
-func Dt(l ecso.Logger, label, content string) {
-	l.Printf("%s\n", bold("%s:", label))
-	l.Printf("  %s\n", content)
+func Dt(logger ecso.Logger, label, content string) {
+	logger.Printf("%s\n", bold("%s:", label))
+	logger.Printf("  %s\n", content)
 }
 
-func Dl(l ecso.Logger, items ...map[string]string) {
+func Dl(logger ecso.Logger, items ...map[string]string) {
 	for _, i := range items {
 		for k, v := range i {
-			Dt(l, k, v)
+			Dt(logger, k, v)
 		}
 	}
 }

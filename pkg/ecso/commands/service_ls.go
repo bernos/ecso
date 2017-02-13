@@ -133,7 +133,7 @@ func printServices(services []*ecs.Service, log ecso.Logger) {
 		}
 	}
 
-	ui.PrintTable(log.Writer(), headers, rows...)
+	ui.PrintTable(log, headers, rows...)
 }
 
 func taskDefinitionName(arn string) string {

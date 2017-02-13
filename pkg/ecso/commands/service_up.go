@@ -54,19 +54,19 @@ func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.BannerGreen(
-		log,
-		"Deployed service '%s' to the '%s' environment",
-		service.Name,
-		env.Name)
-
 	description, err := ecsoAPI.DescribeService(env, service)
 
 	if err != nil {
 		return err
 	}
 
-	ui.PrintServiceDescription(description, log)
+	ui.PrintServiceDescription(log, description)
+
+	ui.BannerGreen(
+		log,
+		"Deployed service '%s' to the '%s' environment",
+		service.Name,
+		env.Name)
 
 	return nil
 }
