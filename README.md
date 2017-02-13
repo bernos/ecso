@@ -32,7 +32,8 @@ mkdir ~/my-project && cd ~/my-project
 # created.
 ecso init
 
-# Set up a new ecso environment to deploy to.
+# Set up a new ecso environment to deploy to. You'll be prompted for all the
+# required details, such as VPC, subnets and so forth.
 ecso environment add my-environment
 
 # Now, create the resources for your new environment in AWS. For details of 
