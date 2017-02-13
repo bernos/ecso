@@ -250,9 +250,11 @@ func PrintMap(w io.Writer, maps ...map[string]string) {
 }
 
 func PrintEnvironmentDescription(env *api.EnvironmentDescription, logger ecso.Logger) {
+	childLogger := logger.Child()
+
 	BannerBlue(logger, "Details of the '%s' environment:", env.Name)
 
-	Dl(logger, map[string]string{
+	Dl(childLogger, map[string]string{
 		"CloudFormation console": env.CloudFormationConsoleURL,
 		"CloudWatch logs":        env.CloudWatchLogsConsoleURL,
 		"ECS console":            env.ECSConsoleURL,
@@ -260,27 +262,29 @@ func PrintEnvironmentDescription(env *api.EnvironmentDescription, logger ecso.Lo
 	})
 
 	BannerBlue(logger, "CloudFormation Outputs:")
-	Dl(logger, env.CloudFormationOutputs)
+	Dl(childLogger, env.CloudFormationOutputs)
 	logger.Printf("\n")
 }
 
 func PrintServiceDescription(service *api.ServiceDescription, logger ecso.Logger) {
+	childLogger := logger.Child()
+
 	BannerBlue(logger, "Details of the '%s' service:", service.Name)
 
-	Dl(logger, map[string]string{
+	Dl(childLogger, map[string]string{
 		"CloudFormation console": service.CloudFormationConsoleURL,
 		"CloudWatch logs":        service.CloudWatchLogsConsoleURL,
 		"ECS console":            service.ECSConsoleURL,
 	})
 
 	if service.URL != "" {
-		Dl(logger, map[string]string{
+		Dl(childLogger, map[string]string{
 			"Service URL": service.URL,
 		})
 	}
 
 	BannerBlue(logger, "CloudFormation Outputs:")
-	Dl(logger, service.CloudFormationOutputs)
+	Dl(childLogger, service.CloudFormationOutputs)
 	logger.Printf("\n")
 }
 
@@ -293,7 +297,8 @@ func BannerGreen(l ecso.Logger, format string, a ...interface{}) {
 }
 
 func Dt(l ecso.Logger, label, content string) {
-	l.Printf("  %s\n    %s\n", bold("%s:", label), content)
+	l.Printf("%s\n", bold("%s:", label))
+	l.Printf("  %s\n", content)
 }
 
 func Dl(l ecso.Logger, items ...map[string]string) {

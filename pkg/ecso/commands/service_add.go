@@ -75,7 +75,9 @@ func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.BannerGreen(log, "Service '%s' added successfully. Now run `ecso service up --name %s --environment <environment>` to deploy", cmd.options.Name, cmd.options.Name)
+	ui.BannerGreen(log, "Service '%s' added successfully.", cmd.options.Name)
+
+	log.Printf("Run `ecso service up %s --environment <ENVIRONMENT>` to deploy.\n\n", cmd.options.Name)
 
 	return nil
 }
@@ -96,6 +98,8 @@ func (cmd *serviceAddCommand) Prompt(ctx *ecso.CommandContext) error {
 		Route:        "What route would you like to expose the service at?",
 		Port:         "Which container port would you like to expose?",
 	}
+
+	ui.BannerBlue(ctx.Config.Logger(), "Adding a new service to the %s project", ctx.Project.Name)
 
 	opt := cmd.options
 

@@ -8,12 +8,6 @@ import (
 )
 
 var (
-	blue     = color.New(color.FgBlue).SprintfFunc()
-	blueBold = color.New(color.FgBlue, color.Bold).SprintfFunc()
-
-	green     = color.New(color.FgGreen).SprintfFunc()
-	greenBold = color.New(color.FgGreen, color.Bold).SprintfFunc()
-
 	red     = color.New(color.FgRed).SprintfFunc()
 	redBold = color.New(color.FgRed, color.Bold).SprintfFunc()
 
@@ -53,15 +47,15 @@ func (l *log) Errorf(format string, a ...interface{}) {
 }
 
 func (l *log) Infof(format string, a ...interface{}) {
-	fmt.Fprintf(l.w, bold("Info: ")+format+"\n", a...)
+	fmt.Fprintf(l.w, l.prefix+bold("Info: ")+format+"\n", a...)
 }
 
 func (l *log) Printf(format string, a ...interface{}) {
-	fmt.Fprintf(l.w, format, a...)
+	fmt.Fprintf(l.w, l.prefix+format, a...)
 }
 
 func (l *log) writeError(msg string) (n int, err error) {
-	return fmt.Fprintf(l.w, "%s %s", redBold("Error:"), red("%s", msg))
+	return fmt.Fprintf(l.w, "%s%s %s", l.prefix, redBold("Error:"), red("%s", msg))
 }
 
 func (l *log) ErrWriter() io.Writer {
