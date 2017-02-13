@@ -25,12 +25,16 @@ var (
 	childTemplateRegexp = regexp.MustCompile(`(\s*)TemplateURL:\s*(\./)*(.+)`)
 )
 
+// DeploymentResult holds information about a successful cloud formation
+// template deployment
 type DeploymentResult struct {
 	StackID            string
 	ChangeSetID        string
 	DidRequireUpdating bool
 }
 
+// CloudFormationHelper contains high level helper functions for dealing with
+// cloud formation
 type CloudFormationHelper interface {
 	PackageAndDeploy(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
 	PackageAndCreate(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
@@ -44,6 +48,7 @@ type CloudFormationHelper interface {
 	GetStackOutputs(stackName string) (map[string]string, error)
 }
 
+// NewCloudFormationHelper creates a CloudFormationHelper
 func NewCloudFormationHelper(region string, cfnClient cloudformationiface.CloudFormationAPI, s3Client s3iface.S3API, stsClient stsiface.STSAPI, logger ecso.Logger) CloudFormationHelper {
 	return &cfnHelper{
 		region:    region,
@@ -286,10 +291,10 @@ func (h *cfnHelper) Deploy(templateBody, stackName string, params, tags map[stri
 	if exists {
 		h.logger.Printf("Waiting for stack update to complete...\n")
 		return result, h.cfnClient.WaitUntilStackUpdateComplete(stack)
-	} else {
-		h.logger.Printf("Waiting for stack creation to complete...\n")
-		return result, h.cfnClient.WaitUntilStackCreateComplete(stack)
 	}
+
+	h.logger.Printf("Waiting for stack creation to complete...\n")
+	return result, h.cfnClient.WaitUntilStackCreateComplete(stack)
 }
 
 func (h *cfnHelper) GetChangeSet(changeset string) (*cloudformation.DescribeChangeSetOutput, error) {
