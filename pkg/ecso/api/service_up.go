@@ -65,7 +65,7 @@ func (api *api) deployServiceStack(reg *ecso.AWSClientRegistry, project *ecso.Pr
 		stackName = service.GetCloudFormationStackName(env)
 		prefix    = service.GetCloudFormationBucketPrefix(env)
 		template  = service.GetCloudFormationTemplateFile()
-		cfn       = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.PrefixPrintf("  "))
+		cfn       = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child())
 	)
 
 	params, err := getServiceStackParameters(cfn, project, env, service, taskDefinition)
@@ -150,7 +150,6 @@ func (api *api) registerECSTaskDefinition(reg *ecso.AWSClientRegistry, project *
 
 	// TODO: fully qualify the path to the service compose file
 	// taskDefinition, err := ConvertToTaskDefinition(taskName, service.ComposeFile)
-	log.Printf("\n")
 	log.Infof("Converting '%s' to task definition...", service.ComposeFile)
 
 	taskDefinition, err := service.GetECSTaskDefinition(env)

@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	log     = ecso.NewLogger(os.Stdout)
+	log     = ecso.NewLogger(os.Stderr, "")
 	version = "0.0.0"
 )
 

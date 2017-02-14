@@ -42,7 +42,7 @@ func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext) error {
 		env       = ctx.Project.Environments[cmd.options.Environment]
 		service   = ctx.Project.Services[cmd.options.Name]
 		registry  = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		ecsHelper = helpers.NewECSHelper(registry.ECSAPI(), log.PrefixPrintf("  "))
+		ecsHelper = helpers.NewECSHelper(registry.ECSAPI(), log.Child())
 		ecsoAPI   = api.New(ctx.Config)
 		count     = 0
 	)

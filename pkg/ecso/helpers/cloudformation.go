@@ -18,18 +18,23 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
+	"github.com/bernos/ecso/pkg/ecso"
 )
 
 var (
 	childTemplateRegexp = regexp.MustCompile(`(\s*)TemplateURL:\s*(\./)*(.+)`)
 )
 
+// DeploymentResult holds information about a successful cloud formation
+// template deployment
 type DeploymentResult struct {
 	StackID            string
 	ChangeSetID        string
 	DidRequireUpdating bool
 }
 
+// CloudFormationHelper contains high level helper functions for dealing with
+// cloud formation
 type CloudFormationHelper interface {
 	PackageAndDeploy(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
 	PackageAndCreate(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
@@ -43,14 +48,15 @@ type CloudFormationHelper interface {
 	GetStackOutputs(stackName string) (map[string]string, error)
 }
 
-func NewCloudFormationHelper(region string, cfnClient cloudformationiface.CloudFormationAPI, s3Client s3iface.S3API, stsClient stsiface.STSAPI, log func(string, ...interface{})) CloudFormationHelper {
+// NewCloudFormationHelper creates a CloudFormationHelper
+func NewCloudFormationHelper(region string, cfnClient cloudformationiface.CloudFormationAPI, s3Client s3iface.S3API, stsClient stsiface.STSAPI, logger ecso.Logger) CloudFormationHelper {
 	return &cfnHelper{
 		region:    region,
 		cfnClient: cfnClient,
 		s3Client:  s3Client,
 		stsClient: stsClient,
 		uploader:  s3manager.NewUploaderWithClient(s3Client),
-		log:       log,
+		logger:    logger,
 	}
 }
 
@@ -60,7 +66,7 @@ type cfnHelper struct {
 	uploader  *s3manager.Uploader
 	s3Client  s3iface.S3API
 	stsClient stsiface.STSAPI
-	log       func(string, ...interface{})
+	logger    ecso.Logger
 }
 
 func (h *cfnHelper) GetStackOutputs(stackName string) (map[string]string, error) {
@@ -173,15 +179,17 @@ func (h *cfnHelper) Create(templateBody, stackName string, params, tags map[stri
 		StackID: *resp.StackId,
 	}
 
+	childLogger := h.logger.Child()
+
 	cancel := h.LogStackEvents(*resp.StackId, func(ev *cloudformation.StackEvent, err error) {
 		if ev != nil {
-			h.log("%s: %s\n", *ev.LogicalResourceId, *ev.ResourceStatus)
+			childLogger.Printf("%s: %s\n", *ev.LogicalResourceId, *ev.ResourceStatus)
 		}
 	})
 
 	defer cancel()
 
-	h.log("Waiting for stack creation to complete...\n")
+	h.logger.Printf("Waiting for stack creation to complete...\n")
 
 	return result, h.cfnClient.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
 		StackName: resp.StackId,
@@ -224,13 +232,13 @@ func (h *cfnHelper) Deploy(templateBody, stackName string, params, tags map[stri
 
 	if exists {
 		input.ChangeSetType = aws.String("UPDATE")
-		h.log("Updating existing '%s' cloudformation stack\n", stackName)
+		h.logger.Printf("Updating existing '%s' cloudformation stack\n", stackName)
 	} else {
-		h.log("Creating new '%s' cloudformation stack\n", stackName)
+		h.logger.Printf("Creating new '%s' cloudformation stack\n", stackName)
 		input.ChangeSetType = aws.String("CREATE")
 	}
 
-	h.log("Creating changeset...\n")
+	h.logger.Printf("Creating changeset...\n")
 
 	changeset, err := h.cfnClient.CreateChangeSet(input)
 
@@ -244,7 +252,7 @@ func (h *cfnHelper) Deploy(templateBody, stackName string, params, tags map[stri
 		DidRequireUpdating: true,
 	}
 
-	h.log("Waiting for changeset %s to be ready...\n", *changeset.Id)
+	h.logger.Printf("Waiting for changeset %s to be ready...\n", *changeset.Id)
 
 	if changeSetDescription, err := h.WaitForChangeset(*changeset.Id, cloudformation.ChangeSetStatusCreateComplete, cloudformation.ChangeSetStatusFailed); err != nil {
 		return result, err
@@ -253,7 +261,7 @@ func (h *cfnHelper) Deploy(templateBody, stackName string, params, tags map[stri
 		return result, nil
 	}
 
-	h.log("Created changeset %s\n", *changeset.Id)
+	h.logger.Printf("Created changeset %s\n", *changeset.Id)
 
 	if dryRun {
 		return result, nil
@@ -270,21 +278,23 @@ func (h *cfnHelper) Deploy(templateBody, stackName string, params, tags map[stri
 		StackName: aws.String(stackName),
 	}
 
+	childLogger := h.logger.Child()
+
 	cancel := h.LogStackEvents(*changeset.StackId, func(ev *cloudformation.StackEvent, err error) {
 		if ev != nil {
-			h.log("%s: %s\n", *ev.LogicalResourceId, *ev.ResourceStatus)
+			childLogger.Printf("%s: %s\n", *ev.LogicalResourceId, *ev.ResourceStatus)
 		}
 	})
 
 	defer cancel()
 
 	if exists {
-		h.log("Waiting for stack update to complete...\n")
+		h.logger.Printf("Waiting for stack update to complete...\n")
 		return result, h.cfnClient.WaitUntilStackUpdateComplete(stack)
-	} else {
-		h.log("Waiting for stack creation to complete...\n")
-		return result, h.cfnClient.WaitUntilStackCreateComplete(stack)
 	}
+
+	h.logger.Printf("Waiting for stack creation to complete...\n")
+	return result, h.cfnClient.WaitUntilStackCreateComplete(stack)
 }
 
 func (h *cfnHelper) GetChangeSet(changeset string) (*cloudformation.DescribeChangeSetOutput, error) {
@@ -304,15 +314,17 @@ func (h *cfnHelper) DeleteStack(stackName string) error {
 		return err
 	}
 
+	childLogger := h.logger.Child()
+
 	cancel := h.LogStackEvents(stackName, func(ev *cloudformation.StackEvent, err error) {
 		if ev != nil {
-			h.log("%s: %s\n", *ev.LogicalResourceId, *ev.ResourceStatus)
+			childLogger.Printf("%s: %s\n", *ev.LogicalResourceId, *ev.ResourceStatus)
 		}
 	})
 
 	defer cancel()
 
-	h.log("Waiting for stack delete to complete...\n")
+	h.logger.Printf("Waiting for stack delete to complete...\n")
 
 	return h.cfnClient.WaitUntilStackDeleteComplete(&cloudformation.DescribeStacksInput{
 		StackName: aws.String(stackName),
@@ -460,7 +472,7 @@ func (h *cfnHelper) createBucket(bucket string) error {
 		},
 	}
 
-	h.log("Creating bucket '%s' in region '%s'\n", bucket, h.region)
+	h.logger.Printf("Creating bucket '%s' in region '%s'\n", bucket, h.region)
 
 	_, err := h.s3Client.CreateBucket(params)
 
@@ -488,7 +500,7 @@ func (h *cfnHelper) uploadChildTemplates(basedir, templateBody, bucket, prefix s
 			Body:   reader,
 		}
 
-		h.log("Uploading template '%s' to 's3://%s/%s'\n", file, bucket, prefix)
+		h.logger.Printf("Uploading template '%s' to 's3://%s/%s'\n", file, bucket, prefix)
 
 		if _, err := h.uploader.Upload(params); err != nil {
 			return err
@@ -523,7 +535,7 @@ func (h *cfnHelper) validateTemplate(body []byte) error {
 }
 
 func (h *cfnHelper) validateTemplateFile(file string) error {
-	h.log("Validating cloudformation template '%s'...\n", file)
+	h.logger.Printf("Validating cloudformation template '%s'...\n", file)
 	templateBody, err := ioutil.ReadFile(file)
 
 	if err != nil {

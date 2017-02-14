@@ -3,7 +3,6 @@ package ui
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 
@@ -13,37 +12,17 @@ import (
 )
 
 var (
-	bold = color.New(color.Bold).SprintfFunc()
-	warn = color.New(color.FgRed).SprintFunc()
+	bold     = color.New(color.Bold).SprintfFunc()
+	warn     = color.New(color.FgRed).SprintFunc()
+	blue     = color.New(color.FgBlue).SprintfFunc()
+	blueBold = color.New(color.FgBlue, color.Bold).SprintfFunc()
+
+	green     = color.New(color.FgGreen).SprintfFunc()
+	greenBold = color.New(color.FgGreen, color.Bold).SprintfFunc()
+
+	red     = color.New(color.FgRed).SprintfFunc()
+	redBold = color.New(color.FgRed, color.Bold).SprintfFunc()
 )
-
-func ValidateIntBetween(min, max int) func(int) error {
-	return func(v int) error {
-		if v < min || v > max {
-			return fmt.Errorf("A value between %d and %d is required", min, max)
-		}
-		return nil
-	}
-}
-
-func ValidateAny() func(string) error {
-	return func(v string) error {
-		return nil
-	}
-}
-
-func ValidateNotEmpty(msg string) func(string) error {
-	return func(v string) error {
-		if v == "" {
-			return fmt.Errorf(msg)
-		}
-		return nil
-	}
-}
-
-func ValidateRequired(name string) func(string) error {
-	return ValidateNotEmpty(fmt.Sprintf("%s is required.", name))
-}
 
 func AskString(prompt, def string, validate func(string) error) (string, error) {
 	str := ""
@@ -185,7 +164,7 @@ func ChoiceVar(dst *int, prompt string, choices []string) error {
 	}
 }
 
-func PrintTable(w io.Writer, headers []string, rows ...map[string]string) {
+func PrintTable(logger ecso.Logger, headers []string, rows ...map[string]string) {
 	format := ""
 
 	for _, h := range headers {
@@ -208,7 +187,7 @@ func PrintTable(w io.Writer, headers []string, rows ...map[string]string) {
 		headerRow[i] = h
 	}
 
-	fmt.Fprintf(w, format, headerRow...)
+	logger.Printf(format, headerRow...)
 
 	for _, row := range rows {
 		r := make([]interface{}, len(headers))
@@ -217,11 +196,11 @@ func PrintTable(w io.Writer, headers []string, rows ...map[string]string) {
 			r[i] = row[h]
 		}
 
-		fmt.Fprintf(w, format, r...)
+		logger.Printf(format, r...)
 	}
 }
 
-func PrintMap(w io.Writer, maps ...map[string]string) {
+func PrintMap(logger ecso.Logger, maps ...map[string]string) {
 	l := 0
 	items := make(map[string]string)
 
@@ -237,41 +216,66 @@ func PrintMap(w io.Writer, maps ...map[string]string) {
 	labelFormat := fmt.Sprintf("  %%%ds:", l)
 
 	for k, v := range items {
-		fmt.Fprintf(w, "%s %s\n", bold(labelFormat, k), v)
+		logger.Printf("%s %s\n", bold(labelFormat, k), v)
 	}
 }
 
-func PrintEnvironmentDescription(env *api.EnvironmentDescription, logger ecso.Logger) {
-	logger.BannerBlue("Details of the '%s' environment:", env.Name)
+func PrintEnvironmentDescription(logger ecso.Logger, env *api.EnvironmentDescription) {
+	childLogger := logger.Child()
 
-	logger.Dl(map[string]string{
+	BannerBlue(logger, "Details of the '%s' environment:", env.Name)
+
+	Dl(childLogger, map[string]string{
 		"CloudFormation console": env.CloudFormationConsoleURL,
 		"CloudWatch logs":        env.CloudWatchLogsConsoleURL,
 		"ECS console":            env.ECSConsoleURL,
 		"ECS base URL":           env.ECSClusterBaseURL,
 	})
 
-	logger.BannerBlue("CloudFormation Outputs:")
-	logger.Dl(env.CloudFormationOutputs)
+	BannerBlue(logger, "CloudFormation Outputs:")
+	Dl(childLogger, env.CloudFormationOutputs)
 	logger.Printf("\n")
 }
 
-func PrintServiceDescription(service *api.ServiceDescription, logger ecso.Logger) {
-	logger.BannerBlue("Details of the '%s' service:", service.Name)
+func PrintServiceDescription(logger ecso.Logger, service *api.ServiceDescription) {
+	childLogger := logger.Child()
 
-	logger.Dl(map[string]string{
+	BannerBlue(logger, "Details of the '%s' service:", service.Name)
+
+	Dl(childLogger, map[string]string{
 		"CloudFormation console": service.CloudFormationConsoleURL,
 		"CloudWatch logs":        service.CloudWatchLogsConsoleURL,
 		"ECS console":            service.ECSConsoleURL,
 	})
 
 	if service.URL != "" {
-		logger.Dl(map[string]string{
+		Dl(childLogger, map[string]string{
 			"Service URL": service.URL,
 		})
 	}
 
-	logger.BannerBlue("CloudFormation Outputs:")
-	logger.Dl(service.CloudFormationOutputs)
+	BannerBlue(logger, "CloudFormation Outputs:")
+	Dl(childLogger, service.CloudFormationOutputs)
 	logger.Printf("\n")
+}
+
+func BannerBlue(logger ecso.Logger, format string, a ...interface{}) {
+	logger.Printf("\n%s\n\n", blueBold(format, a...))
+}
+
+func BannerGreen(logger ecso.Logger, format string, a ...interface{}) {
+	logger.Printf("\n%s\n\n", greenBold(format, a...))
+}
+
+func Dt(logger ecso.Logger, label, content string) {
+	logger.Printf("%s\n", bold("%s:", label))
+	logger.Printf("  %s\n", content)
+}
+
+func Dl(logger ecso.Logger, items ...map[string]string) {
+	for _, i := range items {
+		for k, v := range i {
+			Dt(logger, k, v)
+		}
+	}
 }

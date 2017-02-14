@@ -192,7 +192,7 @@ func printRows(rows []*row, log ecso.Logger) {
 		}
 	}
 
-	ui.PrintTable(log.Writer(), headers, r...)
+	ui.PrintTable(log, headers, r...)
 }
 
 func getContainerImage(taskDefinitionArn, containerName string, ecsAPI ecsiface.ECSAPI) (string, error) {

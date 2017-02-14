@@ -5,7 +5,6 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/helpers"
 	"github.com/bernos/ecso/pkg/ecso/templates"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
@@ -43,7 +42,7 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		ecsoAPI = api.New(ctx.Config)
 	)
 
-	log.BannerBlue("Bringing up environment '%s'", env.Name)
+	ui.BannerBlue(log, "Bringing up environment '%s'", env.Name)
 
 	if cmd.options.DryRun {
 		log.Infof("THIS IS A DRY RUN - no changes to the environment will be made.")
@@ -58,12 +57,12 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	if cmd.options.DryRun {
-		log.BannerGreen("Review the above changes and re-run the command without the --dry-run option to apply them")
+		ui.BannerGreen(log, "Review the above changes and re-run the command without the --dry-run option to apply them")
 
 		return nil
 	}
 
-	log.BannerGreen("Environment '%s' is up and running", env.Name)
+	ui.BannerGreen(log, "Environment '%s' is up and running", env.Name)
 
 	description, err := ecsoAPI.DescribeEnvironment(env)
 
@@ -71,7 +70,7 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.PrintEnvironmentDescription(description, log)
+	ui.PrintEnvironmentDescription(log, description)
 
 	return nil
 }
@@ -91,30 +90,6 @@ func (cmd *envUpCommand) Validate(ctx *ecso.CommandContext) error {
 }
 
 func (cmd *envUpCommand) Prompt(ctx *ecso.CommandContext) error {
-	return nil
-}
-
-func (cmd *envUpCommand) logEnvironmentDetails(ctx *ecso.CommandContext, env *ecso.Environment) error {
-	var (
-		log        = ctx.Config.Logger()
-		reg        = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		cfn        = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.PrefixPrintf("  "))
-		stack      = env.GetCloudFormationStackName()
-		cfnConsole = util.CloudFormationConsoleURL(stack, env.Region)
-		ecsConsole = util.ClusterConsoleURL(env.GetClusterName(), env.Region)
-	)
-
-	outputs, err := cfn.GetStackOutputs(stack)
-
-	if err != nil {
-		return err
-	}
-
-	log.Dl(map[string]string{
-		"Cloud Formation Console": cfnConsole,
-		"ECS Console":             ecsConsole,
-	}, outputs)
-
 	return nil
 }
 

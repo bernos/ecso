@@ -18,7 +18,7 @@ type Config struct {
 
 func (c *Config) Logger() Logger {
 	if c.l == nil {
-		c.l = NewLogger(c.w)
+		c.l = NewLogger(c.w, "")
 	}
 	return c.l
 }
