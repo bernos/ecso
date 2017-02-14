@@ -427,11 +427,14 @@ func NewServiceDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 func NewServiceDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	keys := struct {
 		Environment string
+		Force       string
 	}{
 		Environment: "environment",
+		Force:       "force",
 	}
 
 	fromCliContext := func(c *cli.Context) (ecso.Command, error) {
+		force := c.Bool(keys.Force)
 		service := c.Args().First()
 		env := c.String(keys.Environment)
 
@@ -441,6 +444,10 @@ func NewServiceDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 		if env == "" {
 			return nil, NewOptionRequiredError(keys.Environment)
+		}
+
+		if !force {
+			return nil, NewOptionRequiredError(keys.Force)
 		}
 
 		return commands.NewServiceDownCommand(service, env, func(opt *commands.ServiceDownOptions) {
