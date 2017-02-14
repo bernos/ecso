@@ -47,7 +47,7 @@ func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	printServices(services, log)
+	printServices(ctx.Project, env, services, log)
 
 	return nil
 }
@@ -119,21 +119,32 @@ func getServices(env *ecso.Environment, ecsAPI ecsiface.ECSAPI) ([]*ecs.Service,
 	return services, nil
 }
 
-func printServices(services []*ecs.Service, log ecso.Logger) {
-	headers := []string{"SERVICE", "TASK", "DESIRED", "RUNNING", "STATUS"}
+func printServices(project *ecso.Project, env *ecso.Environment, services []*ecs.Service, log ecso.Logger) {
+	headers := []string{"SERVICE", "ECS SERVICE", "TASK", "DESIRED", "RUNNING", "STATUS"}
 	rows := make([]map[string]string, len(services))
 
 	for i, service := range services {
 		rows[i] = map[string]string{
-			"SERVICE": *service.ServiceName,
-			"TASK":    taskDefinitionName(*service.TaskDefinition),
-			"DESIRED": fmt.Sprintf("%d", *service.DesiredCount),
-			"RUNNING": fmt.Sprintf("%d", *service.RunningCount),
-			"STATUS":  *service.Status,
+			"SERVICE":     localServiceName(*service.ServiceName, env, project),
+			"ECS SERVICE": *service.ServiceName,
+			"TASK":        taskDefinitionName(*service.TaskDefinition),
+			"DESIRED":     fmt.Sprintf("%d", *service.DesiredCount),
+			"RUNNING":     fmt.Sprintf("%d", *service.RunningCount),
+			"STATUS":      *service.Status,
 		}
 	}
 
 	ui.PrintTable(log, headers, rows...)
+}
+
+func localServiceName(ecsServiceName string, env *ecso.Environment, project *ecso.Project) string {
+	for _, s := range project.Services {
+		if strings.HasPrefix(ecsServiceName, s.GetECSTaskDefinitionName(env)+"-Service") {
+			return s.Name
+		}
+	}
+
+	return ""
 }
 
 func taskDefinitionName(arn string) string {
