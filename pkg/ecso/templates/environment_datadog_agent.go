@@ -60,42 +60,4 @@ Resources:
         Properties:
             LogGroupName: !Ref AWS::StackName
             RetentionInDays: 30
-
-    # This IAM Role grants the service access to register/unregister with the
-    # Application Load Balancer (ALB). It is based on the default documented here:
-    # http://docs.aws.amazon.com/AmazonECS/latest/developerguide/service_IAM_role.html
-    ServiceRole:
-        Type: AWS::IAM::Role
-        Properties:
-            RoleName: !Sub ecs-service-${AWS::StackName}
-            Path: /
-            AssumeRolePolicyDocument: |
-                {
-                    "Statement": [{
-                        "Effect": "Allow",
-                        "Principal": { "Service": [ "ecs.amazonaws.com" ]},
-                        "Action": [ "sts:AssumeRole" ]
-                    }]
-                }
-            Policies:
-                - PolicyName: !Sub ecs-service-${AWS::StackName}
-                  PolicyDocument:
-                    {
-                        "Version": "2012-10-17",
-                        "Statement": [{
-                                "Effect": "Allow",
-                                "Action": [
-                                    "ec2:AuthorizeSecurityGroupIngress",
-                                    "ec2:Describe*",
-                                    "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
-                                    "elasticloadbalancing:Describe*",
-                                    "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
-                                    "elasticloadbalancing:DeregisterTargets",
-                                    "elasticloadbalancing:DescribeTargetGroups",
-                                    "elasticloadbalancing:DescribeTargetHealth",
-                                    "elasticloadbalancing:RegisterTargets"
-                                ],
-                                "Resource": "*"
-                        }]
-                    }
 `))

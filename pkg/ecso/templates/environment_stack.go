@@ -88,6 +88,14 @@ Resources:
             Parameters:
                 EnvironmentName: !Ref AWS::StackName
 
+    DNSCleanerTaskDefinition:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: ./dns-cleaner.yaml
+            Parameters:
+                EnvironmentName: !Ref AWS::StackName
+                DNSZone: !Ref DNSZone
+
     ALB:
         Type: AWS::CloudFormation::Stack
         Properties:
