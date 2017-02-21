@@ -20,21 +20,35 @@ func MakeAction(dispatcher ecso.Dispatcher, fn factory, options ...func(*ecso.Di
 			return cli.NewExitError(err.Error(), 1)
 		}
 
-		if err := dispatcher.Dispatch(command, options...); err != nil {
-			// if awsErr, ok := err.(awserr.Error); ok {
-			// 	fmt.Printf("AWS ERROR\n%s", awsErr.Code())
-
-			// 	if reqErr, ok := err.(awserr.RequestFailure); ok {
-			// 		// A service error occurred
-			// 		fmt.Println(reqErr.StatusCode(), reqErr.RequestID())
-			// 	}
-			// }
-
+		if err := command.UnmarshalCliContext(c); err != nil {
+			cli.ShowSubcommandHelp(c)
 			return cli.NewExitError(err.Error(), 1)
 		}
+
+		if err := dispatcher.Dispatch(command, options...); err != nil {
+			return cli.NewExitError(err.Error(), 1)
+		}
+
 		return nil
 	}
 }
+
+// func MakeAction(dispatcher ecso.Dispatcher, fn factory, options ...func(*ecso.DispatchOptions)) func(*cli.Context) error {
+// 	return func(c *cli.Context) error {
+// 		command, err := fn(c)
+
+// 		if err != nil {
+// 			cli.ShowSubcommandHelp(c)
+// 			return cli.NewExitError(err.Error(), 1)
+// 		}
+
+// 		if err := dispatcher.Dispatch(command, options...); err != nil {
+// 			return cli.NewExitError(err.Error(), 1)
+// 		}
+
+// 		return nil
+// 	}
+// }
 
 type UsageError interface {
 	Option() string

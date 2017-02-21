@@ -7,28 +7,21 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/ui"
+	"gopkg.in/urfave/cli.v1"
 )
 
-type InitOptions struct {
-	ProjectName string
-}
-
-func NewInitCommand(projectName string, options ...func(*InitOptions)) ecso.Command {
-	o := &InitOptions{
-		ProjectName: projectName,
-	}
-
-	for _, option := range options {
-		option(o)
-	}
-
+func NewInitCommand(projectName string) ecso.Command {
 	return &initCommand{
-		options: o,
+		projectName: projectName,
 	}
 }
 
 type initCommand struct {
-	options *InitOptions
+	projectName string
+}
+
+func (cmd *initCommand) UnmarshalCliContext(ctx *cli.Context) error {
+	return nil
 }
 
 func (cmd *initCommand) Execute(ctx *ecso.CommandContext) error {
@@ -42,7 +35,7 @@ func (cmd *initCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	project := ecso.NewProject(wd, cmd.options.ProjectName)
+	project := ecso.NewProject(wd, cmd.projectName)
 
 	if err := os.MkdirAll(filepath.Join(project.Dir(), ".ecso"), os.ModePerm); err != nil {
 		return err
@@ -74,7 +67,7 @@ func (cmd *initCommand) Prompt(ctx *ecso.CommandContext) error {
 	}
 
 	return ui.AskStringIfEmptyVar(
-		&cmd.options.ProjectName,
+		&cmd.projectName,
 		"What is the name of your project?",
 		filepath.Base(wd),
 		ui.ValidateNotEmpty("Project name is required"))

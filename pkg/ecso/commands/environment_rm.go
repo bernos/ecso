@@ -6,35 +6,28 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/ui"
+	"gopkg.in/urfave/cli.v1"
 )
 
-type EnvironmentRmOptions struct {
-	Name string
-}
-
-func NewEnvironmentRmCommand(name string, options ...func(*EnvironmentRmOptions)) ecso.Command {
-	o := &EnvironmentRmOptions{
-		Name: name,
-	}
-
-	for _, option := range options {
-		option(o)
-	}
-
+func NewEnvironmentRmCommand(environmentName string) ecso.Command {
 	return &environmentRmCommand{
-		options: o,
+		environmentName: environmentName,
 	}
 }
 
 type environmentRmCommand struct {
-	options *EnvironmentRmOptions
+	environmentName string
+}
+
+func (cmd *environmentRmCommand) UnmarshalCliContext(ctx *cli.Context) error {
+	return nil
 }
 
 func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		log     = ctx.Config.Logger()
 		project = ctx.Project
-		env     = ctx.Project.Environments[cmd.options.Name]
+		env     = ctx.Project.Environments[cmd.environmentName]
 		ecsoAPI = api.New(ctx.Config)
 	)
 
@@ -44,7 +37,7 @@ func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	delete(project.Environments, cmd.options.Name)
+	delete(project.Environments, cmd.environmentName)
 
 	if err := project.Save(); err != nil {
 		return err
@@ -60,10 +53,12 @@ func (cmd *environmentRmCommand) Prompt(ctx *ecso.CommandContext) error {
 }
 
 func (cmd *environmentRmCommand) Validate(ctx *ecso.CommandContext) error {
-	opt := cmd.options
+	if cmd.environmentName == "" {
+		return fmt.Errorf("Environment name is required")
+	}
 
-	if ctx.Project.Environments[opt.Name] == nil {
-		return fmt.Errorf("Environment '%s' not found", opt.Name)
+	if ctx.Project.Environments[cmd.environmentName] == nil {
+		return fmt.Errorf("Environment '%s' not found", cmd.environmentName)
 	}
 
 	return nil

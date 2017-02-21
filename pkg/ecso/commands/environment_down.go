@@ -6,35 +6,28 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/ui"
+	"gopkg.in/urfave/cli.v1"
 )
 
-type EnvironmentDownOptions struct {
-	Name string
-}
-
-func NewEnvironmentDownCommand(name string, options ...func(*EnvironmentDownOptions)) ecso.Command {
-	o := &EnvironmentDownOptions{
-		Name: name,
-	}
-
-	for _, option := range options {
-		option(o)
-	}
-
+func NewEnvironmentDownCommand(environmentName string) ecso.Command {
 	return &environmentDownCommand{
-		options: o,
+		environmentName: environmentName,
 	}
 }
 
 type environmentDownCommand struct {
-	options *EnvironmentDownOptions
+	environmentName string
+}
+
+func (cmd *environmentDownCommand) UnmarshalCliContext(ctx *cli.Context) error {
+	return nil
 }
 
 func (cmd *environmentDownCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		log     = ctx.Config.Logger()
 		project = ctx.Project
-		env     = ctx.Project.Environments[cmd.options.Name]
+		env     = ctx.Project.Environments[cmd.environmentName]
 		ecsoAPI = api.New(ctx.Config)
 	)
 
@@ -54,10 +47,12 @@ func (cmd *environmentDownCommand) Prompt(ctx *ecso.CommandContext) error {
 }
 
 func (cmd *environmentDownCommand) Validate(ctx *ecso.CommandContext) error {
-	opt := cmd.options
+	if cmd.environmentName == "" {
+		return fmt.Errorf("Environment name is required")
+	}
 
-	if ctx.Project.Environments[opt.Name] == nil {
-		return fmt.Errorf("Environment '%s' not found", opt.Name)
+	if ctx.Project.Environments[cmd.environmentName] == nil {
+		return fmt.Errorf("Environment '%s' not found", cmd.environmentName)
 	}
 
 	return nil

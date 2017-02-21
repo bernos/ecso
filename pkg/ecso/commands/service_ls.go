@@ -9,34 +9,31 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/ui"
+	"gopkg.in/urfave/cli.v1"
 )
 
-type ServiceLsOptions struct {
-	Environment string
-}
+const (
+	ServiceLsEnvironmentOption = "environment"
+)
 
-func NewServiceLsCommand(env string, options ...func(*ServiceLsOptions)) ecso.Command {
-	o := &ServiceLsOptions{
-		Environment: env,
-	}
-
-	for _, option := range options {
-		option(o)
-	}
-
+func NewServiceLsCommand(env string) ecso.Command {
 	return &serviceLsCommand{
-		options: o,
+		environment: env,
 	}
 }
 
 type serviceLsCommand struct {
-	options *ServiceLsOptions
+	environment string
+}
+
+func (cmd *serviceLsCommand) UnmarshalCliContext(ctx *cli.Context) error {
+	return nil
 }
 
 func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		log      = ctx.Config.Logger()
-		env      = ctx.Project.Environments[cmd.options.Environment]
+		env      = ctx.Project.Environments[cmd.environment]
 		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
 		ecsAPI   = registry.ECSAPI()
 	)
@@ -57,14 +54,12 @@ func (cmd *serviceLsCommand) Prompt(ctx *ecso.CommandContext) error {
 }
 
 func (cmd *serviceLsCommand) Validate(ctx *ecso.CommandContext) error {
-	opt := cmd.options
-
-	if opt.Environment == "" {
+	if cmd.environment == "" {
 		return fmt.Errorf("Environment is required")
 	}
 
-	if !ctx.Project.HasEnvironment(opt.Environment) {
-		return fmt.Errorf("Environment '%s' not found", opt.Environment)
+	if !ctx.Project.HasEnvironment(cmd.environment) {
+		return fmt.Errorf("Environment '%s' not found", cmd.environment)
 	}
 
 	return nil

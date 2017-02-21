@@ -8,29 +8,29 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/templates"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
+
+	"gopkg.in/urfave/cli.v1"
 )
 
-type EnvironmentUpOptions struct {
-	EnvironmentName string
-	DryRun          bool
-}
+const (
+	EnvironmentUpDryRunOption = "dry-run"
+)
 
-func NewEnvironmentUpCommand(environmentName string, options ...func(*EnvironmentUpOptions)) ecso.Command {
-	o := &EnvironmentUpOptions{
-		EnvironmentName: environmentName,
-	}
-
-	for _, option := range options {
-		option(o)
-	}
-
+func NewEnvironmentUpCommand(environmentName string) ecso.Command {
 	return &envUpCommand{
-		options: o,
+		environmentName: environmentName,
 	}
 }
 
 type envUpCommand struct {
-	options *EnvironmentUpOptions
+	environmentName string
+	dryRun          bool
+}
+
+func (cmd *envUpCommand) UnmarshalCliContext(ctx *cli.Context) error {
+	cmd.dryRun = ctx.Bool(EnvironmentUpDryRunOption)
+
+	return nil
 }
 
 func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
@@ -38,13 +38,13 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		project = ctx.Project
 		cfg     = ctx.Config
 		log     = cfg.Logger()
-		env     = project.Environments[cmd.options.EnvironmentName]
+		env     = project.Environments[cmd.environmentName]
 		ecsoAPI = api.New(ctx.Config)
 	)
 
 	ui.BannerBlue(log, "Bringing up environment '%s'", env.Name)
 
-	if cmd.options.DryRun {
+	if cmd.dryRun {
 		log.Infof("THIS IS A DRY RUN - no changes to the environment will be made.")
 	}
 
@@ -52,11 +52,11 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	if err := ecsoAPI.EnvironmentUp(project, env, cmd.options.DryRun); err != nil {
+	if err := ecsoAPI.EnvironmentUp(project, env, cmd.dryRun); err != nil {
 		return err
 	}
 
-	if cmd.options.DryRun {
+	if cmd.dryRun {
 		ui.BannerGreen(log, "Review the above changes and re-run the command without the --dry-run option to apply them")
 
 		return nil
@@ -76,14 +76,12 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 }
 
 func (cmd *envUpCommand) Validate(ctx *ecso.CommandContext) error {
-	opt := cmd.options
-
-	if opt.EnvironmentName == "" {
+	if cmd.environmentName == "" {
 		return fmt.Errorf("Environment name is required")
 	}
 
-	if !ctx.Project.HasEnvironment(opt.EnvironmentName) {
-		return fmt.Errorf("No environment named '%s' was found", opt.EnvironmentName)
+	if !ctx.Project.HasEnvironment(cmd.environmentName) {
+		return fmt.Errorf("No environment named '%s' was found", cmd.environmentName)
 	}
 
 	return nil

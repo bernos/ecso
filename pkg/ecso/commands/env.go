@@ -5,34 +5,33 @@ import (
 	"os"
 
 	"github.com/bernos/ecso/pkg/ecso"
+	"gopkg.in/urfave/cli.v1"
 )
 
-// Options for the env command
-type EnvOptions struct {
-	Environment string
-	Unset       bool
-}
+const (
+	EnvUnsetOption = "unset"
+)
 
-func NewEnvCommand(environment string, options ...func(*EnvOptions)) ecso.Command {
-	o := &EnvOptions{
-		Environment: environment,
-	}
-
-	for _, option := range options {
-		option(o)
-	}
-
+func NewEnvCommand(environmentName string) ecso.Command {
 	return &envCommand{
-		options: o,
+		environmentName: environmentName,
 	}
 }
 
 type envCommand struct {
-	options *EnvOptions
+	environmentName string
+	unset           bool
+}
+
+func (cmd *envCommand) UnmarshalCliContext(ctx *cli.Context) error {
+	cmd.environmentName = ctx.Args().First()
+	cmd.unset = ctx.Bool(EnvUnsetOption)
+
+	return nil
 }
 
 func (cmd *envCommand) Execute(ctx *ecso.CommandContext) error {
-	if cmd.options.Unset {
+	if cmd.unset {
 		oldPS1 := os.Getenv("ECSO_OLD_PS1")
 
 		fmt.Printf("unset ECSO_ENVIRONMENT; ")
@@ -41,17 +40,17 @@ func (cmd *envCommand) Execute(ctx *ecso.CommandContext) error {
 		if oldPS1 != "" {
 			fmt.Printf("export PS1=\"%s\"\n", oldPS1)
 		}
-	} else if cmd.options.Environment != "" {
-		if _, ok := ctx.Project.Environments[cmd.options.Environment]; ok {
+	} else if cmd.environmentName != "" {
+		if _, ok := ctx.Project.Environments[cmd.environmentName]; ok {
 
 			ps1 := os.Getenv("PS1")
 
 			if ps1 != "" {
-				fmt.Printf("export PS1=\"%s $(tput setaf 2)[ecso::%s:%s]:$(tput sgr0) \"\n", ps1, ctx.Project.Name, cmd.options.Environment)
+				fmt.Printf("export PS1=\"%s $(tput setaf 2)[ecso::%s:%s]:$(tput sgr0) \"\n", ps1, ctx.Project.Name, cmd.environmentName)
 				fmt.Printf("export ECSO_OLD_PS1=\"%s\"\n", ps1)
 			}
 
-			fmt.Printf("export ECSO_ENVIRONMENT=%s\n", cmd.options.Environment)
+			fmt.Printf("export ECSO_ENVIRONMENT=%s\n", cmd.environmentName)
 		}
 	}
 	return nil

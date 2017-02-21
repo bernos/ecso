@@ -6,36 +6,33 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"gopkg.in/urfave/cli.v1"
 )
 
-type ServiceLogsOptions struct {
-	Name        string
-	Environment string
-}
+const (
+	ServiceLogsEnvironmentOption = "environment"
+)
 
-func NewServiceLogsCommand(name, environment string, options ...func(*ServiceLogsOptions)) ecso.Command {
-	o := &ServiceLogsOptions{
-		Name:        name,
-		Environment: environment,
-	}
-
-	for _, option := range options {
-		option(o)
-	}
-
+func NewServiceLogsCommand(name string) ecso.Command {
 	return &serviceLogsCommand{
-		options: o,
+		name: name,
 	}
 }
 
 type serviceLogsCommand struct {
-	options *ServiceLogsOptions
+	name        string
+	environment string
+}
+
+func (cmd *serviceLogsCommand) UnmarshalCliContext(ctx *cli.Context) error {
+	cmd.environment = ctx.String(ServiceLogsEnvironmentOption)
+	return nil
 }
 
 func (cmd *serviceLogsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		service = ctx.Project.Services[cmd.options.Name]
-		env     = ctx.Project.Environments[cmd.options.Environment]
+		service = ctx.Project.Services[cmd.name]
+		env     = ctx.Project.Environments[cmd.environment]
 		log     = ctx.Config.Logger()
 		ecsoAPI = api.New(ctx.Config)
 	)
@@ -54,20 +51,20 @@ func (cmd *serviceLogsCommand) Execute(ctx *ecso.CommandContext) error {
 }
 
 func (cmd *serviceLogsCommand) Validate(ctx *ecso.CommandContext) error {
-	if cmd.options.Name == "" {
+	if cmd.name == "" {
 		return fmt.Errorf("Name is required")
 	}
 
-	if cmd.options.Environment == "" {
+	if cmd.environment == "" {
 		return fmt.Errorf("Environment is required")
 	}
 
-	if !ctx.Project.HasService(cmd.options.Name) {
-		return fmt.Errorf("No service named '%s' was found", cmd.options.Name)
+	if !ctx.Project.HasService(cmd.name) {
+		return fmt.Errorf("No service named '%s' was found", cmd.name)
 	}
 
-	if !ctx.Project.HasEnvironment(cmd.options.Environment) {
-		return fmt.Errorf("No environment named '%s' was found", cmd.options.Environment)
+	if !ctx.Project.HasEnvironment(cmd.environment) {
+		return fmt.Errorf("No environment named '%s' was found", cmd.environment)
 	}
 
 	return nil

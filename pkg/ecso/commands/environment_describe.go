@@ -6,33 +6,26 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/ui"
+	"gopkg.in/urfave/cli.v1"
 )
 
-type EnvironmentDescribeOptions struct {
-	EnvironmentName string
-}
-
-func NewEnvironmentDescribeCommand(environmentName string, options ...func(*EnvironmentDescribeOptions)) ecso.Command {
-	o := &EnvironmentDescribeOptions{
-		EnvironmentName: environmentName,
-	}
-
-	for _, option := range options {
-		option(o)
-	}
-
+func NewEnvironmentDescribeCommand(environmentName string) ecso.Command {
 	return &environmentDescribeCommand{
-		options: o,
+		environmentName: environmentName,
 	}
 }
 
 type environmentDescribeCommand struct {
-	options *EnvironmentDescribeOptions
+	environmentName string
+}
+
+func (cmd *environmentDescribeCommand) UnmarshalCliContext(ctx *cli.Context) error {
+	return nil
 }
 
 func (cmd *environmentDescribeCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		env     = ctx.Project.Environments[cmd.options.EnvironmentName]
+		env     = ctx.Project.Environments[cmd.environmentName]
 		log     = ctx.Config.Logger()
 		ecsoAPI = api.New(ctx.Config)
 	)
@@ -49,14 +42,12 @@ func (cmd *environmentDescribeCommand) Execute(ctx *ecso.CommandContext) error {
 }
 
 func (cmd *environmentDescribeCommand) Validate(ctx *ecso.CommandContext) error {
-	opt := cmd.options
-
-	if opt.EnvironmentName == "" {
+	if cmd.environmentName == "" {
 		return fmt.Errorf("Environment name is required")
 	}
 
-	if !ctx.Project.HasEnvironment(opt.EnvironmentName) {
-		return fmt.Errorf("No environment named '%s' was found", opt.EnvironmentName)
+	if !ctx.Project.HasEnvironment(cmd.environmentName) {
+		return fmt.Errorf("No environment named '%s' was found", cmd.environmentName)
 	}
 
 	return nil

@@ -1,27 +1,22 @@
 package commands
 
-import "github.com/bernos/ecso/pkg/ecso"
+import (
+	"github.com/bernos/ecso/pkg/ecso"
+	"gopkg.in/urfave/cli.v1"
+)
 
-type SkeletonOptions struct {
-	EnvironmentName string
-}
-
-func NewSkeletonCommand(environmentName string, options ...func(*SkeletonOptions)) ecso.Command {
-	o := &SkeletonOptions{
-		EnvironmentName: environmentName,
-	}
-
-	for _, option := range options {
-		option(o)
-	}
-
+func NewSkeletonCommand(environmentName string) ecso.Command {
 	return &skeletonCommand{
-		options: o,
+		environmentName: environmentName,
 	}
 }
 
 type skeletonCommand struct {
-	options *SkeletonOptions
+	environmentName string
+}
+
+func (cmd *skeletonCommand) UnmarshalCliContext(ctx *cli.Context) error {
+	return nil
 }
 
 func (cmd *skeletonCommand) Execute(ctx *ecso.CommandContext) error {

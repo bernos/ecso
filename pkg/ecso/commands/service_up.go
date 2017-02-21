@@ -8,30 +8,25 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
+	"gopkg.in/urfave/cli.v1"
 )
 
-type ServiceUpOptions struct {
-	Name        string
-	Environment string
-}
+const ServiceUpEnvironmentOption = "environment"
 
-func NewServiceUpCommand(name, environment string, options ...func(*ServiceUpOptions)) ecso.Command {
-	o := &ServiceUpOptions{
-		Name:        name,
-		Environment: environment,
-	}
-
-	for _, option := range options {
-		option(o)
-	}
-
+func NewServiceUpCommand(name string) ecso.Command {
 	return &serviceUpCommand{
-		options: o,
+		name: name,
 	}
 }
 
 type serviceUpCommand struct {
-	options *ServiceUpOptions
+	name        string
+	environment string
+}
+
+func (cmd *serviceUpCommand) UnmarshalCliContext(ctx *cli.Context) error {
+	cmd.environment = ctx.String(ServiceUpEnvironmentOption)
+	return nil
 }
 
 func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext) error {
@@ -39,8 +34,8 @@ func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext) error {
 		cfg     = ctx.Config
 		log     = cfg.Logger()
 		project = ctx.Project
-		env     = ctx.Project.Environments[cmd.options.Environment]
-		service = project.Services[cmd.options.Name]
+		env     = ctx.Project.Environments[cmd.environment]
+		service = project.Services[cmd.name]
 		ecsoAPI = api.New(cfg)
 	)
 
@@ -76,22 +71,20 @@ func (cmd *serviceUpCommand) Prompt(ctx *ecso.CommandContext) error {
 }
 
 func (cmd *serviceUpCommand) Validate(ctx *ecso.CommandContext) error {
-	opt := cmd.options
-
 	err := util.AnyError(
-		ui.ValidateRequired("Name")(opt.Name),
-		ui.ValidateRequired("Environment")(opt.Environment))
+		ui.ValidateRequired("Name")(cmd.name),
+		ui.ValidateRequired("Environment")(cmd.environment))
 
 	if err != nil {
 		return err
 	}
 
-	if _, ok := ctx.Project.Services[opt.Name]; !ok {
-		return fmt.Errorf("Service '%s' not found", opt.Name)
+	if _, ok := ctx.Project.Services[cmd.name]; !ok {
+		return fmt.Errorf("Service '%s' not found", cmd.name)
 	}
 
-	if _, ok := ctx.Project.Environments[opt.Environment]; !ok {
-		return fmt.Errorf("Environment '%s' not found", opt.Environment)
+	if _, ok := ctx.Project.Environments[cmd.environment]; !ok {
+		return fmt.Errorf("Environment '%s' not found", cmd.environment)
 	}
 
 	return nil

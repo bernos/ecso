@@ -7,32 +7,35 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/templates"
 	"github.com/bernos/ecso/pkg/ecso/ui"
+	"gopkg.in/urfave/cli.v1"
 )
 
-type ServiceAddOptions struct {
-	Name         string
-	DesiredCount int
-	Route        string
-	Port         int
-}
+const (
+	ServiceAddDesiredCountOption = "desired-count"
+	ServiceAddRouteOption        = "route"
+	ServiceAddPortOption         = "port"
+)
 
-func NewServiceAddCommand(name string, options ...func(*ServiceAddOptions)) ecso.Command {
-	o := &ServiceAddOptions{
-		Name:         name,
-		DesiredCount: 1,
-	}
-
-	for _, option := range options {
-		option(o)
-	}
-
+func NewServiceAddCommand(name string) ecso.Command {
 	return &serviceAddCommand{
-		options: o,
+		name:         name,
+		desiredCount: 1,
 	}
 }
 
 type serviceAddCommand struct {
-	options *ServiceAddOptions
+	name         string
+	desiredCount int
+	route        string
+	port         int
+}
+
+func (cmd *serviceAddCommand) UnmarshalCliContext(ctx *cli.Context) error {
+	cmd.desiredCount = ctx.Int(ServiceAddDesiredCountOption)
+	cmd.route = ctx.String(ServiceAddRouteOption)
+	cmd.port = ctx.Int(ServiceAddPortOption)
+
+	return nil
 }
 
 func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext) error {
@@ -42,19 +45,19 @@ func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext) error {
 	)
 
 	service := &ecso.Service{
-		Name:         cmd.options.Name,
-		ComposeFile:  filepath.Join("services", cmd.options.Name, "docker-compose.yaml"),
-		DesiredCount: cmd.options.DesiredCount,
+		Name:         cmd.name,
+		ComposeFile:  filepath.Join("services", cmd.name, "docker-compose.yaml"),
+		DesiredCount: cmd.desiredCount,
 		Tags: map[string]string{
 			"project": ctx.Project.Name,
-			"service": cmd.options.Name,
+			"service": cmd.name,
 		},
 	}
 
-	if len(cmd.options.Route) > 0 {
-		service.Route = cmd.options.Route
+	if len(cmd.route) > 0 {
+		service.Route = cmd.route
 		service.RoutePriority = len(ctx.Project.Services) + 1
-		service.Port = cmd.options.Port
+		service.Port = cmd.port
 	}
 
 	templateData := struct {
@@ -75,9 +78,9 @@ func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.BannerGreen(log, "Service '%s' added successfully.", cmd.options.Name)
+	ui.BannerGreen(log, "Service '%s' added successfully.", cmd.name)
 
-	log.Printf("Run `ecso service up %s --environment <ENVIRONMENT>` to deploy.\n\n", cmd.options.Name)
+	log.Printf("Run `ecso service up %s --environment <ENVIRONMENT>` to deploy.\n\n", cmd.name)
 
 	return nil
 }
@@ -101,13 +104,11 @@ func (cmd *serviceAddCommand) Prompt(ctx *ecso.CommandContext) error {
 
 	ui.BannerBlue(ctx.Config.Logger(), "Adding a new service to the %s project", ctx.Project.Name)
 
-	opt := cmd.options
-
-	if err := ui.AskStringIfEmptyVar(&opt.Name, prompts.Name, "", serviceNameValidator(ctx.Project)); err != nil {
+	if err := ui.AskStringIfEmptyVar(&cmd.name, prompts.Name, "", serviceNameValidator(ctx.Project)); err != nil {
 		return err
 	}
 
-	if err := ui.AskIntIfEmptyVar(&opt.DesiredCount, prompts.DesiredCount, 1, desiredCountValidator()); err != nil {
+	if err := ui.AskIntIfEmptyVar(&cmd.desiredCount, prompts.DesiredCount, 1, desiredCountValidator()); err != nil {
 		return err
 	}
 
@@ -118,11 +119,11 @@ func (cmd *serviceAddCommand) Prompt(ctx *ecso.CommandContext) error {
 	}
 
 	if webChoice == 0 {
-		if err := ui.AskStringIfEmptyVar(&opt.Route, prompts.Route, "/"+opt.Name, routeValidator()); err != nil {
+		if err := ui.AskStringIfEmptyVar(&cmd.route, prompts.Route, "/"+cmd.name, routeValidator()); err != nil {
 			return err
 		}
 
-		if err := ui.AskIntIfEmptyVar(&opt.Port, prompts.Port, 80, portValidator()); err != nil {
+		if err := ui.AskIntIfEmptyVar(&cmd.port, prompts.Port, 80, portValidator()); err != nil {
 			return err
 		}
 	}
