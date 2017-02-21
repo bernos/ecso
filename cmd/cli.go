@@ -99,35 +99,9 @@ func NewEnvironmentAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func getEnvironmentName(c *cli.Context) (string, error) {
-	name := c.Args().First()
-
-	if name == "" {
-		name = os.Getenv("ECSO_ENVIRONMENT")
-
-	}
-
-	if name == "" {
-		return name, NewArgumentRequiredError("environment")
-	}
-
-	return name, nil
-}
-
 func NewEnvironmentDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	fn := func(c *cli.Context) (ecso.Command, error) {
-		env := c.Args().First()
-
-		if env == "" {
-			env = os.Getenv("ECSO_ENVIRONMENT")
-
-		}
-
-		if env == "" {
-			return nil, NewArgumentRequiredError("environment")
-		}
-
-		return commands.NewEnvironmentDescribeCommand(env), nil
+		return makeEnvironmentCommand(c, commands.NewEnvironmentDescribeCommand)
 	}
 
 	return cli.Command{
@@ -148,21 +122,12 @@ func NewEnvironmentDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 	fn := func(c *cli.Context) (ecso.Command, error) {
 		force := c.Bool(keys.Force)
-		env := c.Args().First()
-
-		if env == "" {
-			env = os.Getenv("ECSO_ENVIRONMENT")
-		}
-
-		if env == "" {
-			return nil, NewArgumentRequiredError("environment")
-		}
 
 		if !force {
 			return nil, NewOptionRequiredError(keys.Force)
 		}
 
-		return commands.NewEnvironmentDownCommand(env), nil
+		return makeEnvironmentCommand(c, commands.NewEnvironmentDownCommand)
 	}
 
 	return cli.Command{
@@ -190,21 +155,12 @@ func NewEnvironmentRmCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 	fn := func(c *cli.Context) (ecso.Command, error) {
 		force := c.Bool(keys.Force)
-		env := c.Args().First()
-
-		if env == "" {
-			env = os.Getenv("ECSO_ENVIRONMENT")
-		}
-
-		if env == "" {
-			return nil, NewArgumentRequiredError("environment")
-		}
 
 		if !force {
 			return nil, NewOptionRequiredError(keys.Force)
 		}
 
-		return commands.NewEnvironmentRmCommand(env), nil
+		return makeEnvironmentCommand(c, commands.NewEnvironmentRmCommand)
 	}
 
 	return cli.Command{
@@ -224,17 +180,7 @@ func NewEnvironmentRmCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 func NewEnvironmentUpCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	fn := func(c *cli.Context) (ecso.Command, error) {
-		env := c.Args().First()
-
-		if env == "" {
-			env = os.Getenv("ECSO_ENVIRONMENT")
-		}
-
-		if env == "" {
-			return nil, NewArgumentRequiredError("environment")
-		}
-
-		return commands.NewEnvironmentUpCommand(env), nil
+		return makeEnvironmentCommand(c, commands.NewEnvironmentUpCommand)
 	}
 
 	return cli.Command{
@@ -314,13 +260,7 @@ func NewServiceAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 func NewServiceDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 	fn := func(c *cli.Context) (ecso.Command, error) {
-		service := c.Args().First()
-
-		if service == "" {
-			return nil, NewArgumentRequiredError("service")
-		}
-
-		return commands.NewServiceDescribeCommand(service), nil
+		return makeServiceCommand(c, commands.NewServiceDescribeCommand)
 	}
 
 	return cli.Command{
@@ -348,17 +288,12 @@ func NewServiceDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 	fn := func(c *cli.Context) (ecso.Command, error) {
 		force := c.Bool(keys.Force)
-		service := c.Args().First()
-
-		if service == "" {
-			return nil, NewArgumentRequiredError("service")
-		}
 
 		if !force {
 			return nil, NewOptionRequiredError(keys.Force)
 		}
 
-		return commands.NewServiceDownCommand(service), nil
+		return makeServiceCommand(c, commands.NewServiceDownCommand)
 	}
 
 	return cli.Command{
@@ -380,13 +315,7 @@ func NewServiceDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 func NewServiceEventsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 	fn := func(c *cli.Context) (ecso.Command, error) {
-		service := c.Args().First()
-
-		if service == "" {
-			return nil, NewArgumentRequiredError("service")
-		}
-
-		return commands.NewServiceEventsCommand(service), nil
+		return makeServiceCommand(c, commands.NewServiceEventsCommand)
 	}
 
 	return cli.Command{
@@ -406,13 +335,7 @@ func NewServiceEventsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 func NewServiceLogsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	fn := func(c *cli.Context) (ecso.Command, error) {
-		service := c.Args().First()
-
-		if service == "" {
-			return nil, NewArgumentRequiredError("service")
-		}
-
-		return commands.NewServiceLogsCommand(service), nil
+		return makeServiceCommand(c, commands.NewServiceLogsCommand)
 	}
 
 	return cli.Command{
@@ -431,15 +354,8 @@ func NewServiceLogsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewServiceLsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-
 	fn := func(c *cli.Context) (ecso.Command, error) {
-		env := c.String(commands.ServiceLsEnvironmentOption)
-
-		if env == "" {
-			return nil, NewOptionRequiredError(commands.ServiceLsEnvironmentOption)
-		}
-
-		return commands.NewServiceLsCommand(env), nil
+		return makeServiceCommand(c, commands.NewServiceLsCommand)
 	}
 
 	return cli.Command{
@@ -457,15 +373,8 @@ func NewServiceLsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewServicePsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-
 	fn := func(c *cli.Context) (ecso.Command, error) {
-		name := c.Args().First()
-
-		if name == "" {
-			return nil, NewArgumentRequiredError("service")
-		}
-
-		return commands.NewServicePsCommand(name), nil
+		return makeServiceCommand(c, commands.NewServicePsCommand)
 	}
 
 	return cli.Command{
@@ -484,15 +393,8 @@ func NewServicePsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewServiceUpCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-
 	fn := func(c *cli.Context) (ecso.Command, error) {
-		name := c.Args().First()
-
-		if name == "" {
-			return nil, NewArgumentRequiredError("service")
-		}
-
-		return commands.NewServiceUpCommand(name), nil
+		return makeServiceCommand(c, commands.NewServiceUpCommand)
 	}
 
 	return cli.Command{
@@ -509,4 +411,29 @@ func NewServiceUpCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 		},
 		Action: MakeAction(dispatcher, fn),
 	}
+}
+
+func makeEnvironmentCommand(c *cli.Context, fn func(string) ecso.Command) (ecso.Command, error) {
+	name := c.Args().First()
+
+	if name == "" {
+		name = os.Getenv("ECSO_ENVIRONMENT")
+
+	}
+
+	if name == "" {
+		return nil, NewArgumentRequiredError("environment")
+	}
+
+	return fn(name), nil
+}
+
+func makeServiceCommand(c *cli.Context, fn func(string) ecso.Command) (ecso.Command, error) {
+	name := c.Args().First()
+
+	if name == "" {
+		return nil, NewArgumentRequiredError("service")
+	}
+
+	return fn(name), nil
 }
