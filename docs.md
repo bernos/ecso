@@ -1,219 +1,221 @@
-# ecso init
 
-```
-NAME:
-   ecso init - Initialise a new ecso project
+## init
 
-USAGE:
-   ecso init [PROJECT]
+Initialise a new ecso project
 
-DESCRIPTION:
-   Creates a new ecso project configuration file at .ecso/project.json. The initial project contains no environments or services. The project configuration file can be safely endited by hand, but it is usually easier to user the ecso cli tool to add new services and environments to the project.
-```
+Creates a new ecso project configuration file at .ecso/project.json. The initial project contains no environments or services. The project configuration file can be safely endited by hand, but it is usually easier to user the ecso cli tool to add new services and environments to the project.
 
-# ecso environment add
+````
+main init [PROJECT]
+````
+# ecso environment
 
-```
-NAME:
-   ecso environment add - Add a new environment to the project
+Manage ecso environments
 
-USAGE:
-   ecso environment add [command options] [ENVIRONMENT]
+````
+ecso environment command [command options] [arguments...]
+````
 
-OPTIONS:
-   --vpc value			The vpc to create the environment in
-   --alb-subnets value		The subnets to place the application load balancer in
-   --instance-subnets value	The subnets to place the ecs container instances in
-   --region value		The AWS region to create the environment in
-   --size value			Then number of container instances to create (default: 0)
-   --instance-type value	The type of container instances to create
+#### Commands
+- add		Add a new environment to the project
+- up		Deploys the infrastructure for an ecso environment
+- rm		Removes an ecso environment
+- describe	Describes an ecso environment
+- down		Terminates an ecso environment
+
+
+#### Options
+   --help, -h	show help
    
-```
+## add
 
-# ecso environment up
+Add a new environment to the project
 
-```
-NAME:
-   ecso environment up - Deploys the infrastructure for an ecso environment
+````
+ecso environment add [command options] [ENVIRONMENT]
+````
 
-USAGE:
-   ecso environment up [command options] ENVIRONMENT
+#### Options
+- --vpc value			The vpc to create the environment in
+- --alb-subnets value		The subnets to place the application load balancer in
+- --instance-subnets value	The subnets to place the ecs container instances in
+- --region value		The AWS region to create the environment in
+- --size value			Then number of container instances to create (default: 0)
+- --instance-type value		The type of container instances to create
 
-DESCRIPTION:
-   All ecso environment infrastructure deployments are managed by CloudFormation. CloudFormation templates for environment infrastructure are stored at .ecso/infrastructure/templates, and are created the first time that `ecso environment up` is run. These templates can be safely edited by hand.
+## up
 
-OPTIONS:
-   --dry-run	If set, list pending changes, but do not execute the updates.
+Deploys the infrastructure for an ecso environment
+
+All ecso environment infrastructure deployments are managed by CloudFormation. CloudFormation templates for environment infrastructure are stored at .ecso/infrastructure/templates, and are created the first time that `ecso environment up` is run. These templates can be safely edited by hand.
+
+````
+ecso environment up [command options] ENVIRONMENT
+````
+
+#### Options
+- --dry-run	If set, list pending changes, but do not execute the updates.
+
+## rm
+
+Removes an ecso environment
+
+Terminates an environment if it is running, and also deletes the environment configuration from the .ecso/project.json file
+
+````
+ecso environment rm [command options] ENVIRONMENT
+````
+
+#### Options
+- --force	Required. Confirms the environment will be removed
+
+## describe
+
+Describes an ecso environment
+
+````
+ecso environment describe ENVIRONMENT
+````
+## down
+
+Terminates an ecso environment
+
+Any services running in the environment will be terminated first. See the description of 'ecso service down' for details. Once all running services have been terminated, the environment Cloud Formation stack will be deleted, and any DNS entries removed.
+
+````
+ecso environment down [command options] ENVIRONMENT
+````
+
+#### Options
+- --force	Required. Confirms the environment will be stopped
+
+# ecso service
+
+Manage ecso services
+
+````
+ecso service command [command options] [arguments...]
+````
+
+#### Commands
+- add		Adds a new service to the project
+- up		Deploy a service
+- down		terminates a service
+- ls		List services
+- ps		Show running tasks for a service
+- events	List ECS events for a service
+- logs		output service logs
+- describe	Lists details of a deployed service
+
+
+#### Options
+   --help, -h	show help
    
-```
+## add
 
-# ecso environment describe
+Adds a new service to the project
 
-```
-NAME:
-   ecso environment describe - Describes an ecso environment
+The .ecso/project.json file will be updated with configuration settings for the new service. CloudFormation templates for the service and supporting resources are created in the .ecso/services/SERVICE dir, and can be safely edited by hand. An initial docker compose file will be created at ./services/SERVICE/docker-compose.yaml.
 
-USAGE:
-   ecso environment describe ENVIRONMENT
-```
+````
+ecso service add [command options] SERVICE
+````
 
-# ecso environment down
+#### Options
+- --desired-count value	The desired number of service instances (default: 0)
+- --route value		If set, the service will be registered with the load balancer at this route
+- --port value		If set, the loadbalancer will bind to this port of the web container in this service (default: 0)
 
-```
-NAME:
-   ecso environment down - Terminates an ecso environment
+## up
 
-USAGE:
-   ecso environment down [command options] ENVIRONMENT
+Deploy a service
 
-DESCRIPTION:
-   Any services running in the environment will be terminated first. See the description of 'ecso service down' for details. Once all running services have been terminated, the environment Cloud Formation stack will be deleted, and any DNS entries removed.
+The service's docker-compose file will be transformed into an ECS task definition, and registered with ECS. The service CloudFormation template will be deployed. Service deployment policies and constraints can be set in the service CloudFormation templates. By default a rolling deployment is performed, with the number of services running at any time equal to at least the desired service count, and at most 200% of the desired service count.
 
-OPTIONS:
-   --force	Required. Confirms the environment will be stopped
-   
-```
+````
+ecso service up [command options] SERVICE
+````
 
-# ecso environment rm
+#### Options
+- --environment value	The name of the environment to deploy to [$ECSO_ENVIRONMENT]
 
-```
-NAME:
-   ecso environment rm - Removes an ecso environment
+## down
 
-USAGE:
-   ecso environment rm [command options] ENVIRONMENT
+terminates a service
 
-DESCRIPTION:
-   Terminates an environment if it is running, and also deletes the environment configuration from the .ecso/project.json file
+The service will be scaled down, then deleted. The service's CloudFormation stack will be deleted, and any DNS records removed.
 
-OPTIONS:
-   --force	Required. Confirms the environment will be removed
-   
-```
+````
+ecso service down [command options] SERVICE
+````
 
-# ecso env
+#### Options
+- --environment value	The environment to terminate the service from [$ECSO_ENVIRONMENT]
 
-```
-NAME:
-   ecso env - Display the commands to set up the default environment for the ecso cli tool
+## ls
 
-USAGE:
-   ecso env [command options] ENVIRONMENT
+List services
 
-OPTIONS:
-   --unset	If set, output shell commands to unset all ecso environment variables
-   
-```
+````
+ecso service ls [command options] [arguments...]
+````
 
-# ecso service add
+#### Options
+- --environment value	Environment to query [$ECSO_ENVIRONMENT]
 
-```
-NAME:
-   ecso service add - Adds a new service to the project
+## ps
 
-USAGE:
-   ecso service add [command options] SERVICE
+Show running tasks for a service
 
-DESCRIPTION:
-   The .ecso/project.json file will be updated with configuration settings for the new service. CloudFormation templates for the service and supporting resources are created in the .ecso/services/SERVICE dir, and can be safely edited by hand. An initial docker compose file will be created at ./services/SERVICE/docker-compose.yaml.
+````
+ecso service ps [command options] SERVICE
+````
 
-OPTIONS:
-   --desired-count value	The desired number of service instances (default: 0)
-   --route value		If set, the service will be registered with the load balancer at this route
-   --port value			If set, the loadbalancer will bind to this port of the web container in this service (default: 0)
-   
-```
+#### Options
+- --environment value	The name of the environment [$ECSO_ENVIRONMENT]
 
-# ecso service up
+## events
 
-```
-NAME:
-   ecso service up - Deploy a service
+List ECS events for a service
 
-USAGE:
-   ecso service up [command options] SERVICE
+````
+ecso service events [command options] SERVICE
+````
 
-DESCRIPTION:
-   The service's docker-compose file will be transformed into an ECS task definition, and registered with ECS. The service CloudFormation template will be deployed. Service deployment policies and constraints can be set in the service CloudFormation templates. By default a rolling deployment is performed, with the number of services running at any time equal to at least the desired service count, and at most 200% of the desired service count.
+#### Options
+- --environment value	The name of the environment [$ECSO_ENVIRONMENT]
 
-OPTIONS:
-   --environment value	The name of the environment to deploy to [$ECSO_ENVIRONMENT]
-   
-```
+## logs
 
-# ecso service down
+output service logs
 
-```
-NAME:
-   ecso service down - terminates a service
+````
+ecso service logs [command options] SERVICE
+````
 
-USAGE:
-   ecso service down [command options] SERVICE
+#### Options
+- --environment value	The environment to terminate the service from [$ECSO_ENVIRONMENT]
 
-DESCRIPTION:
-   The service will be scaled down, then deleted. The service's CloudFormation stack will be deleted, and any DNS records removed.
+## describe
 
-OPTIONS:
-   --environment value	The environment to terminate the service from [$ECSO_ENVIRONMENT]
-   
-```
+Lists details of a deployed service
 
-# ecso service ls
+Returns detailed information about a deployed service. If the service has not been deployed to the environment an error will be returned
 
-```
-NAME:
-   ecso service ls - List services
+````
+ecso service describe [command options] SERVICE
+````
 
-USAGE:
-   ecso service ls [command options] [arguments...]
+#### Options
+- --environment value	The environment to query [$ECSO_ENVIRONMENT]
 
-OPTIONS:
-   --environment value	Environment to query [$ECSO_ENVIRONMENT]
-   
-```
+## env
 
-# ecso service ps
+Display the commands to set up the default environment for the ecso cli tool
 
-```
-NAME:
-   ecso service ps - Show running tasks for a service
+````
+main env [command options] ENVIRONMENT
+````
 
-USAGE:
-   ecso service ps [command options] SERVICE
-
-OPTIONS:
-   --environment value	The name of the environment [$ECSO_ENVIRONMENT]
-   
-```
-
-# ecso service logs
-
-```
-NAME:
-   ecso service logs - output service logs
-
-USAGE:
-   ecso service logs [command options] SERVICE
-
-OPTIONS:
-   --environment value	The environment to terminate the service from [$ECSO_ENVIRONMENT]
-   
-```
-
-# ecso service describe
-
-```
-NAME:
-   ecso service describe - Lists details of a deployed service
-
-USAGE:
-   ecso service describe [command options] SERVICE
-
-DESCRIPTION:
-   Returns detailed information about a deployed service. If the service has not been deployed to the environment an error will be returned
-
-OPTIONS:
-   --environment value	The environment to query [$ECSO_ENVIRONMENT]
-   
-```
-
+#### Options
+- --unset	If set, output shell commands to unset all ecso environment variables

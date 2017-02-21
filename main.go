@@ -19,26 +19,9 @@ func main() {
 	cfg := MustLoadConfig(ecso.NewConfig())
 	prefs := MustLoadUserPreferences(ecso.LoadUserPreferences())
 	dispatcher := ecso.NewDispatcher(project, cfg, prefs)
+	app := cmd.NewApp(version, dispatcher)
 
 	cli.ErrWriter = cfg.Logger().ErrWriter()
-
-	app := cli.NewApp()
-	app.Name = "ecso"
-	app.Usage = "Manage Amazon ECS projects"
-	app.Version = version
-	app.Authors = []cli.Author{
-		cli.Author{
-			Name:  "Brendan McMahon",
-			Email: "bernos@gmail.com",
-		},
-	}
-
-	app.Commands = []cli.Command{
-		cmd.NewInitCliCommand(dispatcher),
-		cmd.NewEnvironmentCliCommand(dispatcher),
-		cmd.NewServiceCliCommand(dispatcher),
-		cmd.NewEnvCliCommand(dispatcher),
-	}
 
 	app.Run(os.Args)
 }

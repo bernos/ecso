@@ -33,23 +33,6 @@ func MakeAction(dispatcher ecso.Dispatcher, fn factory, options ...func(*ecso.Di
 	}
 }
 
-// func MakeAction(dispatcher ecso.Dispatcher, fn factory, options ...func(*ecso.DispatchOptions)) func(*cli.Context) error {
-// 	return func(c *cli.Context) error {
-// 		command, err := fn(c)
-
-// 		if err != nil {
-// 			cli.ShowSubcommandHelp(c)
-// 			return cli.NewExitError(err.Error(), 1)
-// 		}
-
-// 		if err := dispatcher.Dispatch(command, options...); err != nil {
-// 			return cli.NewExitError(err.Error(), 1)
-// 		}
-
-// 		return nil
-// 	}
-// }
-
 type UsageError interface {
 	Option() string
 }
