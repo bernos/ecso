@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -13,7 +14,8 @@ import (
 )
 
 var CommandHelpTemplate = `
-## {{.Name}}
+<a id="{{.Name}}"></a>
+## {{.HelpName}}
 
 {{.Usage}}{{if .Description}}
 
@@ -27,14 +29,17 @@ var CommandHelpTemplate = `
 {{.Category}}{{end}}{{if .VisibleFlags}}
 
 #### Options
-{{range .VisibleFlags}}- {{.}}
-{{end}}{{end}}`
+| option | usage |
+|:---    |:---   |{{range .VisibleFlags}}
+| --{{.Name}} | {{.Usage}} |{{end}}{{end}}
+`
 
 // SubcommandHelpTemplate is the text template for the subcommand help topic.
 // cli.go uses text/template to render templates. You can
 // render custom help text by setting this variable.
 var SubcommandHelpTemplate = `
-# {{.Name}}
+<a id="{{.Name}}"></a>
+# {{.HelpName}}
 
 {{.Usage}}
 
@@ -43,13 +48,17 @@ var SubcommandHelpTemplate = `
 ` + "````" + `
 
 #### Commands{{range .VisibleCategories}}{{if .Name}}
-{{.Name}}:{{end}}{{range .VisibleCommands}}
-- {{.Name}}{{with .ShortName}}, {{.}}{{end}}{{"\t"}}{{.Usage}}{{end}}
+{{.Name}}:{{end}}
+| Name  | Description |
+|:---   |:---         |{{range .VisibleCommands}}
+| --{{.Name}}{{with .ShortName}}, --{{.}}{{end}} | {{.Usage}} | {{end}}
 {{end}}{{if .VisibleFlags}}
 
 #### Options
-   {{range .VisibleFlags}}{{.}}
-   {{end}}{{end}}`
+| option | usage |
+|:---    |:---   |{{range .VisibleFlags}}
+| --{{.Name}} | {{.Usage}} |{{end}}{{end}}
+`
 
 func main() {
 	cli.CommandHelpTemplate = CommandHelpTemplate
@@ -59,14 +68,27 @@ func main() {
 		return nil
 	})
 
+	commands := make([][]string, 0)
+
 	app := cmd.NewApp("", dispatcher)
 
+	fmt.Println("# ECSO ")
+	fmt.Printf("\n#### Table of contents\n\n")
+
 	for _, command := range app.Commands {
-		app.Run([]string{"ecso", command.Name, "--help"})
+		fmt.Printf("- [%s](#%s)\n", command.Name, command.Name)
+		commands = append(commands, []string{"ecso", command.Name, "--help"})
 
 		for _, sub := range command.Subcommands {
-			app.Run([]string{"ecso", command.Name, sub.Name, "--help"})
+			fmt.Printf("  * [%s](#%s)\n", sub.Name, sub.Name)
+			commands = append(commands, []string{"ecso", command.Name, sub.Name, "--help"})
 		}
+	}
+
+	for _, c := range commands {
+		app = cmd.NewApp("", dispatcher)
+		app.Run(c)
+		// time.Sleep(time.Second)
 	}
 }
 
