@@ -21,7 +21,9 @@ const (
 )
 
 type environmentAddCommand struct {
-	name            string
+	// name            string
+	*EnvironmentCommand
+
 	vpcID           string
 	albSubnets      string
 	instanceSubnets string
@@ -35,11 +37,18 @@ type environmentAddCommand struct {
 
 func NewEnvironmentAddCommand(environmentName string) ecso.Command {
 	return &environmentAddCommand{
-		name: environmentName,
+		// name: environmentName,
+		EnvironmentCommand: &EnvironmentCommand{
+			environmentName: environmentName,
+		},
 	}
 }
 
 func (c *environmentAddCommand) UnmarshalCliContext(ctx *cli.Context) error {
+	if err := c.EnvironmentCommand.UnmarshalCliContext(ctx); err != nil {
+		return err
+	}
+
 	c.albSubnets = ctx.String(EnvironmentAddALBSubnetsOption)
 	c.instanceSubnets = ctx.String(EnvironmentAddInstanceSubnetsOption)
 	c.instanceType = ctx.String(EnvironmentAddInstanceTypeOption)
@@ -56,12 +65,12 @@ func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
 		project = ctx.Project
 	)
 
-	if project.HasEnvironment(c.name) {
-		return fmt.Errorf("An environment named '%s' already exists for this project.", c.name)
+	if project.HasEnvironment(c.environmentName) {
+		return fmt.Errorf("An environment named '%s' already exists for this project.", c.environmentName)
 	}
 
 	project.AddEnvironment(&ecso.Environment{
-		Name:   c.name,
+		Name:   c.environmentName,
 		Region: c.region,
 		CloudFormationParameters: map[string]string{
 			"VPC":             c.vpcID,
@@ -73,7 +82,7 @@ func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
 			"DataDogAPIKey":   c.datadogAPIKey,
 		},
 		CloudFormationTags: map[string]string{
-			"environment": c.name,
+			"environment": c.environmentName,
 			"project":     project.Name,
 		},
 	})
@@ -82,8 +91,8 @@ func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.BannerGreen(log, "Successfully added environment '%s' to the project", c.name)
-	log.Printf("Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.name)
+	ui.BannerGreen(log, "Successfully added environment '%s' to the project", c.environmentName)
+	log.Printf("Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.environmentName)
 
 	return nil
 }
@@ -160,7 +169,7 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 		accountDefaults = ac
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.name, prompts.Name, "dev", validators.Name); err != nil {
+	if err := ui.AskStringIfEmptyVar(&c.environmentName, prompts.Name, "dev", validators.Name); err != nil {
 		return err
 	}
 

@@ -14,17 +14,22 @@ const (
 
 func NewEnvCommand(environmentName string) ecso.Command {
 	return &envCommand{
-		environmentName: environmentName,
+		EnvironmentCommand: &EnvironmentCommand{
+			environmentName: environmentName,
+		},
 	}
 }
 
 type envCommand struct {
-	environmentName string
-	unset           bool
+	*EnvironmentCommand
+	unset bool
 }
 
 func (cmd *envCommand) UnmarshalCliContext(ctx *cli.Context) error {
-	cmd.environmentName = ctx.Args().First()
+	if err := cmd.EnvironmentCommand.UnmarshalCliContext(ctx); err != nil {
+		return err
+	}
+
 	cmd.unset = ctx.Bool(EnvUnsetOption)
 
 	return nil

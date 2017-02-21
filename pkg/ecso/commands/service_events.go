@@ -1,36 +1,24 @@
 package commands
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/helpers"
-	"github.com/bernos/ecso/pkg/ecso/ui"
-	"github.com/bernos/ecso/pkg/ecso/util"
-	"gopkg.in/urfave/cli.v1"
-)
-
-const (
-	ServiceEventsEnvironmentOption = "environment"
 )
 
 func NewServiceEventsCommand(name string) ecso.Command {
 	return &serviceEventsCommand{
-		name: name,
+		ServiceCommand: &ServiceCommand{
+			name: name,
+		},
 	}
 }
 
 type serviceEventsCommand struct {
-	name        string
-	environment string
-}
-
-func (cmd *serviceEventsCommand) UnmarshalCliContext(ctx *cli.Context) error {
-	cmd.environment = ctx.String(ServiceDownEnvironmentOption)
-	return nil
+	*ServiceCommand
 }
 
 func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext) error {
@@ -65,29 +53,5 @@ func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext) error {
 		count++
 	}
 
-	return nil
-}
-
-func (cmd *serviceEventsCommand) Validate(ctx *ecso.CommandContext) error {
-	err := util.AnyError(
-		ui.ValidateRequired("Name")(cmd.name),
-		ui.ValidateRequired("Environment")(cmd.name))
-
-	if err != nil {
-		return err
-	}
-
-	if _, ok := ctx.Project.Services[cmd.name]; !ok {
-		return fmt.Errorf("Service '%s' not found", cmd.name)
-	}
-
-	if _, ok := ctx.Project.Environments[cmd.environment]; !ok {
-		return fmt.Errorf("Environment '%s' not found", cmd.environment)
-	}
-
-	return nil
-}
-
-func (cmd *serviceEventsCommand) Prompt(ctx *ecso.CommandContext) error {
 	return nil
 }

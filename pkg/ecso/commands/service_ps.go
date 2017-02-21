@@ -10,11 +10,7 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/ui"
-	"github.com/bernos/ecso/pkg/ecso/util"
-	"gopkg.in/urfave/cli.v1"
 )
-
-const ServicePsEnvironmentOption = "environment"
 
 type row struct {
 	TaskID            string
@@ -30,18 +26,14 @@ type row struct {
 
 func NewServicePsCommand(name string) ecso.Command {
 	return &servicePsCommand{
-		name: name,
+		ServiceCommand: &ServiceCommand{
+			name: name,
+		},
 	}
 }
 
 type servicePsCommand struct {
-	name        string
-	environment string
-}
-
-func (cmd *servicePsCommand) UnmarshalCliContext(ctx *cli.Context) error {
-	cmd.environment = ctx.String(ServicePsEnvironmentOption)
-	return nil
+	*ServiceCommand
 }
 
 func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
@@ -92,30 +84,6 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 	log.Printf("\n")
 	printRows(rows, log)
 	log.Printf("\n")
-
-	return nil
-}
-
-func (cmd *servicePsCommand) Prompt(ctx *ecso.CommandContext) error {
-	return nil
-}
-
-func (cmd *servicePsCommand) Validate(ctx *ecso.CommandContext) error {
-	err := util.AnyError(
-		ui.ValidateRequired("Name")(cmd.name),
-		ui.ValidateRequired("Environment")(cmd.environment))
-
-	if err != nil {
-		return err
-	}
-
-	if _, ok := ctx.Project.Services[cmd.name]; !ok {
-		return fmt.Errorf("Service '%s' not found", cmd.name)
-	}
-
-	if _, ok := ctx.Project.Environments[cmd.environment]; !ok {
-		return fmt.Errorf("Environment '%s' not found", cmd.environment)
-	}
 
 	return nil
 }

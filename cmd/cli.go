@@ -99,6 +99,21 @@ func NewEnvironmentAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
+func getEnvironmentName(c *cli.Context) (string, error) {
+	name := c.Args().First()
+
+	if name == "" {
+		name = os.Getenv("ECSO_ENVIRONMENT")
+
+	}
+
+	if name == "" {
+		return name, NewArgumentRequiredError("environment")
+	}
+
+	return name, nil
+}
+
 func NewEnvironmentDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	fn := func(c *cli.Context) (ecso.Command, error) {
 		env := c.Args().First()
@@ -315,7 +330,7 @@ func NewServiceDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 		ArgsUsage:   "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:   commands.ServiceDescribeEnvironmentOption,
+				Name:   commands.ServiceEnvironmentOption,
 				Usage:  "The environment to query",
 				EnvVar: "ECSO_ENVIRONMENT",
 			},
@@ -353,7 +368,7 @@ func NewServiceDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 		ArgsUsage:   "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:   commands.ServiceDownEnvironmentOption,
+				Name:   commands.ServiceEnvironmentOption,
 				Usage:  "The environment to terminate the service from",
 				EnvVar: "ECSO_ENVIRONMENT",
 			},
@@ -380,7 +395,7 @@ func NewServiceEventsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 		ArgsUsage: "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:   commands.ServiceEventsEnvironmentOption,
+				Name:   commands.ServiceEnvironmentOption,
 				Usage:  "The name of the environment",
 				EnvVar: "ECSO_ENVIRONMENT",
 			},
@@ -406,7 +421,7 @@ func NewServiceLogsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 		ArgsUsage: "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:   commands.ServiceLogsEnvironmentOption,
+				Name:   commands.ServiceEnvironmentOption,
 				Usage:  "The environment to terminate the service from",
 				EnvVar: "ECSO_ENVIRONMENT",
 			},
@@ -459,7 +474,7 @@ func NewServicePsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 		ArgsUsage: "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:   commands.ServicePsEnvironmentOption,
+				Name:   commands.ServiceEnvironmentOption,
 				Usage:  "The name of the environment",
 				EnvVar: "ECSO_ENVIRONMENT",
 			},
@@ -487,7 +502,7 @@ func NewServiceUpCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 		ArgsUsage:   "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:   commands.ServiceUpEnvironmentOption,
+				Name:   commands.ServiceEnvironmentOption,
 				Usage:  "The name of the environment to deploy to",
 				EnvVar: "ECSO_ENVIRONMENT",
 			},

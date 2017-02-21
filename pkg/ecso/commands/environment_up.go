@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"fmt"
-
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/templates"
@@ -18,16 +16,22 @@ const (
 
 func NewEnvironmentUpCommand(environmentName string) ecso.Command {
 	return &envUpCommand{
-		environmentName: environmentName,
+		EnvironmentCommand: &EnvironmentCommand{
+			environmentName: environmentName,
+		},
 	}
 }
 
 type envUpCommand struct {
-	environmentName string
-	dryRun          bool
+	*EnvironmentCommand
+	dryRun bool
 }
 
 func (cmd *envUpCommand) UnmarshalCliContext(ctx *cli.Context) error {
+	if err := cmd.EnvironmentCommand.UnmarshalCliContext(ctx); err != nil {
+		return err
+	}
+
 	cmd.dryRun = ctx.Bool(EnvironmentUpDryRunOption)
 
 	return nil
@@ -72,22 +76,6 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 
 	ui.PrintEnvironmentDescription(log, description)
 
-	return nil
-}
-
-func (cmd *envUpCommand) Validate(ctx *ecso.CommandContext) error {
-	if cmd.environmentName == "" {
-		return fmt.Errorf("Environment name is required")
-	}
-
-	if !ctx.Project.HasEnvironment(cmd.environmentName) {
-		return fmt.Errorf("No environment named '%s' was found", cmd.environmentName)
-	}
-
-	return nil
-}
-
-func (cmd *envUpCommand) Prompt(ctx *ecso.CommandContext) error {
 	return nil
 }
 
