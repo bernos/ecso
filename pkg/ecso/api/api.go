@@ -6,19 +6,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 )
 
-// env
-
-// environment add
-// environment up
-// environment rm
-
-// service add
-// service up
-// service down
-// service ls
-// service ps
-// service logs
-
 type API interface {
 	DescribeEnvironment(env *ecso.Environment) (*EnvironmentDescription, error)
 	DescribeService(env *ecso.Environment, service *ecso.Service) (*ServiceDescription, error)
@@ -31,12 +18,6 @@ type API interface {
 	ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*cloudwatchlogs.FilteredLogEvent, error)
 
 	GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ecs.Service, error)
-	// ListTasks()
-
-	// GetLogs()
-
-	// LoadProject(dir string) (*ecso.Project, error)
-	// SaveProject(p *ecso.Project) error
 }
 
 // New creates a new API

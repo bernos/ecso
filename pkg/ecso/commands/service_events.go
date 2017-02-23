@@ -21,6 +21,7 @@ type serviceEventsCommand struct {
 	*ServiceCommand
 }
 
+// TODO add GetServiceEvents to the ecso api and call from here, rather than using the helper directly
 func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		log       = ctx.Config.Logger()
