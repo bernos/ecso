@@ -23,7 +23,7 @@ func (cmd *serviceDecribeCommand) Execute(ctx *ecso.CommandContext) error {
 		env     = ctx.Project.Environments[cmd.environment]
 		service = ctx.Project.Services[cmd.name]
 		log     = ctx.Config.Logger()
-		ecsoAPI = api.New(ctx.Config)
+		ecsoAPI = api.NewServiceAPI(ctx.Config)
 	)
 
 	description, err := ecsoAPI.DescribeService(env, service)

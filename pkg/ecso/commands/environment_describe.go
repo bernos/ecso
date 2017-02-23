@@ -22,7 +22,7 @@ func (cmd *environmentDescribeCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		env     = ctx.Project.Environments[cmd.environmentName]
 		log     = ctx.Config.Logger()
-		ecsoAPI = api.New(ctx.Config)
+		ecsoAPI = api.NewEnvironmentAPI(ctx.Config)
 	)
 
 	description, err := ecsoAPI.DescribeEnvironment(env)

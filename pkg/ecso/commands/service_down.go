@@ -39,7 +39,7 @@ func (cmd *serviceDownCommand) UnmarshalCliContext(ctx *cli.Context) error {
 
 func (cmd *serviceDownCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		ecsoAPI = api.New(ctx.Config)
+		ecsoAPI = api.NewServiceAPI(ctx.Config)
 		service = ctx.Project.Services[cmd.name]
 		env     = ctx.Project.Environments[cmd.environment]
 		log     = ctx.Config.Logger()

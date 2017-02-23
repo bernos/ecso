@@ -42,7 +42,7 @@ func (cmd *environmentDownCommand) Execute(ctx *ecso.CommandContext) error {
 		log     = ctx.Config.Logger()
 		project = ctx.Project
 		env     = ctx.Project.Environments[cmd.environmentName]
-		ecsoAPI = api.New(ctx.Config)
+		ecsoAPI = api.NewEnvironmentAPI(ctx.Config)
 	)
 
 	ui.BannerBlue(log, "Stopping '%s' environment", env.Name)
