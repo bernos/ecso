@@ -4,59 +4,53 @@
 
 - [init](#init)
 - [environment](#environment)
-  * [add](#add)
-  * [up](#up)
-  * [rm](#rm)
-  * [describe](#describe)
-  * [down](#down)
+  * [add](#environment-add)
+  * [up](#environment-up)
+  * [rm](#environment-rm)
+  * [describe](#environment-describe)
+  * [down](#environment-down)
 - [service](#service)
-  * [add](#add)
-  * [up](#up)
-  * [down](#down)
-  * [ls](#ls)
-  * [ps](#ps)
-  * [events](#events)
-  * [logs](#logs)
-  * [describe](#describe)
+  * [add](#service-add)
+  * [up](#service-up)
+  * [down](#service-down)
+  * [ls](#service-ls)
+  * [ps](#service-ps)
+  * [events](#service-events)
+  * [logs](#service-logs)
+  * [describe](#service-describe)
 - [env](#env)
+- [help](#help)
 
 <a id="init"></a>
-## main init
+# init
 
 Initialise a new ecso project
 
-Creates a new ecso project configuration file at .ecso/project.json. The initial project contains no environments or services. The project configuration file can be safely endited by hand, but it is usually easier to user the ecso cli tool to add new services and environments to the project.
-
 ````
-main init [PROJECT]
+ecso init [PROJECT]
 ````
 
-<a id="ecso environment"></a>
-# ecso environment
+<a id="environment"></a>
+# environment
 
 Manage ecso environments
 
 ````
-ecso environment command [command options] [arguments...]
+ecso environment <command> [arguments...]
 ````
 
 #### Commands
 | Name  | Description |
 |:---   |:---         |
-| --add | Add a new environment to the project | 
-| --up | Deploys the infrastructure for an ecso environment | 
-| --rm | Removes an ecso environment | 
-| --describe | Describes an ecso environment | 
-| --down | Terminates an ecso environment | 
+| [add](#environment-add) | Add a new environment to the project | 
+| [up](#environment-up) | Deploys the infrastructure for an ecso environment | 
+| [rm](#environment-rm) | Removes an ecso environment | 
+| [describe](#environment-describe) | Describes an ecso environment | 
+| [down](#environment-down) | Terminates an ecso environment | 
 
 
-#### Options
-| option | usage |
-|:---    |:---   |
-| --help, h | show help |
-
-<a id="add"></a>
-## ecso environment add
+<a id="environment-add"></a>
+## add
 
 Add a new environment to the project
 
@@ -74,8 +68,8 @@ ecso environment add [command options] [ENVIRONMENT]
 | --size | Then number of container instances to create |
 | --instance-type | The type of container instances to create |
 
-<a id="up"></a>
-## ecso environment up
+<a id="environment-up"></a>
+## up
 
 Deploys the infrastructure for an ecso environment
 
@@ -90,8 +84,8 @@ ecso environment up [command options] ENVIRONMENT
 |:---    |:---   |
 | --dry-run | If set, list pending changes, but do not execute the updates. |
 
-<a id="rm"></a>
-## ecso environment rm
+<a id="environment-rm"></a>
+## rm
 
 Removes an ecso environment
 
@@ -106,8 +100,8 @@ ecso environment rm [command options] ENVIRONMENT
 |:---    |:---   |
 | --force | Required. Confirms the environment will be removed |
 
-<a id="describe"></a>
-## ecso environment describe
+<a id="environment-describe"></a>
+## describe
 
 Describes an ecso environment
 
@@ -115,8 +109,8 @@ Describes an ecso environment
 ecso environment describe ENVIRONMENT
 ````
 
-<a id="down"></a>
-## ecso environment down
+<a id="environment-down"></a>
+## down
 
 Terminates an ecso environment
 
@@ -131,35 +125,30 @@ ecso environment down [command options] ENVIRONMENT
 |:---    |:---   |
 | --force | Required. Confirms the environment will be stopped |
 
-<a id="ecso service"></a>
-# ecso service
+<a id="service"></a>
+# service
 
 Manage ecso services
 
 ````
-ecso service command [command options] [arguments...]
+ecso service <command> [arguments...]
 ````
 
 #### Commands
 | Name  | Description |
 |:---   |:---         |
-| --add | Adds a new service to the project | 
-| --up | Deploy a service | 
-| --down | terminates a service | 
-| --ls | List services | 
-| --ps | Show running tasks for a service | 
-| --events | List ECS events for a service | 
-| --logs | output service logs | 
-| --describe | Lists details of a deployed service | 
+| [add](#service-add) | Adds a new service to the project | 
+| [up](#service-up) | Deploy a service | 
+| [down](#service-down) | terminates a service | 
+| [ls](#service-ls) | List services | 
+| [ps](#service-ps) | Show running tasks for a service | 
+| [events](#service-events) | List ECS events for a service | 
+| [logs](#service-logs) | output service logs | 
+| [describe](#service-describe) | Lists details of a deployed service | 
 
 
-#### Options
-| option | usage |
-|:---    |:---   |
-| --help, h | show help |
-
-<a id="add"></a>
-## ecso service add
+<a id="service-add"></a>
+## add
 
 Adds a new service to the project
 
@@ -176,8 +165,8 @@ ecso service add [command options] SERVICE
 | --route | If set, the service will be registered with the load balancer at this route |
 | --port | If set, the loadbalancer will bind to this port of the web container in this service |
 
-<a id="up"></a>
-## ecso service up
+<a id="service-up"></a>
+## up
 
 Deploy a service
 
@@ -192,8 +181,8 @@ ecso service up [command options] SERVICE
 |:---    |:---   |
 | --environment | The name of the environment to deploy to |
 
-<a id="down"></a>
-## ecso service down
+<a id="service-down"></a>
+## down
 
 terminates a service
 
@@ -208,8 +197,8 @@ ecso service down [command options] SERVICE
 |:---    |:---   |
 | --environment | The environment to terminate the service from |
 
-<a id="ls"></a>
-## ecso service ls
+<a id="service-ls"></a>
+## ls
 
 List services
 
@@ -222,8 +211,8 @@ ecso service ls [command options] [arguments...]
 |:---    |:---   |
 | --environment | Environment to query |
 
-<a id="ps"></a>
-## ecso service ps
+<a id="service-ps"></a>
+## ps
 
 Show running tasks for a service
 
@@ -236,8 +225,8 @@ ecso service ps [command options] SERVICE
 |:---    |:---   |
 | --environment | The name of the environment |
 
-<a id="events"></a>
-## ecso service events
+<a id="service-events"></a>
+## events
 
 List ECS events for a service
 
@@ -250,8 +239,8 @@ ecso service events [command options] SERVICE
 |:---    |:---   |
 | --environment | The name of the environment |
 
-<a id="logs"></a>
-## ecso service logs
+<a id="service-logs"></a>
+## logs
 
 output service logs
 
@@ -264,8 +253,8 @@ ecso service logs [command options] SERVICE
 |:---    |:---   |
 | --environment | The environment to terminate the service from |
 
-<a id="describe"></a>
-## ecso service describe
+<a id="service-describe"></a>
+## describe
 
 Lists details of a deployed service
 
@@ -281,15 +270,24 @@ ecso service describe [command options] SERVICE
 | --environment | The environment to query |
 
 <a id="env"></a>
-## main env
+# env
 
 Display the commands to set up the default environment for the ecso cli tool
 
 ````
-main env [command options] ENVIRONMENT
+ecso env [command options] ENVIRONMENT
 ````
 
 #### Options
 | option | usage |
 |:---    |:---   |
 | --unset | If set, output shell commands to unset all ecso environment variables |
+
+<a id="help"></a>
+# help
+
+Shows a list of commands or help for one command
+
+````
+ecso help [command]
+````

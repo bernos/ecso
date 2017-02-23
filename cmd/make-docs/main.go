@@ -61,16 +61,20 @@ var SubcommandHelpTemplate = `
 `
 
 func main() {
-	cli.CommandHelpTemplate = CommandHelpTemplate
-	cli.SubcommandHelpTemplate = SubcommandHelpTemplate
-
 	dispatcher := ecso.DispatcherFunc(func(c ecso.Command, o ...func(*ecso.DispatchOptions)) error {
 		return nil
 	})
 
-	commands := make([][]string, 0)
-
 	app := cmd.NewApp("", dispatcher)
+
+	viaCustom(app)
+}
+
+func viaBuiltIn(app *cli.App) {
+	cli.CommandHelpTemplate = CommandHelpTemplate
+	cli.SubcommandHelpTemplate = SubcommandHelpTemplate
+
+	commands := make([][]string, 0)
 
 	fmt.Println("# ECSO ")
 	fmt.Printf("\n#### Table of contents\n\n")
@@ -86,11 +90,81 @@ func main() {
 	}
 
 	for _, c := range commands {
-		app = cmd.NewApp("", dispatcher)
 		app.Run(c)
-		// time.Sleep(time.Second)
 	}
 }
+
+func viaCustom(app *cli.App) {
+	app.Setup()
+
+	fmt.Println("# ECSO ")
+	fmt.Printf("\n#### Table of contents\n\n")
+
+	for _, command := range app.Commands {
+		fmt.Printf("- [%s](#%s)\n", command.Name, command.Name)
+
+		for _, sub := range command.Subcommands {
+			fmt.Printf("  * [%s](#%s-%s)\n", sub.Name, command.Name, sub.Name)
+		}
+	}
+
+	for _, command := range app.Commands {
+		printHelp(os.Stdout, CustomSubCommandHelpTemplate, &Command{
+			Command: &command,
+		})
+		for _, sub := range command.Subcommands {
+			printHelp(os.Stdout, CustomCommandHelpTemplate, &Command{
+				Command: &sub,
+				Parent:  &command,
+			})
+		}
+	}
+}
+
+type Command struct {
+	*cli.Command
+	Parent *cli.Command
+}
+
+var CustomCommandHelpTemplate = `
+<a id="{{.Parent.Name}}-{{.Name}}"></a>
+## {{.Name}}
+
+{{.Usage}}{{if .Description}}
+
+{{.Description}}{{end}}
+
+` + "````" + `
+ecso {{.Parent.Name}} {{.Name}}{{if .VisibleFlags}} [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}
+` + "````" + `{{if .VisibleFlags}}
+
+#### Options
+| option | usage |
+|:---    |:---   |{{range .VisibleFlags}}
+| --{{.Name}} | {{.Usage}} |{{end}}{{end}}
+`
+
+var CustomSubCommandHelpTemplate = `
+<a id="{{.Name}}"></a>
+# {{.Name}}
+
+{{.Usage}}
+
+` + "````" + `
+ecso {{.Name}}{{if .Subcommands}} <command>{{end}}{{if .VisibleFlags}} [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}
+` + "````" + `{{if .Subcommands}}
+
+#### Commands
+| Name  | Description |
+|:---   |:---         |{{$p := .Name}}{{range .Subcommands}}
+| [{{.Name}}](#{{$p}}-{{.Name}}) | {{.Usage}} | {{end}}
+{{end}}{{if .VisibleFlags}}
+
+#### Options
+| option | usage |
+|:---    |:---   |{{range .VisibleFlags}}
+| --{{.Name}} | {{.Usage}} |{{end}}{{end}}
+`
 
 func printHelp(out io.Writer, templ string, data interface{}) {
 	funcMap := template.FuncMap{
