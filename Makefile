@@ -10,21 +10,6 @@ OK_COLOR    := \033[32;01m
 ERROR_COLOR := \033[31;01m
 WARN_COLOR  := \033[33;01m
 
-DOC_COMMANDS := init \
-				environment_add \
-				environment_up \
-				environment_describe \
-				environment_down \
-				environment_rm \
-				env \
-				service_add \
-				service_up \
-				service_down \
-				service_ls \
-				service_ps \
-				service_logs \
-				service_describe
-
 all: $(BINARIES)
 
 build:
@@ -41,7 +26,8 @@ deps:
 	@echo "\n$(OK_COLOR)====> Fetching depenencies$(NO_COLOR)"
 	go get github.com/aktau/github-release
 
-docs: test build clean-docs $(DOC_COMMANDS)
+docs: test build clean-docs
+	go run cmd/make-docs/main.go > docs.md
 
 install: test
 	@echo "\n$(OK_COLOR)====> Installing$(NO_COLOR)"
@@ -82,9 +68,4 @@ $(BINARIES): test
 	@echo "\n$(OK_COLOR)====> Building $@$(NO_COLOR)"
 	GOOS=$(word 1, $(osarch)) GOARCH=$(word 2, $(osarch)) go build -a -ldflags "-X main.version=$(VERSION)" -o $(RELEASE_DIR)/$@ main.go
 
-$(DOC_COMMANDS):
-	@echo "# ecso $(subst _, ,$@)\n\n\`\`\`" >> docs.md
-	@./bin/local/ecso $(subst _, ,$@) -h >> docs.md
-	@echo "\`\`\`\n" >> docs.md
-
-.PHONY: release tag test deps clean install
+.PHONY: release tag test deps clean install docs

@@ -1,40 +1,28 @@
 package commands
 
 import (
-	"fmt"
-
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-type EnvironmentRmOptions struct {
-	Name string
-}
-
-func NewEnvironmentRmCommand(name string, options ...func(*EnvironmentRmOptions)) ecso.Command {
-	o := &EnvironmentRmOptions{
-		Name: name,
-	}
-
-	for _, option := range options {
-		option(o)
-	}
-
+func NewEnvironmentRmCommand(environmentName string) ecso.Command {
 	return &environmentRmCommand{
-		options: o,
+		EnvironmentCommand: &EnvironmentCommand{
+			environmentName: environmentName,
+		},
 	}
 }
 
 type environmentRmCommand struct {
-	options *EnvironmentRmOptions
+	*EnvironmentCommand
 }
 
 func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		log     = ctx.Config.Logger()
 		project = ctx.Project
-		env     = ctx.Project.Environments[cmd.options.Name]
+		env     = ctx.Project.Environments[cmd.environmentName]
 		ecsoAPI = api.New(ctx.Config)
 	)
 
@@ -44,27 +32,13 @@ func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	delete(project.Environments, cmd.options.Name)
+	delete(project.Environments, cmd.environmentName)
 
 	if err := project.Save(); err != nil {
 		return err
 	}
 
 	ui.BannerGreen(log, "Successfully removed '%s' environment", env.Name)
-
-	return nil
-}
-
-func (cmd *environmentRmCommand) Prompt(ctx *ecso.CommandContext) error {
-	return nil
-}
-
-func (cmd *environmentRmCommand) Validate(ctx *ecso.CommandContext) error {
-	opt := cmd.options
-
-	if ctx.Project.Environments[opt.Name] == nil {
-		return fmt.Errorf("Environment '%s' not found", opt.Name)
-	}
 
 	return nil
 }

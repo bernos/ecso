@@ -1,37 +1,23 @@
 package commands
 
 import (
-	"fmt"
 	"path/filepath"
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/ui"
-	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
-type ServiceUpOptions struct {
-	Name        string
-	Environment string
-}
-
-func NewServiceUpCommand(name, environment string, options ...func(*ServiceUpOptions)) ecso.Command {
-	o := &ServiceUpOptions{
-		Name:        name,
-		Environment: environment,
-	}
-
-	for _, option := range options {
-		option(o)
-	}
-
+func NewServiceUpCommand(name string) ecso.Command {
 	return &serviceUpCommand{
-		options: o,
+		ServiceCommand: &ServiceCommand{
+			name: name,
+		},
 	}
 }
 
 type serviceUpCommand struct {
-	options *ServiceUpOptions
+	*ServiceCommand
 }
 
 func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext) error {
@@ -39,8 +25,8 @@ func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext) error {
 		cfg     = ctx.Config
 		log     = cfg.Logger()
 		project = ctx.Project
-		env     = ctx.Project.Environments[cmd.options.Environment]
-		service = project.Services[cmd.options.Name]
+		env     = ctx.Project.Environments[cmd.environment]
+		service = project.Services[cmd.name]
 		ecsoAPI = api.New(cfg)
 	)
 
@@ -67,32 +53,6 @@ func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext) error {
 		"Deployed service '%s' to the '%s' environment",
 		service.Name,
 		env.Name)
-
-	return nil
-}
-
-func (cmd *serviceUpCommand) Prompt(ctx *ecso.CommandContext) error {
-	return nil
-}
-
-func (cmd *serviceUpCommand) Validate(ctx *ecso.CommandContext) error {
-	opt := cmd.options
-
-	err := util.AnyError(
-		ui.ValidateRequired("Name")(opt.Name),
-		ui.ValidateRequired("Environment")(opt.Environment))
-
-	if err != nil {
-		return err
-	}
-
-	if _, ok := ctx.Project.Services[opt.Name]; !ok {
-		return fmt.Errorf("Service '%s' not found", opt.Name)
-	}
-
-	if _, ok := ctx.Project.Environments[opt.Environment]; !ok {
-		return fmt.Errorf("Environment '%s' not found", opt.Environment)
-	}
 
 	return nil
 }

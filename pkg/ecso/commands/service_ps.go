@@ -10,13 +10,7 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/ui"
-	"github.com/bernos/ecso/pkg/ecso/util"
 )
-
-type ServicePsOptions struct {
-	Name        string
-	Environment string
-}
 
 type row struct {
 	TaskID            string
@@ -30,29 +24,22 @@ type row struct {
 	Port              string
 }
 
-func NewServicePsCommand(name, env string, options ...func(*ServicePsOptions)) ecso.Command {
-	o := &ServicePsOptions{
-		Name:        name,
-		Environment: env,
-	}
-
-	for _, option := range options {
-		option(o)
-	}
-
+func NewServicePsCommand(name string) ecso.Command {
 	return &servicePsCommand{
-		options: o,
+		ServiceCommand: &ServiceCommand{
+			name: name,
+		},
 	}
 }
 
 type servicePsCommand struct {
-	options *ServicePsOptions
+	*ServiceCommand
 }
 
 func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		service  = ctx.Project.Services[cmd.options.Name]
-		env      = ctx.Project.Environments[cmd.options.Environment]
+		service  = ctx.Project.Services[cmd.name]
+		env      = ctx.Project.Environments[cmd.environment]
 		log      = ctx.Config.Logger()
 		rows     = make([]*row, 0)
 		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
@@ -97,32 +84,6 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 	log.Printf("\n")
 	printRows(rows, log)
 	log.Printf("\n")
-
-	return nil
-}
-
-func (cmd *servicePsCommand) Prompt(ctx *ecso.CommandContext) error {
-	return nil
-}
-
-func (cmd *servicePsCommand) Validate(ctx *ecso.CommandContext) error {
-	opt := cmd.options
-
-	err := util.AnyError(
-		ui.ValidateRequired("Name")(opt.Name),
-		ui.ValidateRequired("Environment")(opt.Environment))
-
-	if err != nil {
-		return err
-	}
-
-	if _, ok := ctx.Project.Services[opt.Name]; !ok {
-		return fmt.Errorf("Service '%s' not found", opt.Name)
-	}
-
-	if _, ok := ctx.Project.Environments[opt.Environment]; !ok {
-		return fmt.Errorf("Environment '%s' not found", opt.Environment)
-	}
 
 	return nil
 }

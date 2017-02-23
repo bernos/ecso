@@ -1,7 +1,16 @@
 package ecso
 
+import (
+	"gopkg.in/urfave/cli.v1"
+)
+
+type CliContextUnmarshaller interface {
+	UnmarshalCliContext(c *cli.Context) error
+}
+
 // Command represents a single ecso command
 type Command interface {
+	CliContextUnmarshaller
 	Prompt(ctx *CommandContext) error
 	Validate(ctx *CommandContext) error
 	Execute(ctx *CommandContext) error
@@ -20,6 +29,10 @@ func (fn CommandFunc) Prompt(ctx *CommandContext) error {
 }
 
 func (fn CommandFunc) Validate(ctx *CommandContext) error {
+	return nil
+}
+
+func (fn CommandFunc) UnmarshalCliContext(c *cli.Context) error {
 	return nil
 }
 

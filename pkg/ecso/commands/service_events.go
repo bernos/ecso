@@ -1,46 +1,31 @@
 package commands
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/helpers"
-	"github.com/bernos/ecso/pkg/ecso/ui"
-	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
-type ServiceEventsOptions struct {
-	Name        string
-	Environment string
-}
-
-func NewServiceEventsCommand(name, env string, options ...func(*ServiceEventsOptions)) ecso.Command {
-	o := &ServiceEventsOptions{
-		Name:        name,
-		Environment: env,
-	}
-
-	for _, option := range options {
-		option(o)
-	}
-
+func NewServiceEventsCommand(name string) ecso.Command {
 	return &serviceEventsCommand{
-		options: o,
+		ServiceCommand: &ServiceCommand{
+			name: name,
+		},
 	}
 }
 
 type serviceEventsCommand struct {
-	options *ServiceEventsOptions
+	*ServiceCommand
 }
 
 func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		log       = ctx.Config.Logger()
-		env       = ctx.Project.Environments[cmd.options.Environment]
-		service   = ctx.Project.Services[cmd.options.Name]
+		env       = ctx.Project.Environments[cmd.environment]
+		service   = ctx.Project.Services[cmd.name]
 		registry  = ctx.Config.MustGetAWSClientRegistry(env.Region)
 		ecsHelper = helpers.NewECSHelper(registry.ECSAPI(), log.Child())
 		ecsoAPI   = api.New(ctx.Config)
@@ -68,31 +53,5 @@ func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext) error {
 		count++
 	}
 
-	return nil
-}
-
-func (cmd *serviceEventsCommand) Validate(ctx *ecso.CommandContext) error {
-	opt := cmd.options
-
-	err := util.AnyError(
-		ui.ValidateRequired("Name")(opt.Name),
-		ui.ValidateRequired("Environment")(opt.Environment))
-
-	if err != nil {
-		return err
-	}
-
-	if _, ok := ctx.Project.Services[opt.Name]; !ok {
-		return fmt.Errorf("Service '%s' not found", opt.Name)
-	}
-
-	if _, ok := ctx.Project.Environments[opt.Environment]; !ok {
-		return fmt.Errorf("Environment '%s' not found", opt.Environment)
-	}
-
-	return nil
-}
-
-func (cmd *serviceEventsCommand) Prompt(ctx *ecso.CommandContext) error {
 	return nil
 }

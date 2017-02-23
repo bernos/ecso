@@ -7,37 +7,56 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/ui"
+
+	"gopkg.in/urfave/cli.v1"
 )
 
-type EnvironmentAddOptions struct {
-	Name            string
-	VPCID           string
-	ALBSubnets      string
-	InstanceSubnets string
-	Region          string
-	Account         string
-	InstanceType    string
-	Size            int
-	DNSZone         string
-	DataDogAPIKey   string
-}
-
-func NewEnvironmentAddCommand(environmentName string, options ...func(*EnvironmentAddOptions)) ecso.Command {
-	o := &EnvironmentAddOptions{
-		Name: environmentName,
-	}
-
-	for _, option := range options {
-		option(o)
-	}
-
-	return &environmentAddCommand{
-		options: o,
-	}
-}
+const (
+	EnvironmentAddVPCOption             = "vpc"
+	EnvironmentAddALBSubnetsOption      = "alb-subnets"
+	EnvironmentAddInstanceSubnetsOption = "instance-subnets"
+	EnvironmentAddInstanceTypeOption    = "instance-type"
+	EnvironmentAddRegionOption          = "region"
+	EnvironmentAddSizeOption            = "size"
+)
 
 type environmentAddCommand struct {
-	options *EnvironmentAddOptions
+	// name            string
+	*EnvironmentCommand
+
+	vpcID           string
+	albSubnets      string
+	instanceSubnets string
+	region          string
+	account         string
+	instanceType    string
+	size            int
+	dnsZone         string
+	datadogAPIKey   string
+}
+
+func NewEnvironmentAddCommand(environmentName string) ecso.Command {
+	return &environmentAddCommand{
+		// name: environmentName,
+		EnvironmentCommand: &EnvironmentCommand{
+			environmentName: environmentName,
+		},
+	}
+}
+
+func (c *environmentAddCommand) UnmarshalCliContext(ctx *cli.Context) error {
+	if err := c.EnvironmentCommand.UnmarshalCliContext(ctx); err != nil {
+		return err
+	}
+
+	c.albSubnets = ctx.String(EnvironmentAddALBSubnetsOption)
+	c.instanceSubnets = ctx.String(EnvironmentAddInstanceSubnetsOption)
+	c.instanceType = ctx.String(EnvironmentAddInstanceTypeOption)
+	c.region = ctx.String(EnvironmentAddRegionOption)
+	c.size = ctx.Int(EnvironmentAddSizeOption)
+	c.vpcID = ctx.String(EnvironmentAddVPCOption)
+
+	return nil
 }
 
 func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
@@ -46,24 +65,24 @@ func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
 		project = ctx.Project
 	)
 
-	if project.HasEnvironment(c.options.Name) {
-		return fmt.Errorf("An environment named '%s' already exists for this project.", c.options.Name)
+	if project.HasEnvironment(c.environmentName) {
+		return fmt.Errorf("An environment named '%s' already exists for this project.", c.environmentName)
 	}
 
 	project.AddEnvironment(&ecso.Environment{
-		Name:   c.options.Name,
-		Region: c.options.Region,
+		Name:   c.environmentName,
+		Region: c.region,
 		CloudFormationParameters: map[string]string{
-			"VPC":             c.options.VPCID,
-			"InstanceSubnets": c.options.InstanceSubnets,
-			"ALBSubnets":      c.options.ALBSubnets,
-			"InstanceType":    c.options.InstanceType,
-			"DNSZone":         c.options.DNSZone,
-			"ClusterSize":     fmt.Sprintf("%d", c.options.Size),
-			"DataDogAPIKey":   c.options.DataDogAPIKey,
+			"VPC":             c.vpcID,
+			"InstanceSubnets": c.instanceSubnets,
+			"ALBSubnets":      c.albSubnets,
+			"InstanceType":    c.instanceType,
+			"DNSZone":         c.dnsZone,
+			"ClusterSize":     fmt.Sprintf("%d", c.size),
+			"DataDogAPIKey":   c.datadogAPIKey,
 		},
 		CloudFormationTags: map[string]string{
-			"environment": c.options.Name,
+			"environment": c.environmentName,
 			"project":     project.Name,
 		},
 	})
@@ -72,8 +91,8 @@ func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.BannerGreen(log, "Successfully added environment '%s' to the project", c.options.Name)
-	log.Printf("Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.options.Name)
+	ui.BannerGreen(log, "Successfully added environment '%s' to the project", c.environmentName)
+	log.Printf("Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.environmentName)
 
 	return nil
 }
@@ -87,7 +106,6 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 	var (
 		log             = ctx.Config.Logger()
 		project         = ctx.Project
-		options         = c.options
 		cfg             = ctx.Config
 		prefs           = ctx.UserPreferences
 		accountDefaults = ecso.AccountDefaults{}
@@ -143,47 +161,47 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 	// If yes, then ask for the cfn stack id and collect outputs
 	ui.BannerBlue(log, "Adding a new environment to the %s project", project.Name)
 
-	if account := getCurrentAWSAccount(stsAPI); options.Account == "" {
-		options.Account = account
+	if account := getCurrentAWSAccount(stsAPI); c.account == "" {
+		c.account = account
 	}
 
-	if ac, ok := prefs.AccountDefaults[options.Account]; ok {
+	if ac, ok := prefs.AccountDefaults[c.account]; ok {
 		accountDefaults = ac
 	}
 
-	if err := ui.AskStringIfEmptyVar(&options.Name, prompts.Name, "dev", validators.Name); err != nil {
+	if err := ui.AskStringIfEmptyVar(&c.environmentName, prompts.Name, "dev", validators.Name); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&options.Region, prompts.Region, "ap-southeast-2", validators.Region); err != nil {
+	if err := ui.AskStringIfEmptyVar(&c.region, prompts.Region, "ap-southeast-2", validators.Region); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&options.VPCID, prompts.VPC, accountDefaults.VPCID, validators.VPC); err != nil {
+	if err := ui.AskStringIfEmptyVar(&c.vpcID, prompts.VPC, accountDefaults.VPCID, validators.VPC); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&options.ALBSubnets, prompts.ALBSubnets, accountDefaults.ALBSubnets, validators.ALBSubnets); err != nil {
+	if err := ui.AskStringIfEmptyVar(&c.albSubnets, prompts.ALBSubnets, accountDefaults.ALBSubnets, validators.ALBSubnets); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&options.InstanceSubnets, prompts.InstanceSubnets, accountDefaults.InstanceSubnets, validators.InstanceSubnets); err != nil {
+	if err := ui.AskStringIfEmptyVar(&c.instanceSubnets, prompts.InstanceSubnets, accountDefaults.InstanceSubnets, validators.InstanceSubnets); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&options.InstanceType, prompts.InstanceType, "t2.large", validators.InstanceType); err != nil {
+	if err := ui.AskStringIfEmptyVar(&c.instanceType, prompts.InstanceType, "t2.large", validators.InstanceType); err != nil {
 		return err
 	}
 
-	if err := ui.AskIntIfEmptyVar(&options.Size, prompts.Size, 4, validators.Size); err != nil {
+	if err := ui.AskIntIfEmptyVar(&c.size, prompts.Size, 4, validators.Size); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&options.DNSZone, prompts.DNSZone, accountDefaults.DNSZone, validators.DNSZone); err != nil {
+	if err := ui.AskStringIfEmptyVar(&c.dnsZone, prompts.DNSZone, accountDefaults.DNSZone, validators.DNSZone); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&options.DataDogAPIKey, prompts.DataDogAPIKey, accountDefaults.DataDogAPIKey, validators.DataDogAPIKey); err != nil {
+	if err := ui.AskStringIfEmptyVar(&c.datadogAPIKey, prompts.DataDogAPIKey, accountDefaults.DataDogAPIKey, validators.DataDogAPIKey); err != nil {
 		return err
 	}
 
