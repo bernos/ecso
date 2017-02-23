@@ -4,6 +4,11 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/ui"
+	"gopkg.in/urfave/cli.v1"
+)
+
+const (
+	ServiceDownForceOption = "force"
 )
 
 func NewServiceDownCommand(name string) ecso.Command {
@@ -16,6 +21,20 @@ func NewServiceDownCommand(name string) ecso.Command {
 
 type serviceDownCommand struct {
 	*ServiceCommand
+}
+
+func (cmd *serviceDownCommand) UnmarshalCliContext(ctx *cli.Context) error {
+	if err := cmd.ServiceCommand.UnmarshalCliContext(ctx); err != nil {
+		return err
+	}
+
+	force := ctx.Bool(ServiceDownForceOption)
+
+	if !force {
+		return ecso.NewOptionRequiredError(ServiceDownForceOption)
+	}
+
+	return nil
 }
 
 func (cmd *serviceDownCommand) Execute(ctx *ecso.CommandContext) error {
