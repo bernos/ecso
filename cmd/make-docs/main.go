@@ -13,53 +13,6 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
-var CommandHelpTemplate = `
-<a id="{{.Name}}"></a>
-## {{.HelpName}}
-
-{{.Usage}}{{if .Description}}
-
-{{.Description}}{{end}}
-
-` + "````" + `
-{{.HelpName}}{{if .VisibleFlags}} [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}
-` + "````" + `{{if .Category}}
-
-#### Category
-{{.Category}}{{end}}{{if .VisibleFlags}}
-
-#### Options
-| option | usage |
-|:---    |:---   |{{range .VisibleFlags}}
-| --{{.Name}} | {{.Usage}} |{{end}}{{end}}
-`
-
-// SubcommandHelpTemplate is the text template for the subcommand help topic.
-// cli.go uses text/template to render templates. You can
-// render custom help text by setting this variable.
-var SubcommandHelpTemplate = `
-<a id="{{.Name}}"></a>
-# {{.HelpName}}
-
-{{.Usage}}
-
-` + "````" + `
-{{.HelpName}} command{{if .VisibleFlags}} [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}
-` + "````" + `
-
-#### Commands{{range .VisibleCategories}}{{if .Name}}
-{{.Name}}:{{end}}
-| Name  | Description |
-|:---   |:---         |{{range .VisibleCommands}}
-| --{{.Name}}{{with .ShortName}}, --{{.}}{{end}} | {{.Usage}} | {{end}}
-{{end}}{{if .VisibleFlags}}
-
-#### Options
-| option | usage |
-|:---    |:---   |{{range .VisibleFlags}}
-| --{{.Name}} | {{.Usage}} |{{end}}{{end}}
-`
-
 func main() {
 	dispatcher := ecso.DispatcherFunc(func(c ecso.Command, o ...func(*ecso.DispatchOptions)) error {
 		return nil
@@ -68,30 +21,6 @@ func main() {
 	app := cmd.NewApp("", dispatcher)
 
 	viaCustom(app)
-}
-
-func viaBuiltIn(app *cli.App) {
-	cli.CommandHelpTemplate = CommandHelpTemplate
-	cli.SubcommandHelpTemplate = SubcommandHelpTemplate
-
-	commands := make([][]string, 0)
-
-	fmt.Println("# ECSO ")
-	fmt.Printf("\n#### Table of contents\n\n")
-
-	for _, command := range app.Commands {
-		fmt.Printf("- [%s](#%s)\n", command.Name, command.Name)
-		commands = append(commands, []string{"ecso", command.Name, "--help"})
-
-		for _, sub := range command.Subcommands {
-			fmt.Printf("  * [%s](#%s)\n", sub.Name, sub.Name)
-			commands = append(commands, []string{"ecso", command.Name, sub.Name, "--help"})
-		}
-	}
-
-	for _, c := range commands {
-		app.Run(c)
-	}
 }
 
 func viaCustom(app *cli.App) {
