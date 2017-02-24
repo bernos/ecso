@@ -14,6 +14,7 @@ type EnvironmentAPI interface {
 	DescribeEnvironment(env *ecso.Environment) (*EnvironmentDescription, error)
 	EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun bool) error
 	EnvironmentDown(p *ecso.Project, env *ecso.Environment) error
+	IsEnvironmentUp(env *ecso.Environment) (bool, error)
 }
 
 // New creates a new API
@@ -68,6 +69,18 @@ func (api *environmentAPI) DescribeEnvironment(env *ecso.Environment) (*Environm
 	}
 
 	return description, nil
+}
+
+func (api *environmentAPI) IsEnvironmentUp(env *ecso.Environment) (bool, error) {
+	reg, err := api.cfg.GetAWSClientRegistry(env.Region)
+
+	if err != nil {
+		return false, err
+	}
+
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.cfg.Logger().Child())
+
+	return cfn.StackExists(env.GetCloudFormationStackName())
 }
 
 func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environment) error {
