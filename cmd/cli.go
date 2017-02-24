@@ -167,6 +167,10 @@ func NewEnvironmentUpCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 				Name:  commands.EnvironmentUpDryRunOption,
 				Usage: "If set, list pending changes, but do not execute the updates.",
 			},
+			cli.BoolFlag{
+				Name:  commands.EnvironmentUpForceOption,
+				Usage: "Override warnings about first time environment deployments if cloud formation stack already exists",
+			},
 		},
 		Action: MakeAction(dispatcher, fn),
 	}

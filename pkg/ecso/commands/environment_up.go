@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"fmt"
+
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/templates"
@@ -12,6 +14,7 @@ import (
 
 const (
 	EnvironmentUpDryRunOption = "dry-run"
+	EnvironmentUpForceOption  = "force"
 )
 
 func NewEnvironmentUpCommand(environmentName string) ecso.Command {
@@ -25,6 +28,7 @@ func NewEnvironmentUpCommand(environmentName string) ecso.Command {
 type envUpCommand struct {
 	*EnvironmentCommand
 	dryRun bool
+	force  bool
 }
 
 func (cmd *envUpCommand) UnmarshalCliContext(ctx *cli.Context) error {
@@ -33,6 +37,7 @@ func (cmd *envUpCommand) UnmarshalCliContext(ctx *cli.Context) error {
 	}
 
 	cmd.dryRun = ctx.Bool(EnvironmentUpDryRunOption)
+	cmd.force = ctx.Bool(EnvironmentUpForceOption)
 
 	return nil
 }
@@ -52,7 +57,7 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		log.Infof("THIS IS A DRY RUN - no changes to the environment will be made.")
 	}
 
-	if err := cmd.ensureTemplates(project, env, log); err != nil {
+	if err := cmd.ensureTemplates(ctx, project, env, log); err != nil {
 		return err
 	}
 
@@ -79,13 +84,25 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *envUpCommand) ensureTemplates(project *ecso.Project, env *ecso.Environment, logger ecso.Logger) error {
+func (cmd *envUpCommand) ensureTemplates(ctx *ecso.CommandContext, project *ecso.Project, env *ecso.Environment, logger ecso.Logger) error {
 	dst := env.GetCloudFormationTemplateDir()
 
 	exists, err := util.DirExists(dst)
 
 	if err != nil || exists {
 		return err
+	}
+
+	envAPI := api.NewEnvironmentAPI(ctx.Config)
+
+	stackExists, err := envAPI.IsEnvironmentUp(env)
+
+	if err != nil {
+		return err
+	}
+
+	if stackExists && !cmd.force {
+		return fmt.Errorf("This looks like the first time you've run `environment up` for the %s environment from this repository, however there is already a CloudFormation stack up and running. This could mean that someone has already created the %s environment for the %s project. If you really know what you are doing, you can rerun `environment up` with the `--force` flag.", env.Name, env.Name, project.Name)
 	}
 
 	return templates.WriteEnvironmentFiles(project, env, nil)
