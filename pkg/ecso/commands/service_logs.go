@@ -24,7 +24,7 @@ func (cmd *serviceLogsCommand) Execute(ctx *ecso.CommandContext) error {
 		service = ctx.Project.Services[cmd.name]
 		env     = ctx.Project.Environments[cmd.environment]
 		log     = ctx.Config.Logger()
-		ecsoAPI = api.New(ctx.Config)
+		ecsoAPI = api.NewServiceAPI(ctx.Config)
 	)
 
 	events, err := ecsoAPI.ServiceLogs(ctx.Project, env, service)

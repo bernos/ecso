@@ -27,7 +27,7 @@ func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext) error {
 		project = ctx.Project
 		env     = ctx.Project.Environments[cmd.environment]
 		service = project.Services[cmd.name]
-		ecsoAPI = api.New(cfg)
+		ecsoAPI = api.NewServiceAPI(cfg)
 	)
 
 	ui.BannerBlue(

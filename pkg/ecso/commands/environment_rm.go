@@ -4,6 +4,11 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/ui"
+	"gopkg.in/urfave/cli.v1"
+)
+
+const (
+	EnvironmentRmForceOption = "force"
 )
 
 func NewEnvironmentRmCommand(environmentName string) ecso.Command {
@@ -18,12 +23,26 @@ type environmentRmCommand struct {
 	*EnvironmentCommand
 }
 
+func (cmd *environmentRmCommand) UnmarshalCliContext(ctx *cli.Context) error {
+	if err := cmd.EnvironmentCommand.UnmarshalCliContext(ctx); err != nil {
+		return err
+	}
+
+	force := ctx.Bool(EnvironmentRmForceOption)
+
+	if !force {
+		return ecso.NewOptionRequiredError(EnvironmentRmForceOption)
+	}
+
+	return nil
+}
+
 func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		log     = ctx.Config.Logger()
 		project = ctx.Project
 		env     = ctx.Project.Environments[cmd.environmentName]
-		ecsoAPI = api.New(ctx.Config)
+		ecsoAPI = api.NewEnvironmentAPI(ctx.Config)
 	)
 
 	ui.BannerBlue(log, "Removing '%s' environment", env.Name)

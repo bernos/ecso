@@ -44,7 +44,7 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 		rows     = make([]*row, 0)
 		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
 		ecsAPI   = registry.ECSAPI()
-		ecsoAPI  = api.New(ctx.Config)
+		ecsoAPI  = api.NewServiceAPI(ctx.Config)
 	)
 
 	runningService, err := ecsoAPI.GetECSService(ctx.Project, env, service)

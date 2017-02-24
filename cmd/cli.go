@@ -113,20 +113,7 @@ func NewEnvironmentDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewEnvironmentDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-
-	keys := struct {
-		Force string
-	}{
-		Force: "force",
-	}
-
 	fn := func(c *cli.Context) (ecso.Command, error) {
-		force := c.Bool(keys.Force)
-
-		if !force {
-			return nil, NewOptionRequiredError(keys.Force)
-		}
-
 		return makeEnvironmentCommand(c, commands.NewEnvironmentDownCommand)
 	}
 
@@ -137,8 +124,8 @@ func NewEnvironmentDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 		ArgsUsage:   "ENVIRONMENT",
 		Flags: []cli.Flag{
 			cli.BoolFlag{
-				Name:  keys.Force,
-				Usage: "Required. Confirms the environment will be stopped",
+				Name:  commands.EnvironmentDownForceOption,
+				Usage: "Required. Confirms the environment will be terminated",
 			},
 		},
 		Action: MakeAction(dispatcher, fn),
@@ -146,20 +133,7 @@ func NewEnvironmentDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewEnvironmentRmCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-
-	keys := struct {
-		Force string
-	}{
-		Force: "force",
-	}
-
 	fn := func(c *cli.Context) (ecso.Command, error) {
-		force := c.Bool(keys.Force)
-
-		if !force {
-			return nil, NewOptionRequiredError(keys.Force)
-		}
-
 		return makeEnvironmentCommand(c, commands.NewEnvironmentRmCommand)
 	}
 
@@ -170,7 +144,7 @@ func NewEnvironmentRmCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 		ArgsUsage:   "ENVIRONMENT",
 		Flags: []cli.Flag{
 			cli.BoolFlag{
-				Name:  keys.Force,
+				Name:  commands.EnvironmentRmForceOption,
 				Usage: "Required. Confirms the environment will be removed",
 			},
 		},
@@ -258,7 +232,6 @@ func NewServiceAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewServiceDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-
 	fn := func(c *cli.Context) (ecso.Command, error) {
 		return makeServiceCommand(c, commands.NewServiceDescribeCommand)
 	}
@@ -280,19 +253,7 @@ func NewServiceDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewServiceDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-	keys := struct {
-		Force string
-	}{
-		Force: "force",
-	}
-
 	fn := func(c *cli.Context) (ecso.Command, error) {
-		force := c.Bool(keys.Force)
-
-		if !force {
-			return nil, NewOptionRequiredError(keys.Force)
-		}
-
 		return makeServiceCommand(c, commands.NewServiceDownCommand)
 	}
 
@@ -307,13 +268,16 @@ func NewServiceDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 				Usage:  "The environment to terminate the service from",
 				EnvVar: "ECSO_ENVIRONMENT",
 			},
+			cli.BoolFlag{
+				Name:  commands.ServiceDownForceOption,
+				Usage: "Required. Confirms the service will be terminated",
+			},
 		},
 		Action: MakeAction(dispatcher, fn),
 	}
 }
 
 func NewServiceEventsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-
 	fn := func(c *cli.Context) (ecso.Command, error) {
 		return makeServiceCommand(c, commands.NewServiceEventsCommand)
 	}
@@ -422,7 +386,7 @@ func makeEnvironmentCommand(c *cli.Context, fn func(string) ecso.Command) (ecso.
 	}
 
 	if name == "" {
-		return nil, NewArgumentRequiredError("environment")
+		return nil, ecso.NewArgumentRequiredError("environment")
 	}
 
 	return fn(name), nil
@@ -432,7 +396,7 @@ func makeServiceCommand(c *cli.Context, fn func(string) ecso.Command) (ecso.Comm
 	name := c.Args().First()
 
 	if name == "" {
-		return nil, NewArgumentRequiredError("service")
+		return nil, ecso.NewArgumentRequiredError("service")
 	}
 
 	return fn(name), nil

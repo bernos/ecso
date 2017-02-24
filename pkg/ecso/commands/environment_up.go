@@ -43,7 +43,7 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		cfg     = ctx.Config
 		log     = cfg.Logger()
 		env     = project.Environments[cmd.environmentName]
-		ecsoAPI = api.New(ctx.Config)
+		ecsoAPI = api.NewEnvironmentAPI(ctx.Config)
 	)
 
 	ui.BannerBlue(log, "Bringing up environment '%s'", env.Name)
