@@ -4,6 +4,8 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
+// CliContextUnmarshaller is an interface that can unmarshal a
+// Context struct from the urfave/cli package
 type CliContextUnmarshaller interface {
 	UnmarshalCliContext(c *cli.Context) error
 }
@@ -24,14 +26,20 @@ func (fn CommandFunc) Execute(ctx *CommandContext) error {
 	return fn(ctx)
 }
 
+// Prompt asks for user input
 func (fn CommandFunc) Prompt(ctx *CommandContext) error {
 	return nil
 }
 
+// Validate ensures the command is valid. A CommandFunc is always
+// valid, as it has no internal state
 func (fn CommandFunc) Validate(ctx *CommandContext) error {
 	return nil
 }
 
+// UnmarshalCliContext unmarshals a cli.Context struct into a
+// Command. For a CommandFunc this does nothing, as there is no
+// internal state
 func (fn CommandFunc) UnmarshalCliContext(c *cli.Context) error {
 	return nil
 }
