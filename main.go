@@ -23,7 +23,11 @@ func main() {
 
 	cli.ErrWriter = cfg.Logger().ErrWriter()
 
-	app.Run(os.Args)
+	err := app.Run(os.Args)
+
+	if err != nil {
+		ExitWithError(err, 1)
+	}
 }
 
 func ExitWithError(err error, code int) {
