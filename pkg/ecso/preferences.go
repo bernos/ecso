@@ -8,15 +8,32 @@ import (
 	"path/filepath"
 )
 
-func LoadUserPreferences() (*UserPreferences, error) {
-	preferences := &UserPreferences{}
+type UserPreferences struct {
+	AccountDefaults map[string]AccountDefaults
+}
+
+type AccountDefaults struct {
+	VPCID           string
+	ALBSubnets      string
+	InstanceSubnets string
+	DNSZone         string
+	DataDogAPIKey   string
+}
+
+func LoadCurrentUserPreferences() (*UserPreferences, error) {
 	user, err := user.Current()
 
 	if err != nil {
-		return preferences, err
+		return nil, err
 	}
 
-	data, err := ioutil.ReadFile(filepath.Join(user.HomeDir, ".ecso.json"))
+	return LoadUserPreferences(filepath.Join(user.HomeDir, ".ecso.json"))
+}
+
+func LoadUserPreferences(file string) (*UserPreferences, error) {
+	preferences := &UserPreferences{}
+
+	data, err := ioutil.ReadFile(file)
 
 	if os.IsNotExist(err) {
 		return preferences, nil

@@ -132,15 +132,3 @@ func (p *Project) AddService(service *Service) {
 	}
 	p.Services[service.Name] = service
 }
-
-type UserPreferences struct {
-	AccountDefaults map[string]AccountDefaults
-}
-
-type AccountDefaults struct {
-	VPCID           string
-	ALBSubnets      string
-	InstanceSubnets string
-	DNSZone         string
-	DataDogAPIKey   string
-}
