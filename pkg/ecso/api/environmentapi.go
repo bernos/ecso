@@ -15,6 +15,7 @@ type EnvironmentAPI interface {
 	EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun bool) error
 	EnvironmentDown(p *ecso.Project, env *ecso.Environment) error
 	IsEnvironmentUp(env *ecso.Environment) (bool, error)
+	SendNotification(env *ecso.Environment, msg string) error
 }
 
 // New creates a new API
@@ -178,4 +179,27 @@ func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment,
 	}
 
 	return err
+}
+
+func (api *environmentAPI) SendNotification(env *ecso.Environment, msg string) error {
+	var (
+		log   = api.cfg.Logger()
+		stack = env.GetCloudFormationStackName()
+	)
+
+	reg, err := api.cfg.GetAWSClientRegistry(env.Region)
+
+	if err != nil {
+		return err
+	}
+
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child())
+
+	outputs, err := cfn.GetStackOutputs(stack)
+
+	if _, ok := outputs["NotificationsTopic"]; ok {
+
+	}
+
+	return nil
 }

@@ -12,6 +12,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/route53/route53iface"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 )
@@ -25,6 +27,7 @@ type AWSClientRegistry struct {
 	ecsAPI            ecsiface.ECSAPI
 	cloudWatchLogsAPI cloudwatchlogsiface.CloudWatchLogsAPI
 	route53           route53iface.Route53API
+	snsAPI            snsiface.SNSAPI
 }
 
 func NewAWSClientRegistry(sess *session.Session) *AWSClientRegistry {
@@ -66,6 +69,13 @@ func (r *AWSClientRegistry) S3API() s3iface.S3API {
 		r.s3API = s3.New(r.session)
 	}
 	return r.s3API
+}
+
+func (r *AWSClientRegistry) SNSAPI() snsiface.SNSAPI {
+	if r.snsAPI == nil {
+		r.snsAPI = sns.New(r.session)
+	}
+	return r.snsAPI
 }
 
 func (r *AWSClientRegistry) STSAPI() stsiface.STSAPI {
