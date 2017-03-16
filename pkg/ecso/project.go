@@ -31,7 +31,7 @@ func GetCurrentProjectDir() (string, error) {
 }
 
 func LoadProject(dir string) (*Project, error) {
-	project := NewProject(dir, "unknown")
+	project := NewProject(dir, "unknown", "unknown")
 
 	data, err := ioutil.ReadFile(project.ProjectFile())
 
@@ -44,10 +44,11 @@ func LoadProject(dir string) (*Project, error) {
 	return project, err
 }
 
-func NewProject(dir, name string) *Project {
+func NewProject(dir, name, version string) *Project {
 	return &Project{
 		dir:          dir,
 		Name:         name,
+		EcsoVersion:  version,
 		Environments: make(map[string]*Environment),
 		Services:     make(map[string]*Service),
 	}
@@ -57,6 +58,7 @@ type Project struct {
 	dir string
 
 	Name         string
+	EcsoVersion  string
 	Environments map[string]*Environment
 	Services     map[string]*Service
 }
@@ -92,12 +94,10 @@ func (p *Project) UnmarshalJSON(b []byte) error {
 
 	for _, env := range p.Environments {
 		env.project = p
-		// p.Environments[i] = env
 	}
 
 	for _, svc := range p.Services {
 		svc.project = p
-		// p.Services[i] = svc
 	}
 
 	return nil

@@ -37,7 +37,6 @@ type environmentAddCommand struct {
 
 func NewEnvironmentAddCommand(environmentName string) ecso.Command {
 	return &environmentAddCommand{
-		// name: environmentName,
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
 		},

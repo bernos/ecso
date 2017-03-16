@@ -146,6 +146,12 @@ func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment,
 		return err
 	}
 
+	if tags == nil {
+		tags = make(map[string]string)
+	}
+
+	tags["ecso-version"] = p.EcsoVersion
+
 	var result *helpers.DeploymentResult
 
 	if exists {

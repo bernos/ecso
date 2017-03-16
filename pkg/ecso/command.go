@@ -56,16 +56,18 @@ func CommandError(err error) Command {
 // CommandContext provides access to configuration options and preferences
 // scoped to a running Command
 type CommandContext struct {
+	EcsoVersion     string
 	Project         *Project
 	Config          *Config
 	UserPreferences *UserPreferences
 }
 
 // NewCommandContext creates a CommandContext
-func NewCommandContext(project *Project, config *Config, preferences *UserPreferences) *CommandContext {
+func NewCommandContext(project *Project, config *Config, preferences *UserPreferences, version string) *CommandContext {
 	return &CommandContext{
 		Project:         project,
 		Config:          config,
 		UserPreferences: preferences,
+		EcsoVersion:     version,
 	}
 }
