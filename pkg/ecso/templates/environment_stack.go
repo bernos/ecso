@@ -136,6 +136,13 @@ Outputs:
             - SNS
             - Outputs.AlertsTopic
 
+    NotificationsTopic:
+        Description: A reference to the notifications SNS topic
+        Value:
+          Fn::GetAtt:
+            - SNS
+            - Outputs.NotificationsTopic
+
     VPC:
         Description: The VPC ID
         Value: !Ref VPC
