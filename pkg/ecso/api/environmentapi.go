@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/helpers"
 	"github.com/bernos/ecso/pkg/ecso/util"
@@ -197,8 +198,21 @@ func (api *environmentAPI) SendNotification(env *ecso.Environment, msg string) e
 
 	outputs, err := cfn.GetStackOutputs(stack)
 
-	if _, ok := outputs["NotificationsTopic"]; ok {
+	if topic, ok := outputs["NotificationsTopic"]; ok {
+		snsAPI := reg.SNSAPI()
 
+		_, err := snsAPI.Publish(&sns.PublishInput{
+			Message: aws.String(msg),
+			MessageAttributes: map[string]*sns.MessageAttributeValue{
+				"Environment": {
+					DataType:    aws.String("String"),
+					StringValue: aws.String(env.Name),
+				},
+			},
+			TopicArn: aws.String(topic),
+		})
+
+		return err
 	}
 
 	return nil

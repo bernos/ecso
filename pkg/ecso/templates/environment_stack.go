@@ -121,6 +121,10 @@ Resources:
                 VPC: !Ref VPC
                 DNSZone: !Ref DNSZone
                 DataDogAPIKey: !Ref DataDogAPIKey
+                NotificationsTopic:
+                  Fn::GetAtt:
+                  - SNS
+                  - Outputs.NotificationsTopic
                 SecurityGroup:
                   Fn::GetAtt:
                   - SecurityGroups

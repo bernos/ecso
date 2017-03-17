@@ -178,16 +178,32 @@ func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, s
 		return err
 	}
 
+	envAPI := NewEnvironmentAPI(api.cfg)
+
+	if err := envAPI.SendNotification(env, fmt.Sprintf("Commenced deployment of %s to %s", service.Name, env.Name)); err != nil {
+		api.cfg.Logger().Printf("WARNING Failed to send deployment commencing notification to sns. %s", err.Error())
+	}
+
 	// register task
 	taskDefinition, err := api.registerECSTaskDefinition(reg, project, env, service)
 
 	if err != nil {
+		if err := envAPI.SendNotification(env, fmt.Sprintf("Failed to deploy %s to %s", service.Name, env.Name)); err != nil {
+			api.cfg.Logger().Printf("WARNING Failed to send deployment failure notification to sns. %s", err.Error())
+		}
 		return err
 	}
 
 	// deploy the service cfn stack
 	if err := api.deployServiceStack(reg, project, env, service, taskDefinition); err != nil {
+		if err := envAPI.SendNotification(env, fmt.Sprintf("Failed to deploy %s to %s", service.Name, env.Name)); err != nil {
+			api.cfg.Logger().Printf("WARNING Failed to send deployment failure notification to sns. %s", err.Error())
+		}
 		return err
+	}
+
+	if err := envAPI.SendNotification(env, fmt.Sprintf("Completed deployment of %s to %s", service.Name, env.Name)); err != nil {
+		api.cfg.Logger().Printf("WARNING Failed to send deployment completed notification to sns. %s", err.Error())
 	}
 
 	return nil

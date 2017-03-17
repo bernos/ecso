@@ -44,6 +44,10 @@ Parameters:
         Type: String
         Default: ""
 
+    NotificationsTopic:
+        Description: The arn of the sns topic to send ecs cluster events to
+        Type: String
+
 Mappings:
 
     # These are the latest ECS optimized AMIs as of November 2016:
@@ -83,6 +87,33 @@ Resources:
         Type: AWS::ECS::Cluster
         Properties:
             ClusterName: !Ref EnvironmentName
+
+    CloudWatchEvents:
+        Type: AWS::Events::Rule
+        Properties:
+            Name: !Sub ${EnvironmentName}-Events
+            State: ENABLED
+            EventPattern:
+                source:
+                    - "aws.ecs"
+                detail-type:
+                    - "ECS Task State Change"
+                    - "ECS Container Instance State Change"
+                detail:
+                    clusterArn:
+                        - !Sub arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${EnvironmentName}
+            Targets:
+                - Arn: !GetAtt EventLoggingLambda.Arn
+                  Id: !Sub ${EnvironmentName}-Events-Lambda-Target
+
+    InvokeLambdaPermission:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName:
+                Ref: EventLoggingLambda
+            Action: "lambda:InvokeFunction"
+            Principal: "events.amazonaws.com"
+            SourceArn: !GetAtt CloudWatchEvents.Arn
 
     CloudWatchLogsGroup:
         Type: AWS::Logs::LogGroup
@@ -385,6 +416,41 @@ Resources:
             Path: /
             Roles:
                 - !Ref ECSRole
+
+    EventLoggingLambda:
+        Type: AWS::Lambda::Function
+        Properties:
+            Handler: index.handler
+            Role: !GetAtt LambdaExecutionRole.Arn
+            Runtime: nodejs4.3
+            Code:
+                ZipFile: !Sub |
+                  exports.handler = function(event, context) {
+                      console.log(JSON.stringify(event, null, 2))
+                  }
+
+    LambdaExecutionRole:
+        Type: AWS::IAM::Role
+        Properties:
+            AssumeRolePolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+              - Effect: Allow
+                Principal:
+                  Service:
+                  - lambda.amazonaws.com
+                Action:
+                - sts:AssumeRole
+            Path: "/"
+            Policies:
+            - PolicyName: root
+              PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                - Effect: Allow
+                  Action:
+                  - logs:*
+                  Resource: arn:aws:logs:*:*:*
 
 Outputs:
 
