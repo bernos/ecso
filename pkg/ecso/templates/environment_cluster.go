@@ -137,10 +137,114 @@ Resources:
                 Timeout: PT15M
         UpdatePolicy:
             AutoScalingRollingUpdate:
-                MinInstancesInService: 1
+                MinInstancesInService: !Ref ClusterSize
                 MaxBatchSize: 1
                 PauseTime: PT15M
                 WaitOnResourceSignals: true
+
+    CPUScaleUpPolicy:
+        Type: AWS::AutoScaling::ScalingPolicy
+        Properties:
+            AutoScalingGroupName: !Ref ECSAutoScalingGroup
+            AdjustmentType: ChangeInCapacity
+            Cooldown: 90
+            ScalingAdjustment: 1
+
+    CPUScaleDownPolicy:
+        Type: AWS::AutoScaling::ScalingPolicy
+        Properties:
+            AutoScalingGroupName: !Ref ECSAutoScalingGroup
+            AdjustmentType: ChangeInCapacity
+            Cooldown: 90
+            ScalingAdjustment: -1
+
+    CPUReservationHighTrigger:
+        Type: AWS::CloudWatch::Alarm
+        Properties:
+            AlarmName: !Sub ${EnvironmentName}-cpu-reservation-high-trigger
+            AlarmDescription: Reserved CPU capcity is high
+            Namespace: AWS/ECS
+            MetricName: CPUReservation
+            Statistic: Maximum
+            Period: 60
+            EvaluationPeriods: 2
+            Threshold: 80
+            ComparisonOperator: GreaterThanThreshold
+            AlarmActions:
+                - !Ref CPUScaleUpPolicy
+            Dimensions:
+                - Name: ClusterName
+                  Value: !Ref ECSCluster
+
+    CPUReservationLowTrigger:
+        Type: AWS::CloudWatch::Alarm
+        Properties:
+            AlarmName: !Sub ${EnvironmentName}-cpu-reservation-low-trigger
+            AlarmDescription: Reserved CPU capcity is low
+            Namespace: AWS/ECS
+            MetricName: CPUReservation
+            Statistic: Maximum
+            Period: 60
+            EvaluationPeriods: 2
+            Threshold: 80
+            ComparisonOperator: LessThanThreshold
+            AlarmActions:
+                - !Ref CPUScaleDownPolicy
+            Dimensions:
+                - Name: ClusterName
+                  Value: !Ref ECSCluster
+
+    MemoryScaleUpPolicy:
+        Type: AWS::AutoScaling::ScalingPolicy
+        Properties:
+            AutoScalingGroupName: !Ref ECSAutoScalingGroup
+            AdjustmentType: ChangeInCapacity
+            Cooldown: 90
+            ScalingAdjustment: 1
+
+    MemoryScaleDownPolicy:
+        Type: AWS::AutoScaling::ScalingPolicy
+        Properties:
+            AutoScalingGroupName: !Ref ECSAutoScalingGroup
+            AdjustmentType: ChangeInCapacity
+            Cooldown: 90
+            ScalingAdjustment: -1
+
+    MemoryReservationHighTrigger:
+        Type: AWS::CloudWatch::Alarm
+        Properties:
+            AlarmName: !Sub ${EnvironmentName}-alarm-memory-reservation-high-trigger
+            AlarmDescription: Reserved memory capcity is high
+            Namespace: AWS/ECS
+            MetricName: MemoryReservation
+            Statistic: Maximum
+            Period: 60
+            EvaluationPeriods: 2
+            Threshold: 80
+            ComparisonOperator: GreaterThanThreshold
+            AlarmActions:
+                - !Ref MemoryScaleUpPolicy
+            Dimensions:
+                - Name: ClusterName
+                  Value: !Ref ECSCluster
+
+    MemoryReservationLowTrigger:
+        Type: AWS::CloudWatch::Alarm
+        Properties:
+            AlarmName: !Sub ${EnvironmentName}-alarm-memory-reservation-low-trigger
+            AlarmDescription: Reserved memory capcity is low
+            Namespace: AWS/ECS
+            MetricName: MemoryReservation
+            Statistic: Maximum
+            Period: 60
+            EvaluationPeriods: 2
+            Threshold: 80
+            ComparisonOperator: LessThanThreshold
+            AlarmActions:
+                - !Ref MemoryScaleDownPolicy
+            Dimensions:
+                - Name: ClusterName
+                  Value: !Ref ECSCluster
 
     ECSLaunchConfiguration:
         Type: AWS::AutoScaling::LaunchConfiguration
