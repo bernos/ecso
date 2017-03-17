@@ -410,6 +410,7 @@ Resources:
                             "Resource": "*"
                         }]
                     }
+
     ECSInstanceProfile:
         Type: AWS::IAM::InstanceProfile
         Properties:
@@ -423,6 +424,7 @@ Resources:
             Handler: index.handler
             Role: !GetAtt LambdaExecutionRole.Arn
             Runtime: nodejs4.3
+            FunctionName: !Sub ${EnvironmentName}-ECS-Event-Logger
             Code:
                 ZipFile: !Sub |
                   exports.handler = function(event, context) {
