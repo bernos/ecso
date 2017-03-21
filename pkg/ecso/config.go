@@ -44,10 +44,3 @@ func NewConfig(version string, options ...func(*Config)) (*Config, error) {
 
 	return cfg, nil
 }
-
-func WriteOutputTo(w io.Writer) func(*Config) {
-	return func(c *Config) {
-		c.l = nil
-		c.w = w
-	}
-}
