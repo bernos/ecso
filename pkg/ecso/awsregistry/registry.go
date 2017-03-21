@@ -20,10 +20,10 @@ import (
 )
 
 var (
-	registries map[string]*AWSClientRegistry = make(map[string]*AWSClientRegistry)
+	registries map[string]*ClientRegistry = make(map[string]*ClientRegistry)
 )
 
-type AWSClientRegistry struct {
+type ClientRegistry struct {
 	session *session.Session
 
 	stsAPI            stsiface.STSAPI
@@ -35,7 +35,7 @@ type AWSClientRegistry struct {
 	snsAPI            snsiface.SNSAPI
 }
 
-func GetRegistry(region string) (*AWSClientRegistry, error) {
+func ForRegion(region string) (*ClientRegistry, error) {
 	if registries[region] == nil {
 
 		sess, err := session.NewSession(&aws.Config{
@@ -46,61 +46,61 @@ func GetRegistry(region string) (*AWSClientRegistry, error) {
 			return nil, err
 		}
 
-		registries[region] = NewAWSClientRegistry(sess)
+		registries[region] = NewClientRegistry(sess)
 	}
 
 	return registries[region], nil
 }
 
-func NewAWSClientRegistry(sess *session.Session) *AWSClientRegistry {
-	return &AWSClientRegistry{
+func NewClientRegistry(sess *session.Session) *ClientRegistry {
+	return &ClientRegistry{
 		session: sess,
 	}
 }
 
-func (r *AWSClientRegistry) CloudFormationAPI() cloudformationiface.CloudFormationAPI {
+func (r *ClientRegistry) CloudFormationAPI() cloudformationiface.CloudFormationAPI {
 	if r.cloudFormationAPI == nil {
 		r.cloudFormationAPI = cloudformation.New(r.session)
 	}
 	return r.cloudFormationAPI
 }
 
-func (r *AWSClientRegistry) CloudWatchLogsAPI() cloudwatchlogsiface.CloudWatchLogsAPI {
+func (r *ClientRegistry) CloudWatchLogsAPI() cloudwatchlogsiface.CloudWatchLogsAPI {
 	if r.cloudWatchLogsAPI == nil {
 		r.cloudWatchLogsAPI = cloudwatchlogs.New(r.session)
 	}
 	return r.cloudWatchLogsAPI
 }
 
-func (r *AWSClientRegistry) ECSAPI() ecsiface.ECSAPI {
+func (r *ClientRegistry) ECSAPI() ecsiface.ECSAPI {
 	if r.ecsAPI == nil {
 		r.ecsAPI = ecs.New(r.session)
 	}
 	return r.ecsAPI
 }
 
-func (r *AWSClientRegistry) Route53API() route53iface.Route53API {
+func (r *ClientRegistry) Route53API() route53iface.Route53API {
 	if r.route53 == nil {
 		r.route53 = route53.New(r.session)
 	}
 	return r.route53
 }
 
-func (r *AWSClientRegistry) S3API() s3iface.S3API {
+func (r *ClientRegistry) S3API() s3iface.S3API {
 	if r.s3API == nil {
 		r.s3API = s3.New(r.session)
 	}
 	return r.s3API
 }
 
-func (r *AWSClientRegistry) SNSAPI() snsiface.SNSAPI {
+func (r *ClientRegistry) SNSAPI() snsiface.SNSAPI {
 	if r.snsAPI == nil {
 		r.snsAPI = sns.New(r.session)
 	}
 	return r.snsAPI
 }
 
-func (r *AWSClientRegistry) STSAPI() stsiface.STSAPI {
+func (r *ClientRegistry) STSAPI() stsiface.STSAPI {
 	if r.stsAPI == nil {
 		r.stsAPI = sts.New(r.session)
 	}

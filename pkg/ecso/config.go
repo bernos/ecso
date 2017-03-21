@@ -21,8 +21,8 @@ func (c *Config) Logger() Logger {
 	return c.l
 }
 
-func (c *Config) MustGetAWSClientRegistry(region string) *awsregistry.AWSClientRegistry {
-	reg, err := awsregistry.GetRegistry(region)
+func (c *Config) MustGetAWSClientRegistry(region string) *awsregistry.ClientRegistry {
+	reg, err := awsregistry.ForRegion(region)
 
 	if err != nil {
 		c.Logger().Errorf("Failed to create AWSClientRegistry for region '%s': %s", region, err.Error())

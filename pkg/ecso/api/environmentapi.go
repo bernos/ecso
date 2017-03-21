@@ -47,7 +47,7 @@ func (api *environmentAPI) DescribeEnvironment(env *ecso.Environment) (*Environm
 		description = &EnvironmentDescription{Name: env.Name}
 	)
 
-	reg, err := awsregistry.GetRegistry(env.Region)
+	reg, err := awsregistry.ForRegion(env.Region)
 
 	if err != nil {
 		return description, err
@@ -75,7 +75,7 @@ func (api *environmentAPI) DescribeEnvironment(env *ecso.Environment) (*Environm
 }
 
 func (api *environmentAPI) IsEnvironmentUp(env *ecso.Environment) (bool, error) {
-	reg, err := awsregistry.GetRegistry(env.Region)
+	reg, err := awsregistry.ForRegion(env.Region)
 
 	if err != nil {
 		return false, err
@@ -87,7 +87,7 @@ func (api *environmentAPI) IsEnvironmentUp(env *ecso.Environment) (bool, error) 
 }
 
 func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environment) error {
-	reg, err := awsregistry.GetRegistry(env.Region)
+	reg, err := awsregistry.ForRegion(env.Region)
 
 	if err != nil {
 		return err
@@ -134,7 +134,7 @@ func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment,
 		params   = env.CloudFormationParameters
 	)
 
-	reg, err := awsregistry.GetRegistry(env.Region)
+	reg, err := awsregistry.ForRegion(env.Region)
 
 	if err != nil {
 		return err
@@ -189,7 +189,7 @@ func (api *environmentAPI) SendNotification(env *ecso.Environment, msg string) e
 		stack = env.GetCloudFormationStackName()
 	)
 
-	reg, err := awsregistry.GetRegistry(env.Region)
+	reg, err := awsregistry.ForRegion(env.Region)
 
 	if err != nil {
 		return err

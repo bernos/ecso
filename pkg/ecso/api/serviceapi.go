@@ -41,7 +41,7 @@ type serviceAPI struct {
 }
 
 func (api *serviceAPI) GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ecs.Service, error) {
-	reg, err := awsregistry.GetRegistry(env.Region)
+	reg, err := awsregistry.ForRegion(env.Region)
 
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (api *serviceAPI) DescribeService(env *ecso.Environment, service *ecso.Serv
 		log = api.cfg.Logger()
 	)
 
-	reg, err := awsregistry.GetRegistry(env.Region)
+	reg, err := awsregistry.ForRegion(env.Region)
 
 	if err != nil {
 		return nil, err
@@ -127,7 +127,7 @@ func (api *serviceAPI) DescribeService(env *ecso.Environment, service *ecso.Serv
 
 func (api *serviceAPI) ServiceDown(project *ecso.Project, env *ecso.Environment, service *ecso.Service) error {
 	log := api.cfg.Logger()
-	reg, err := awsregistry.GetRegistry(env.Region)
+	reg, err := awsregistry.ForRegion(env.Region)
 
 	if err != nil {
 		return err
@@ -147,7 +147,7 @@ func (api *serviceAPI) ServiceDown(project *ecso.Project, env *ecso.Environment,
 }
 
 func (api *serviceAPI) ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*cloudwatchlogs.FilteredLogEvent, error) {
-	reg, err := awsregistry.GetRegistry(env.Region)
+	reg, err := awsregistry.ForRegion(env.Region)
 
 	if err != nil {
 		return nil, err
@@ -167,7 +167,7 @@ func (api *serviceAPI) ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ec
 }
 
 func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, service *ecso.Service) error {
-	reg, err := awsregistry.GetRegistry(env.Region)
+	reg, err := awsregistry.ForRegion(env.Region)
 
 	if err != nil {
 		return err
@@ -228,7 +228,7 @@ func (api *serviceAPI) setEnv(project *ecso.Project, env *ecso.Environment, serv
 	return nil
 }
 
-func (api *serviceAPI) deployServiceStack(reg *awsregistry.AWSClientRegistry, project *ecso.Project, env *ecso.Environment, service *ecso.Service, taskDefinition *ecs.TaskDefinition) error {
+func (api *serviceAPI) deployServiceStack(reg *awsregistry.ClientRegistry, project *ecso.Project, env *ecso.Environment, service *ecso.Service, taskDefinition *ecs.TaskDefinition) error {
 	var (
 		cfg       = api.cfg
 		log       = cfg.Logger()
@@ -310,7 +310,7 @@ func getServiceStackTags(project *ecso.Project, env *ecso.Environment, service *
 	return tags
 }
 
-func (api *serviceAPI) registerECSTaskDefinition(reg *awsregistry.AWSClientRegistry, project *ecso.Project, env *ecso.Environment, service *ecso.Service) (*ecs.TaskDefinition, error) {
+func (api *serviceAPI) registerECSTaskDefinition(reg *awsregistry.ClientRegistry, project *ecso.Project, env *ecso.Environment, service *ecso.Service) (*ecs.TaskDefinition, error) {
 	var (
 		cfg       = api.cfg
 		log       = cfg.Logger()
@@ -372,7 +372,7 @@ func (api *serviceAPI) registerECSTaskDefinition(reg *awsregistry.AWSClientRegis
 
 	return resp.TaskDefinition, nil
 }
-func (api *serviceAPI) clearServiceDNSRecords(reg *awsregistry.AWSClientRegistry, env *ecso.Environment, service *ecso.Service) error {
+func (api *serviceAPI) clearServiceDNSRecords(reg *awsregistry.ClientRegistry, env *ecso.Environment, service *ecso.Service) error {
 	var (
 		log       = api.cfg.Logger()
 		r53Helper = helpers.NewRoute53Helper(reg.Route53API(), log.Child())
@@ -388,7 +388,7 @@ func (api *serviceAPI) clearServiceDNSRecords(reg *awsregistry.AWSClientRegistry
 	return nil
 }
 
-func (api *serviceAPI) deleteServiceStack(reg *awsregistry.AWSClientRegistry, env *ecso.Environment, service *ecso.Service) error {
+func (api *serviceAPI) deleteServiceStack(reg *awsregistry.ClientRegistry, env *ecso.Environment, service *ecso.Service) error {
 	var (
 		log   = api.cfg.Logger()
 		stack = service.GetCloudFormationStackName(env)
