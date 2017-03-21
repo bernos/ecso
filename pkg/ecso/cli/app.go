@@ -1,21 +1,23 @@
-package cmd
+package cli
 
 import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"gopkg.in/urfave/cli.v1"
 )
 
-func NewApp(version string, dispatcher ecso.Dispatcher) *cli.App {
+func NewApp(cfg *ecso.Config, dispatcher ecso.Dispatcher) *cli.App {
 	app := cli.NewApp()
 	app.Name = "ecso"
 	app.Usage = "Manage Amazon ECS projects"
-	app.Version = version
+	app.Version = cfg.Version
 	app.Authors = []cli.Author{
 		cli.Author{
 			Name:  "Brendan McMahon",
 			Email: "bernos@gmail.com",
 		},
 	}
+
+	cli.ErrWriter = cfg.Logger().ErrWriter()
 
 	cliDispatcher := CliDispatcher(dispatcher)
 

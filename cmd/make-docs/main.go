@@ -8,8 +8,8 @@ import (
 	"text/tabwriter"
 	"text/template"
 
-	"github.com/bernos/ecso/cmd"
 	"github.com/bernos/ecso/pkg/ecso"
+	ecsocli "github.com/bernos/ecso/pkg/ecso/cli"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -18,7 +18,14 @@ func main() {
 		return nil
 	})
 
-	app := cmd.NewApp("", dispatcher)
+	cfg, err := ecso.NewConfig("")
+
+	if err != nil {
+		fmt.Printf("ERROR: %s\n", err.Error())
+		os.Exit(1)
+	}
+
+	app := ecsocli.NewApp(cfg, dispatcher)
 
 	viaCustom(app)
 }

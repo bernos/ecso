@@ -9,6 +9,8 @@ import (
 )
 
 type Config struct {
+	Version string
+
 	l Logger
 	w io.Writer
 
@@ -51,8 +53,9 @@ func (c *Config) GetAWSClientRegistry(region string) (*AWSClientRegistry, error)
 	return c.awsClientRegistries[region], nil
 }
 
-func NewConfig(options ...func(*Config)) (*Config, error) {
+func NewConfig(version string, options ...func(*Config)) (*Config, error) {
 	cfg := &Config{
+		Version:             version,
 		w:                   os.Stderr,
 		awsClientRegistries: make(map[string]*AWSClientRegistry),
 	}

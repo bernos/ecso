@@ -3,10 +3,8 @@ package main
 import (
 	"os"
 
-	"github.com/bernos/ecso/cmd"
 	"github.com/bernos/ecso/pkg/ecso"
-
-	"gopkg.in/urfave/cli.v1"
+	"github.com/bernos/ecso/pkg/ecso/cli"
 )
 
 var (
@@ -16,12 +14,10 @@ var (
 
 func main() {
 	project := MustLoadProject(ecso.LoadCurrentProject())
-	cfg := MustLoadConfig(ecso.NewConfig())
+	cfg := MustLoadConfig(ecso.NewConfig(version))
 	prefs := MustLoadUserPreferences(ecso.LoadCurrentUserPreferences())
 	dispatcher := ecso.NewDispatcher(project, cfg, prefs, version)
-	app := cmd.NewApp(version, dispatcher)
-
-	cli.ErrWriter = cfg.Logger().ErrWriter()
+	app := cli.NewApp(cfg, dispatcher)
 
 	err := app.Run(os.Args)
 
