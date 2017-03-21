@@ -4,8 +4,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/bernos/ecso/pkg/ecso/awsregistry"
 )
 
 type Config struct {
@@ -13,9 +12,6 @@ type Config struct {
 
 	l Logger
 	w io.Writer
-
-	// AWS client registries by region
-	awsClientRegistries map[string]*AWSClientRegistry
 }
 
 func (c *Config) Logger() Logger {
@@ -25,8 +21,8 @@ func (c *Config) Logger() Logger {
 	return c.l
 }
 
-func (c *Config) MustGetAWSClientRegistry(region string) *AWSClientRegistry {
-	reg, err := c.GetAWSClientRegistry(region)
+func (c *Config) MustGetAWSClientRegistry(region string) *awsregistry.AWSClientRegistry {
+	reg, err := awsregistry.GetRegistry(region)
 
 	if err != nil {
 		c.Logger().Errorf("Failed to create AWSClientRegistry for region '%s': %s", region, err.Error())
@@ -36,28 +32,10 @@ func (c *Config) MustGetAWSClientRegistry(region string) *AWSClientRegistry {
 	return reg
 }
 
-func (c *Config) GetAWSClientRegistry(region string) (*AWSClientRegistry, error) {
-	if c.awsClientRegistries[region] == nil {
-
-		sess, err := session.NewSession(&aws.Config{
-			Region: aws.String(region),
-		})
-
-		if err != nil {
-			return nil, err
-		}
-
-		c.awsClientRegistries[region] = NewAWSClientRegistry(sess)
-	}
-
-	return c.awsClientRegistries[region], nil
-}
-
 func NewConfig(version string, options ...func(*Config)) (*Config, error) {
 	cfg := &Config{
-		Version:             version,
-		w:                   os.Stderr,
-		awsClientRegistries: make(map[string]*AWSClientRegistry),
+		Version: version,
+		w:       os.Stderr,
 	}
 
 	for _, o := range options {

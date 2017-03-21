@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/awsregistry"
 	"github.com/bernos/ecso/pkg/ecso/helpers"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
@@ -46,7 +47,7 @@ func (api *environmentAPI) DescribeEnvironment(env *ecso.Environment) (*Environm
 		description = &EnvironmentDescription{Name: env.Name}
 	)
 
-	reg, err := api.cfg.GetAWSClientRegistry(env.Region)
+	reg, err := awsregistry.GetRegistry(env.Region)
 
 	if err != nil {
 		return description, err
@@ -74,7 +75,7 @@ func (api *environmentAPI) DescribeEnvironment(env *ecso.Environment) (*Environm
 }
 
 func (api *environmentAPI) IsEnvironmentUp(env *ecso.Environment) (bool, error) {
-	reg, err := api.cfg.GetAWSClientRegistry(env.Region)
+	reg, err := awsregistry.GetRegistry(env.Region)
 
 	if err != nil {
 		return false, err
@@ -86,7 +87,7 @@ func (api *environmentAPI) IsEnvironmentUp(env *ecso.Environment) (bool, error) 
 }
 
 func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environment) error {
-	reg, err := api.cfg.GetAWSClientRegistry(env.Region)
+	reg, err := awsregistry.GetRegistry(env.Region)
 
 	if err != nil {
 		return err
@@ -133,7 +134,7 @@ func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment,
 		params   = env.CloudFormationParameters
 	)
 
-	reg, err := api.cfg.GetAWSClientRegistry(env.Region)
+	reg, err := awsregistry.GetRegistry(env.Region)
 
 	if err != nil {
 		return err
@@ -188,7 +189,7 @@ func (api *environmentAPI) SendNotification(env *ecso.Environment, msg string) e
 		stack = env.GetCloudFormationStackName()
 	)
 
-	reg, err := api.cfg.GetAWSClientRegistry(env.Region)
+	reg, err := awsregistry.GetRegistry(env.Region)
 
 	if err != nil {
 		return err

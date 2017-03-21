@@ -1,6 +1,7 @@
-package ecso
+package awsregistry
 
 import (
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/cloudformation/cloudformationiface"
@@ -18,6 +19,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 )
 
+var (
+	registries map[string]*AWSClientRegistry = make(map[string]*AWSClientRegistry)
+)
+
 type AWSClientRegistry struct {
 	session *session.Session
 
@@ -28,6 +33,23 @@ type AWSClientRegistry struct {
 	cloudWatchLogsAPI cloudwatchlogsiface.CloudWatchLogsAPI
 	route53           route53iface.Route53API
 	snsAPI            snsiface.SNSAPI
+}
+
+func GetRegistry(region string) (*AWSClientRegistry, error) {
+	if registries[region] == nil {
+
+		sess, err := session.NewSession(&aws.Config{
+			Region: aws.String(region),
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		registries[region] = NewAWSClientRegistry(sess)
+	}
+
+	return registries[region], nil
 }
 
 func NewAWSClientRegistry(sess *session.Session) *AWSClientRegistry {
