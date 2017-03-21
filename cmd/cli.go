@@ -8,25 +8,6 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
-func CliCommand(dispatcher ecso.Dispatcher) cli.Command {
-	fn := func(c *cli.Context) (ecso.Command, error) {
-		return commands.NewSkeletonCommand(c.Args().First()), nil
-	}
-
-	return cli.Command{
-		Name:      "TODO",
-		Usage:     "TODO",
-		ArgsUsage: "[TODO]",
-		Flags: []cli.Flag{
-			cli.BoolFlag{
-				Name:  commands.EnvUnsetOption,
-				Usage: "TODO",
-			},
-		},
-		Action: MakeAction(dispatcher, fn),
-	}
-}
-
 func NewEnvCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	fn := func(c *cli.Context) (ecso.Command, error) {
 		return commands.NewEnvCommand(c.Args().First()), nil

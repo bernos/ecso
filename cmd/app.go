@@ -17,11 +17,13 @@ func NewApp(version string, dispatcher ecso.Dispatcher) *cli.App {
 		},
 	}
 
+	cliDispatcher := CliDispatcher(dispatcher)
+
 	app.Commands = []cli.Command{
-		NewInitCliCommand(dispatcher),
-		NewEnvironmentCliCommand(dispatcher),
-		NewServiceCliCommand(dispatcher),
-		NewEnvCliCommand(dispatcher),
+		NewInitCliCommand(cliDispatcher),
+		NewEnvironmentCliCommand(cliDispatcher),
+		NewServiceCliCommand(cliDispatcher),
+		NewEnvCliCommand(cliDispatcher),
 	}
 
 	return app
