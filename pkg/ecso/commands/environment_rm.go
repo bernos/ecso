@@ -3,6 +3,7 @@ package commands
 import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -11,7 +12,7 @@ const (
 	EnvironmentRmForceOption = "force"
 )
 
-func NewEnvironmentRmCommand(environmentName string, environmentAPI api.EnvironmentAPI, log ecso.Logger) ecso.Command {
+func NewEnvironmentRmCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger) ecso.Command {
 	return &environmentRmCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,

@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -10,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
@@ -25,7 +25,7 @@ type row struct {
 	Port              string
 }
 
-func NewServicePsCommand(name string, serviceAPI api.ServiceAPI, log ecso.Logger) ecso.Command {
+func NewServicePsCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
 	return &servicePsCommand{
 		ServiceCommand: &ServiceCommand{
 			name:       name,
@@ -82,9 +82,9 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 		rows = append(rows, newRows...)
 	}
 
-	log.Printf("\n")
+	cmd.log.Printf("\n")
 	printRows(rows, cmd.log)
-	log.Printf("\n")
+	cmd.log.Printf("\n")
 
 	return nil
 }
@@ -127,7 +127,7 @@ func rowsFromTask(task *ecs.Task, ecsAPI ecsiface.ECSAPI) ([]*row, error) {
 	return rows, nil
 }
 
-func printRows(rows []*row, log ecso.Logger) {
+func printRows(rows []*row, log log.Logger) {
 	headers := []string{
 		"CONTAINER",
 		"IMAGE",

@@ -3,6 +3,7 @@ package commands
 import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -11,7 +12,7 @@ const (
 	ServiceDownForceOption = "force"
 )
 
-func NewServiceDownCommand(name string, serviceAPI api.ServiceAPI, log ecso.Logger) ecso.Command {
+func NewServiceDownCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
 	return &serviceDownCommand{
 		ServiceCommand: &ServiceCommand{
 			name:       name,

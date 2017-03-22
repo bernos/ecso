@@ -3,10 +3,11 @@ package commands
 import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-func NewEnvironmentDescribeCommand(environmentName string, environmentAPI api.EnvironmentAPI, log ecso.Logger) ecso.Command {
+func NewEnvironmentDescribeCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger) ecso.Command {
 	return &environmentDescribeCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,

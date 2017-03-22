@@ -4,14 +4,14 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/aws/aws-sdk-go/service/route53/route53iface"
-	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
 type Route53Helper interface {
 	DeleteResourceRecordSetsByName(name, zone, reason string) error
 }
 
-func NewRoute53Helper(route53API route53iface.Route53API, logger ecso.Logger) Route53Helper {
+func NewRoute53Helper(route53API route53iface.Route53API, logger log.Logger) Route53Helper {
 	return &route53Helper{
 		route53API: route53API,
 		logger:     logger,
@@ -20,7 +20,7 @@ func NewRoute53Helper(route53API route53iface.Route53API, logger ecso.Logger) Ro
 
 type route53Helper struct {
 	route53API route53iface.Route53API
-	logger     ecso.Logger
+	logger     log.Logger
 }
 
 func (h *route53Helper) DeleteResourceRecordSetsByName(name, zone, reason string) error {

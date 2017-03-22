@@ -3,10 +3,11 @@ package commands
 import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-func NewServiceDescribeCommand(name string, serviceAPI api.ServiceAPI, log ecso.Logger) ecso.Command {
+func NewServiceDescribeCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
 	return &serviceDecribeCommand{
 		ServiceCommand: &ServiceCommand{
 			name:       name,

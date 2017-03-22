@@ -5,6 +5,7 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/templates"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
@@ -17,7 +18,7 @@ const (
 	EnvironmentUpForceOption  = "force"
 )
 
-func NewEnvironmentUpCommand(environmentName string, environmentAPI api.EnvironmentAPI, log ecso.Logger) ecso.Command {
+func NewEnvironmentUpCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger) ecso.Command {
 	return &envUpCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,

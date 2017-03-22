@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/templates"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"gopkg.in/urfave/cli.v1"
@@ -16,7 +17,7 @@ const (
 	ServiceAddPortOption         = "port"
 )
 
-func NewServiceAddCommand(name string, log ecso.Logger) ecso.Command {
+func NewServiceAddCommand(name string, log log.Logger) ecso.Command {
 	return &serviceAddCommand{
 		name:         name,
 		desiredCount: 1,
@@ -29,7 +30,7 @@ type serviceAddCommand struct {
 	desiredCount int
 	route        string
 	port         int
-	log          ecso.Logger
+	log          log.Logger
 }
 
 func (cmd *serviceAddCommand) UnmarshalCliContext(ctx *cli.Context) error {

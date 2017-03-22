@@ -5,10 +5,11 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/cli"
+	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
 var (
-	log     = ecso.NewLogger(os.Stderr, "")
+	logger  = log.NewLogger(os.Stderr, "")
 	version = "0.0.0"
 )
 
@@ -27,7 +28,7 @@ func main() {
 }
 
 func ExitWithError(err error, code int) {
-	log.Errorf(err.Error())
+	logger.Errorf(err.Error())
 	os.Exit(code)
 }
 

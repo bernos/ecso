@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -16,7 +17,7 @@ const (
 	ServiceLsEnvironmentOption = "environment"
 )
 
-func NewServiceLsCommand(env string, log ecso.Logger) ecso.Command {
+func NewServiceLsCommand(env string, log log.Logger) ecso.Command {
 	return &serviceLsCommand{
 		environment: env,
 		log:         log,
@@ -25,7 +26,7 @@ func NewServiceLsCommand(env string, log ecso.Logger) ecso.Command {
 
 type serviceLsCommand struct {
 	environment string
-	log         ecso.Logger
+	log         log.Logger
 }
 
 func (cmd *serviceLsCommand) UnmarshalCliContext(ctx *cli.Context) error {
@@ -115,7 +116,7 @@ func getServices(env *ecso.Environment, ecsAPI ecsiface.ECSAPI) ([]*ecs.Service,
 	return services, nil
 }
 
-func printServices(project *ecso.Project, env *ecso.Environment, services []*ecs.Service, log ecso.Logger) {
+func printServices(project *ecso.Project, env *ecso.Environment, services []*ecs.Service, log log.Logger) {
 	headers := []string{"SERVICE", "ECS SERVICE", "TASK", "DESIRED", "RUNNING", "STATUS"}
 	rows := make([]map[string]string, len(services))
 

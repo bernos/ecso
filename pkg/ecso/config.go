@@ -5,18 +5,19 @@ import (
 	"os"
 
 	"github.com/bernos/ecso/pkg/ecso/awsregistry"
+	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
 type Config struct {
 	Version string
 
-	l Logger
+	l log.Logger
 	w io.Writer
 }
 
-func (c *Config) Logger() Logger {
+func (c *Config) Logger() log.Logger {
 	if c.l == nil {
-		c.l = NewLogger(c.w, "")
+		c.l = log.NewLogger(c.w, "")
 	}
 	return c.l
 }

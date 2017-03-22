@@ -7,9 +7,10 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/helpers"
+	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
-func NewServiceEventsCommand(name string, serviceAPI api.ServiceAPI, log ecso.Logger) ecso.Command {
+func NewServiceEventsCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
 	return &serviceEventsCommand{
 		ServiceCommand: &ServiceCommand{
 			name:       name,

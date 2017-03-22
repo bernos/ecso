@@ -5,9 +5,10 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
-func NewServiceLogsCommand(name string, serviceAPI api.ServiceAPI, log ecso.Logger) ecso.Command {
+func NewServiceLogsCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
 	return &serviceLogsCommand{
 		ServiceCommand: &ServiceCommand{
 			name:       name,

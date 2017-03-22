@@ -2,12 +2,12 @@ package commands
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 
 	"gopkg.in/urfave/cli.v1"
@@ -37,7 +37,7 @@ type environmentAddCommand struct {
 	datadogAPIKey   string
 }
 
-func NewEnvironmentAddCommand(environmentName string, environmentAPI api.EnvironmentAPI, log ecso.Logger) ecso.Command {
+func NewEnvironmentAddCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger) ecso.Command {
 	return &environmentAddCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
@@ -92,7 +92,7 @@ func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	ui.BannerGreen(c.log, "Successfully added environment '%s' to the project", c.environmentName)
-	log.Printf("Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.environmentName)
+	c.log.Printf("Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.environmentName)
 
 	return nil
 }
