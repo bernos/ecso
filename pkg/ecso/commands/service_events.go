@@ -12,18 +12,15 @@ import (
 func NewServiceEventsCommand(name string, serviceAPI api.ServiceAPI, log ecso.Logger) ecso.Command {
 	return &serviceEventsCommand{
 		ServiceCommand: &ServiceCommand{
-			name: name,
+			name:       name,
+			serviceAPI: serviceAPI,
+			log:        log,
 		},
-		serviceAPI: serviceAPI,
-		log:        log,
 	}
 }
 
 type serviceEventsCommand struct {
 	*ServiceCommand
-
-	serviceAPI api.ServiceAPI
-	log        ecso.Logger
 }
 
 // TODO add GetServiceEvents to the ecso api and call from here, rather than using the helper directly

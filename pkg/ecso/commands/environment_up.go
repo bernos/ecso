@@ -21,18 +21,17 @@ func NewEnvironmentUpCommand(environmentName string, environmentAPI api.Environm
 	return &envUpCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
+			environmentAPI:  environmentAPI,
+			log:             log,
 		},
-		environmentAPI: environmentAPI,
-		log:            log,
 	}
 }
 
 type envUpCommand struct {
 	*EnvironmentCommand
-	log            ecso.Logger
-	environmentAPI api.EnvironmentAPI
-	dryRun         bool
-	force          bool
+
+	dryRun bool
+	force  bool
 }
 
 func (cmd *envUpCommand) UnmarshalCliContext(ctx *cli.Context) error {

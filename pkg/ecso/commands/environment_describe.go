@@ -10,17 +10,14 @@ func NewEnvironmentDescribeCommand(environmentName string, environmentAPI api.En
 	return &environmentDescribeCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
+			environmentAPI:  environmentAPI,
+			log:             log,
 		},
-		environmentAPI: environmentAPI,
-		log:            log,
 	}
 }
 
 type environmentDescribeCommand struct {
 	*EnvironmentCommand
-
-	log            ecso.Logger
-	environmentAPI api.EnvironmentAPI
 }
 
 func (cmd *environmentDescribeCommand) Execute(ctx *ecso.CommandContext) error {

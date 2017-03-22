@@ -15,17 +15,14 @@ func NewEnvironmentRmCommand(environmentName string, environmentAPI api.Environm
 	return &environmentRmCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
+			environmentAPI:  environmentAPI,
+			log:             log,
 		},
-		environmentAPI: environmentAPI,
-		log:            log,
 	}
 }
 
 type environmentRmCommand struct {
 	*EnvironmentCommand
-
-	log            ecso.Logger
-	environmentAPI api.EnvironmentAPI
 }
 
 func (cmd *environmentRmCommand) UnmarshalCliContext(ctx *cli.Context) error {

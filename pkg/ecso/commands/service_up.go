@@ -11,18 +11,15 @@ import (
 func NewServiceUpCommand(name string, serviceAPI api.ServiceAPI, log ecso.Logger) ecso.Command {
 	return &serviceUpCommand{
 		ServiceCommand: &ServiceCommand{
-			name: name,
+			name:       name,
+			serviceAPI: serviceAPI,
+			log:        log,
 		},
-		serviceAPI: serviceAPI,
-		log:        log,
 	}
 }
 
 type serviceUpCommand struct {
 	*ServiceCommand
-
-	serviceAPI api.ServiceAPI
-	log        ecso.Logger
 }
 
 func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext) error {

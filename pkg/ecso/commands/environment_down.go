@@ -15,18 +15,14 @@ func NewEnvironmentDownCommand(environmentName string, environmentAPI api.Enviro
 	return &environmentDownCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
+			environmentAPI:  environmentAPI,
+			log:             log,
 		},
-
-		environmentAPI: environmentAPI,
-		log:            log,
 	}
 }
 
 type environmentDownCommand struct {
 	*EnvironmentCommand
-
-	log            ecso.Logger
-	environmentAPI api.EnvironmentAPI
 }
 
 func (cmd *environmentDownCommand) UnmarshalCliContext(ctx *cli.Context) error {

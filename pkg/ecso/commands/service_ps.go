@@ -28,18 +28,15 @@ type row struct {
 func NewServicePsCommand(name string, serviceAPI api.ServiceAPI, log ecso.Logger) ecso.Command {
 	return &servicePsCommand{
 		ServiceCommand: &ServiceCommand{
-			name: name,
+			name:       name,
+			serviceAPI: serviceAPI,
+			log:        log,
 		},
-		serviceAPI: serviceAPI,
-		log:        log,
 	}
 }
 
 type servicePsCommand struct {
 	*ServiceCommand
-
-	serviceAPI api.ServiceAPI
-	log        ecso.Logger
 }
 
 func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {

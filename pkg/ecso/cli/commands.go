@@ -44,7 +44,7 @@ func NewEnvironmentCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 func NewEnvironmentAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *ecso.Config) (ecso.Command, error) {
-		return commands.NewEnvironmentAddCommand(ctx.Args().First(), cfg.Logger()), nil
+		return commands.NewEnvironmentAddCommand(ctx.Args().First(), api.NewEnvironmentAPI(cfg), cfg.Logger()), nil
 	}
 
 	return cli.Command{

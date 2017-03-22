@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/api"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -14,6 +15,8 @@ const (
 type ServiceCommand struct {
 	name        string
 	environment string
+	serviceAPI  api.ServiceAPI
+	log         ecso.Logger
 }
 
 func (cmd *ServiceCommand) UnmarshalCliContext(ctx *cli.Context) error {
