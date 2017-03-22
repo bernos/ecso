@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	dispatcher := ecso.DispatcherFunc(func(c ecso.Command, o ...func(*ecso.DispatchOptions)) error {
+	dispatcher := ecso.DispatcherFunc(func(c ecso.CommandFactory, o ...func(*ecso.DispatchOptions)) error {
 		return nil
 	})
 

@@ -16,14 +16,16 @@ const (
 	ServiceLsEnvironmentOption = "environment"
 )
 
-func NewServiceLsCommand(env string) ecso.Command {
+func NewServiceLsCommand(env string, log ecso.Logger) ecso.Command {
 	return &serviceLsCommand{
 		environment: env,
+		log:         log,
 	}
 }
 
 type serviceLsCommand struct {
 	environment string
+	log         ecso.Logger
 }
 
 func (cmd *serviceLsCommand) UnmarshalCliContext(ctx *cli.Context) error {
@@ -32,7 +34,6 @@ func (cmd *serviceLsCommand) UnmarshalCliContext(ctx *cli.Context) error {
 
 func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		log      = ctx.Config.Logger()
 		env      = ctx.Project.Environments[cmd.environment]
 		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
 		ecsAPI   = registry.ECSAPI()
@@ -44,7 +45,7 @@ func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	printServices(ctx.Project, env, services, log)
+	printServices(ctx.Project, env, services, cmd.log)
 
 	return nil
 }

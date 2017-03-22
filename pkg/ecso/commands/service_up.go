@@ -8,48 +8,50 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-func NewServiceUpCommand(name string) ecso.Command {
+func NewServiceUpCommand(name string, serviceAPI api.ServiceAPI, log ecso.Logger) ecso.Command {
 	return &serviceUpCommand{
 		ServiceCommand: &ServiceCommand{
 			name: name,
 		},
+		serviceAPI: serviceAPI,
+		log:        log,
 	}
 }
 
 type serviceUpCommand struct {
 	*ServiceCommand
+
+	serviceAPI api.ServiceAPI
+	log        ecso.Logger
 }
 
 func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		cfg     = ctx.Config
-		log     = cfg.Logger()
 		project = ctx.Project
 		env     = ctx.Project.Environments[cmd.environment]
 		service = project.Services[cmd.name]
-		ecsoAPI = api.NewServiceAPI(cfg)
 	)
 
 	ui.BannerBlue(
-		log,
+		cmd.log,
 		"Deploying service '%s' to the '%s' environment",
 		service.Name,
 		env.Name)
 
-	if err := ecsoAPI.ServiceUp(project, env, service); err != nil {
+	if err := cmd.serviceAPI.ServiceUp(project, env, service); err != nil {
 		return err
 	}
 
-	description, err := ecsoAPI.DescribeService(env, service)
+	description, err := cmd.serviceAPI.DescribeService(env, service)
 
 	if err != nil {
 		return err
 	}
 
-	ui.PrintServiceDescription(log, description)
+	ui.PrintServiceDescription(cmd.log, description)
 
 	ui.BannerGreen(
-		log,
+		cmd.log,
 		"Deployed service '%s' to the '%s' environment",
 		service.Name,
 		env.Name)

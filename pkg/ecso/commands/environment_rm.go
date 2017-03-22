@@ -11,16 +11,21 @@ const (
 	EnvironmentRmForceOption = "force"
 )
 
-func NewEnvironmentRmCommand(environmentName string) ecso.Command {
+func NewEnvironmentRmCommand(environmentName string, environmentAPI api.EnvironmentAPI, log ecso.Logger) ecso.Command {
 	return &environmentRmCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
 		},
+		environmentAPI: environmentAPI,
+		log:            log,
 	}
 }
 
 type environmentRmCommand struct {
 	*EnvironmentCommand
+
+	log            ecso.Logger
+	environmentAPI api.EnvironmentAPI
 }
 
 func (cmd *environmentRmCommand) UnmarshalCliContext(ctx *cli.Context) error {
@@ -39,15 +44,13 @@ func (cmd *environmentRmCommand) UnmarshalCliContext(ctx *cli.Context) error {
 
 func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		log     = ctx.Config.Logger()
 		project = ctx.Project
 		env     = ctx.Project.Environments[cmd.environmentName]
-		ecsoAPI = api.NewEnvironmentAPI(ctx.Config)
 	)
 
-	ui.BannerBlue(log, "Removing '%s' environment", env.Name)
+	ui.BannerBlue(cmd.log, "Removing '%s' environment", env.Name)
 
-	if err := ecsoAPI.EnvironmentDown(project, env); err != nil {
+	if err := cmd.environmentAPI.EnvironmentDown(project, env); err != nil {
 		return err
 	}
 
@@ -57,7 +60,7 @@ func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.BannerGreen(log, "Successfully removed '%s' environment", env.Name)
+	ui.BannerGreen(cmd.log, "Successfully removed '%s' environment", env.Name)
 
 	return nil
 }

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
@@ -24,6 +25,8 @@ type environmentAddCommand struct {
 	// name            string
 	*EnvironmentCommand
 
+	log ecso.Logger
+
 	vpcID           string
 	albSubnets      string
 	instanceSubnets string
@@ -35,11 +38,12 @@ type environmentAddCommand struct {
 	datadogAPIKey   string
 }
 
-func NewEnvironmentAddCommand(environmentName string) ecso.Command {
+func NewEnvironmentAddCommand(environmentName string, log ecso.Logger) ecso.Command {
 	return &environmentAddCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
 		},
+		log: log,
 	}
 }
 
@@ -59,10 +63,7 @@ func (c *environmentAddCommand) UnmarshalCliContext(ctx *cli.Context) error {
 }
 
 func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
-	var (
-		log     = ctx.Config.Logger()
-		project = ctx.Project
-	)
+	project := ctx.Project
 
 	if project.HasEnvironment(c.environmentName) {
 		return fmt.Errorf("An environment named '%s' already exists for this project.", c.environmentName)
@@ -90,7 +91,7 @@ func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.BannerGreen(log, "Successfully added environment '%s' to the project", c.environmentName)
+	ui.BannerGreen(c.log, "Successfully added environment '%s' to the project", c.environmentName)
 	log.Printf("Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.environmentName)
 
 	return nil

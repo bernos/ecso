@@ -16,10 +16,11 @@ const (
 	ServiceAddPortOption         = "port"
 )
 
-func NewServiceAddCommand(name string) ecso.Command {
+func NewServiceAddCommand(name string, log ecso.Logger) ecso.Command {
 	return &serviceAddCommand{
 		name:         name,
 		desiredCount: 1,
+		log:          log,
 	}
 }
 
@@ -28,6 +29,7 @@ type serviceAddCommand struct {
 	desiredCount int
 	route        string
 	port         int
+	log          ecso.Logger
 }
 
 func (cmd *serviceAddCommand) UnmarshalCliContext(ctx *cli.Context) error {
@@ -39,10 +41,7 @@ func (cmd *serviceAddCommand) UnmarshalCliContext(ctx *cli.Context) error {
 }
 
 func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext) error {
-	var (
-		log     = ctx.Config.Logger()
-		project = ctx.Project
-	)
+	project := ctx.Project
 
 	service := &ecso.Service{
 		Name:         cmd.name,
@@ -78,9 +77,9 @@ func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.BannerGreen(log, "Service '%s' added successfully.", cmd.name)
+	ui.BannerGreen(cmd.log, "Service '%s' added successfully.", cmd.name)
 
-	log.Printf("Run `ecso service up %s --environment <ENVIRONMENT>` to deploy.\n\n", cmd.name)
+	cmd.log.Printf("Run `ecso service up %s --environment <ENVIRONMENT>` to deploy.\n\n", cmd.name)
 
 	return nil
 }
@@ -102,7 +101,7 @@ func (cmd *serviceAddCommand) Prompt(ctx *ecso.CommandContext) error {
 		Port:         "Which container port would you like to expose?",
 	}
 
-	ui.BannerBlue(ctx.Config.Logger(), "Adding a new service to the %s project", ctx.Project.Name)
+	ui.BannerBlue(cmd.log, "Adding a new service to the %s project", ctx.Project.Name)
 
 	if err := ui.AskStringIfEmptyVar(&cmd.name, prompts.Name, "", serviceNameValidator(ctx.Project)); err != nil {
 		return err

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -24,30 +25,33 @@ type row struct {
 	Port              string
 }
 
-func NewServicePsCommand(name string) ecso.Command {
+func NewServicePsCommand(name string, serviceAPI api.ServiceAPI, log ecso.Logger) ecso.Command {
 	return &servicePsCommand{
 		ServiceCommand: &ServiceCommand{
 			name: name,
 		},
+		serviceAPI: serviceAPI,
+		log:        log,
 	}
 }
 
 type servicePsCommand struct {
 	*ServiceCommand
+
+	serviceAPI api.ServiceAPI
+	log        ecso.Logger
 }
 
 func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		service  = ctx.Project.Services[cmd.name]
 		env      = ctx.Project.Environments[cmd.environment]
-		log      = ctx.Config.Logger()
 		rows     = make([]*row, 0)
 		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
 		ecsAPI   = registry.ECSAPI()
-		ecsoAPI  = api.NewServiceAPI(ctx.Config)
 	)
 
-	runningService, err := ecsoAPI.GetECSService(ctx.Project, env, service)
+	runningService, err := cmd.serviceAPI.GetECSService(ctx.Project, env, service)
 
 	if err != nil || runningService == nil {
 		return err
@@ -82,7 +86,7 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	log.Printf("\n")
-	printRows(rows, log)
+	printRows(rows, cmd.log)
 	log.Printf("\n")
 
 	return nil
