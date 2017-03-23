@@ -42,8 +42,8 @@ func (cmd *serviceDownCommand) UnmarshalCliContext(ctx *cli.Context) error {
 
 func (cmd *serviceDownCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		service = ctx.Project.Services[cmd.name]
-		env     = ctx.Project.Environments[cmd.environment]
+		env     = cmd.Environment(ctx)
+		service = cmd.Service(ctx)
 	)
 
 	ui.BannerBlue(

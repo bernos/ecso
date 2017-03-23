@@ -22,9 +22,7 @@ type environmentDescribeCommand struct {
 }
 
 func (cmd *environmentDescribeCommand) Execute(ctx *ecso.CommandContext) error {
-	env := ctx.Project.Environments[cmd.environmentName]
-
-	description, err := cmd.environmentAPI.DescribeEnvironment(env)
+	description, err := cmd.environmentAPI.DescribeEnvironment(cmd.Environment(ctx))
 
 	if err != nil {
 		return err

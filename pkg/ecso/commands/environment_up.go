@@ -49,7 +49,7 @@ func (cmd *envUpCommand) UnmarshalCliContext(ctx *cli.Context) error {
 func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		project = ctx.Project
-		env     = project.Environments[cmd.environmentName]
+		env     = cmd.Environment(ctx)
 	)
 
 	ui.BannerBlue(cmd.log, "Bringing up environment '%s'", env.Name)

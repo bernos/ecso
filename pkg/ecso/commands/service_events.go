@@ -31,8 +31,8 @@ type serviceEventsCommand struct {
 // TODO add GetServiceEvents to the ecso api and call from here, rather than using the helper directly
 func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		env     = ctx.Project.Environments[cmd.environment]
-		service = ctx.Project.Services[cmd.name]
+		env     = cmd.Environment(ctx)
+		service = cmd.Service(ctx)
 		count   = 0
 	)
 

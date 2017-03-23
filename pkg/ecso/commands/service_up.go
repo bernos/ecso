@@ -26,8 +26,8 @@ type serviceUpCommand struct {
 func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		project = ctx.Project
-		env     = ctx.Project.Environments[cmd.environment]
-		service = project.Services[cmd.name]
+		env     = cmd.Environment(ctx)
+		service = cmd.Service(ctx)
 	)
 
 	ui.BannerBlue(

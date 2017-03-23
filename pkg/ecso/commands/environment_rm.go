@@ -43,7 +43,7 @@ func (cmd *environmentRmCommand) UnmarshalCliContext(ctx *cli.Context) error {
 func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		project = ctx.Project
-		env     = ctx.Project.Environments[cmd.environmentName]
+		env     = cmd.Environment(ctx)
 	)
 
 	ui.BannerBlue(cmd.log, "Removing '%s' environment", env.Name)
@@ -52,7 +52,7 @@ func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	delete(project.Environments, cmd.environmentName)
+	delete(project.Environments, env.Name)
 
 	if err := project.Save(); err != nil {
 		return err

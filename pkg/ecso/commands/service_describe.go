@@ -23,8 +23,8 @@ type serviceDecribeCommand struct {
 
 func (cmd *serviceDecribeCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		env     = ctx.Project.Environments[cmd.environment]
-		service = ctx.Project.Services[cmd.name]
+		env     = cmd.Environment(ctx)
+		service = cmd.Service(ctx)
 	)
 
 	description, err := cmd.serviceAPI.DescribeService(env, service)

@@ -39,8 +39,8 @@ type servicePsCommand struct {
 
 func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		service = ctx.Project.Services[cmd.name]
-		env     = ctx.Project.Environments[cmd.environment]
+		env     = cmd.Environment(ctx)
+		service = cmd.Service(ctx)
 		rows    = make([]*row, 0)
 	)
 

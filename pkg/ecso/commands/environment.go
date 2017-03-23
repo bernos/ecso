@@ -34,3 +34,7 @@ func (cmd *EnvironmentCommand) Validate(ctx *ecso.CommandContext) error {
 func (cmd *EnvironmentCommand) Prompt(ctx *ecso.CommandContext) error {
 	return nil
 }
+
+func (cmd *EnvironmentCommand) Environment(ctx *ecso.CommandContext) *ecso.Environment {
+	return ctx.Project.Environments[cmd.environmentName]
+}

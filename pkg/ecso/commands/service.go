@@ -20,6 +20,14 @@ type ServiceCommand struct {
 	log         log.Logger
 }
 
+func (cmd *ServiceCommand) Environment(ctx *ecso.CommandContext) *ecso.Environment {
+	return ctx.Project.Environments[cmd.environment]
+}
+
+func (cmd *ServiceCommand) Service(ctx *ecso.CommandContext) *ecso.Service {
+	return ctx.Project.Services[cmd.name]
+}
+
 func (cmd *ServiceCommand) UnmarshalCliContext(ctx *cli.Context) error {
 	cmd.environment = ctx.String(ServiceEnvironmentOption)
 	return nil

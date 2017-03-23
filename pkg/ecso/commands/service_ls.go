@@ -35,7 +35,7 @@ func (cmd *serviceLsCommand) UnmarshalCliContext(ctx *cli.Context) error {
 }
 
 func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext) error {
-	env := ctx.Project.Environments[cmd.environmentName]
+	env := cmd.Environment(ctx)
 
 	services, err := cmd.environmentAPI.GetECSServices(env)
 

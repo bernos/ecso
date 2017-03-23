@@ -24,8 +24,8 @@ type serviceLogsCommand struct {
 
 func (cmd *serviceLogsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		service = ctx.Project.Services[cmd.name]
-		env     = ctx.Project.Environments[cmd.environment]
+		env     = cmd.Environment(ctx)
+		service = cmd.Service(ctx)
 	)
 
 	events, err := cmd.serviceAPI.ServiceLogs(ctx.Project, env, service)

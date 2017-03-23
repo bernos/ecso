@@ -43,7 +43,7 @@ func (cmd *environmentDownCommand) UnmarshalCliContext(ctx *cli.Context) error {
 func (cmd *environmentDownCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		project = ctx.Project
-		env     = ctx.Project.Environments[cmd.environmentName]
+		env     = cmd.Environment(ctx)
 	)
 
 	ui.BannerBlue(cmd.log, "Stopping '%s' environment", env.Name)
