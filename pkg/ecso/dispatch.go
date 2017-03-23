@@ -24,7 +24,7 @@ func NewDispatcher(project *Project, cfg *config.Config, prefs *UserPreferences,
 			return fmt.Errorf("No ecso project file was found")
 		}
 
-		ctx := NewCommandContext(project, cfg, prefs, version)
+		ctx := NewCommandContext(project, prefs, version)
 
 		cmd, err := factory(cfg)
 
