@@ -1,8 +1,6 @@
 package ecso
 
-import (
-	"gopkg.in/urfave/cli.v1"
-)
+import "gopkg.in/urfave/cli.v1"
 
 // CliContextUnmarshaller is an interface that can unmarshal a
 // Context struct from the urfave/cli package
@@ -58,15 +56,13 @@ func CommandError(err error) Command {
 type CommandContext struct {
 	EcsoVersion     string
 	Project         *Project
-	Config          *Config
 	UserPreferences *UserPreferences
 }
 
 // NewCommandContext creates a CommandContext
-func NewCommandContext(project *Project, config *Config, preferences *UserPreferences, version string) *CommandContext {
+func NewCommandContext(project *Project, preferences *UserPreferences, version string) *CommandContext {
 	return &CommandContext{
 		Project:         project,
-		Config:          config,
 		UserPreferences: preferences,
 		EcsoVersion:     version,
 	}

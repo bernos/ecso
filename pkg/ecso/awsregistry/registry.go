@@ -1,6 +1,8 @@
 package awsregistry
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
@@ -43,7 +45,7 @@ func ForRegion(region string) (*ClientRegistry, error) {
 		})
 
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Failed to create AWSClientRegistry for region '%s': %s", region, err.Error())
 		}
 
 		registries[region] = NewClientRegistry(sess)

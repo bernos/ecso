@@ -10,15 +10,16 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	ecsocli "github.com/bernos/ecso/pkg/ecso/cli"
+	"github.com/bernos/ecso/pkg/ecso/config"
 	"gopkg.in/urfave/cli.v1"
 )
 
 func main() {
-	dispatcher := ecso.DispatcherFunc(func(c ecso.Command, o ...func(*ecso.DispatchOptions)) error {
+	dispatcher := ecso.DispatcherFunc(func(c ecso.CommandFactory, o ...func(*ecso.DispatchOptions)) error {
 		return nil
 	})
 
-	cfg, err := ecso.NewConfig("")
+	cfg, err := config.NewConfig("")
 
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err.Error())

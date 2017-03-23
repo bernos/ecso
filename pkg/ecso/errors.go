@@ -33,3 +33,13 @@ func (err *ArgumentRequiredError) Error() string {
 func (err *ArgumentRequiredError) Option() string {
 	return err.arg
 }
+
+func IsArgumentRequiredError(err error) bool {
+	_, ok := err.(*ArgumentRequiredError)
+	return ok
+}
+
+func IsOptionRequiredError(err error) bool {
+	_, ok := err.(*OptionRequiredError)
+	return ok
+}

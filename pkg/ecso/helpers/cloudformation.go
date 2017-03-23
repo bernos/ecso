@@ -18,7 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
-	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
 var (
@@ -49,7 +49,7 @@ type CloudFormationHelper interface {
 }
 
 // NewCloudFormationHelper creates a CloudFormationHelper
-func NewCloudFormationHelper(region string, cfnClient cloudformationiface.CloudFormationAPI, s3Client s3iface.S3API, stsClient stsiface.STSAPI, logger ecso.Logger) CloudFormationHelper {
+func NewCloudFormationHelper(region string, cfnClient cloudformationiface.CloudFormationAPI, s3Client s3iface.S3API, stsClient stsiface.STSAPI, logger log.Logger) CloudFormationHelper {
 	return &cfnHelper{
 		region:    region,
 		cfnClient: cfnClient,
@@ -66,7 +66,7 @@ type cfnHelper struct {
 	uploader  *s3manager.Uploader
 	s3Client  s3iface.S3API
 	stsClient stsiface.STSAPI
-	logger    ecso.Logger
+	logger    log.Logger
 }
 
 func (h *cfnHelper) GetStackOutputs(stackName string) (map[string]string, error) {

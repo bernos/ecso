@@ -5,12 +5,15 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
-func NewServiceLogsCommand(name string) ecso.Command {
+func NewServiceLogsCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
 	return &serviceLogsCommand{
 		ServiceCommand: &ServiceCommand{
-			name: name,
+			name:       name,
+			serviceAPI: serviceAPI,
+			log:        log,
 		},
 	}
 }
@@ -23,18 +26,16 @@ func (cmd *serviceLogsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		service = ctx.Project.Services[cmd.name]
 		env     = ctx.Project.Environments[cmd.environment]
-		log     = ctx.Config.Logger()
-		ecsoAPI = api.NewServiceAPI(ctx.Config)
 	)
 
-	events, err := ecsoAPI.ServiceLogs(ctx.Project, env, service)
+	events, err := cmd.serviceAPI.ServiceLogs(ctx.Project, env, service)
 
 	if err != nil {
 		return err
 	}
 
 	for _, event := range events {
-		log.Printf("%-42s %s\n", time.Unix(*event.Timestamp/1000, *event.Timestamp%1000), *event.Message)
+		cmd.log.Printf("%-42s %s\n", time.Unix(*event.Timestamp/1000, *event.Timestamp%1000), *event.Message)
 	}
 
 	return nil

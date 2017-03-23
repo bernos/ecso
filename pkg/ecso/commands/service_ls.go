@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/awsregistry"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -16,14 +18,16 @@ const (
 	ServiceLsEnvironmentOption = "environment"
 )
 
-func NewServiceLsCommand(env string) ecso.Command {
+func NewServiceLsCommand(env string, log log.Logger) ecso.Command {
 	return &serviceLsCommand{
 		environment: env,
+		log:         log,
 	}
 }
 
 type serviceLsCommand struct {
 	environment string
+	log         log.Logger
 }
 
 func (cmd *serviceLsCommand) UnmarshalCliContext(ctx *cli.Context) error {
@@ -31,20 +35,21 @@ func (cmd *serviceLsCommand) UnmarshalCliContext(ctx *cli.Context) error {
 }
 
 func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext) error {
-	var (
-		log      = ctx.Config.Logger()
-		env      = ctx.Project.Environments[cmd.environment]
-		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		ecsAPI   = registry.ECSAPI()
-	)
+	env := ctx.Project.Environments[cmd.environment]
 
-	services, err := getServices(env, ecsAPI)
+	reg, err := awsregistry.ForRegion(env.Region)
 
 	if err != nil {
 		return err
 	}
 
-	printServices(ctx.Project, env, services, log)
+	services, err := getServices(env, reg.ECSAPI())
+
+	if err != nil {
+		return err
+	}
+
+	printServices(ctx.Project, env, services, cmd.log)
 
 	return nil
 }
@@ -114,7 +119,7 @@ func getServices(env *ecso.Environment, ecsAPI ecsiface.ECSAPI) ([]*ecs.Service,
 	return services, nil
 }
 
-func printServices(project *ecso.Project, env *ecso.Environment, services []*ecs.Service, log ecso.Logger) {
+func printServices(project *ecso.Project, env *ecso.Environment, services []*ecs.Service, log log.Logger) {
 	headers := []string{"SERVICE", "ECS SERVICE", "TASK", "DESIRED", "RUNNING", "STATUS"}
 	rows := make([]map[string]string, len(services))
 

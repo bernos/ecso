@@ -3,6 +3,7 @@ package commands
 import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -11,10 +12,12 @@ const (
 	EnvironmentDownForceOption = "force"
 )
 
-func NewEnvironmentDownCommand(environmentName string) ecso.Command {
+func NewEnvironmentDownCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger) ecso.Command {
 	return &environmentDownCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
+			environmentAPI:  environmentAPI,
+			log:             log,
 		},
 	}
 }
@@ -39,19 +42,17 @@ func (cmd *environmentDownCommand) UnmarshalCliContext(ctx *cli.Context) error {
 
 func (cmd *environmentDownCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		log     = ctx.Config.Logger()
 		project = ctx.Project
 		env     = ctx.Project.Environments[cmd.environmentName]
-		ecsoAPI = api.NewEnvironmentAPI(ctx.Config)
 	)
 
-	ui.BannerBlue(log, "Stopping '%s' environment", env.Name)
+	ui.BannerBlue(cmd.log, "Stopping '%s' environment", env.Name)
 
-	if err := ecsoAPI.EnvironmentDown(project, env); err != nil {
+	if err := cmd.environmentAPI.EnvironmentDown(project, env); err != nil {
 		return err
 	}
 
-	ui.BannerGreen(log, "Successfully stopped '%s' environment", env.Name)
+	ui.BannerGreen(cmd.log, "Successfully stopped '%s' environment", env.Name)
 
 	return nil
 }

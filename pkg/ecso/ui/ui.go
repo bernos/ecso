@@ -6,8 +6,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/fatih/color"
 )
 
@@ -164,7 +164,7 @@ func ChoiceVar(dst *int, prompt string, choices []string) error {
 	}
 }
 
-func PrintTable(logger ecso.Logger, headers []string, rows ...map[string]string) {
+func PrintTable(logger log.Logger, headers []string, rows ...map[string]string) {
 	format := ""
 
 	for _, h := range headers {
@@ -200,7 +200,7 @@ func PrintTable(logger ecso.Logger, headers []string, rows ...map[string]string)
 	}
 }
 
-func PrintMap(logger ecso.Logger, maps ...map[string]string) {
+func PrintMap(logger log.Logger, maps ...map[string]string) {
 	l := 0
 	items := make(map[string]string)
 
@@ -220,7 +220,7 @@ func PrintMap(logger ecso.Logger, maps ...map[string]string) {
 	}
 }
 
-func PrintEnvironmentDescription(logger ecso.Logger, env *api.EnvironmentDescription) {
+func PrintEnvironmentDescription(logger log.Logger, env *api.EnvironmentDescription) {
 	childLogger := logger.Child()
 
 	BannerBlue(logger, "Details of the '%s' environment:", env.Name)
@@ -237,7 +237,7 @@ func PrintEnvironmentDescription(logger ecso.Logger, env *api.EnvironmentDescrip
 	logger.Printf("\n")
 }
 
-func PrintServiceDescription(logger ecso.Logger, service *api.ServiceDescription) {
+func PrintServiceDescription(logger log.Logger, service *api.ServiceDescription) {
 	childLogger := logger.Child()
 
 	BannerBlue(logger, "Details of the '%s' service:", service.Name)
@@ -259,20 +259,20 @@ func PrintServiceDescription(logger ecso.Logger, service *api.ServiceDescription
 	logger.Printf("\n")
 }
 
-func BannerBlue(logger ecso.Logger, format string, a ...interface{}) {
+func BannerBlue(logger log.Logger, format string, a ...interface{}) {
 	logger.Printf("\n%s\n\n", blueBold(format, a...))
 }
 
-func BannerGreen(logger ecso.Logger, format string, a ...interface{}) {
+func BannerGreen(logger log.Logger, format string, a ...interface{}) {
 	logger.Printf("\n%s\n\n", greenBold(format, a...))
 }
 
-func Dt(logger ecso.Logger, label, content string) {
+func Dt(logger log.Logger, label, content string) {
 	logger.Printf("%s\n", bold("%s:", label))
 	logger.Printf("  %s\n", content)
 }
 
-func Dl(logger ecso.Logger, items ...map[string]string) {
+func Dl(logger log.Logger, items ...map[string]string) {
 	for _, i := range items {
 		for k, v := range i {
 			Dt(logger, k, v)

@@ -6,6 +6,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/awsregistry"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 
 	"gopkg.in/urfave/cli.v1"
@@ -35,10 +38,12 @@ type environmentAddCommand struct {
 	datadogAPIKey   string
 }
 
-func NewEnvironmentAddCommand(environmentName string) ecso.Command {
+func NewEnvironmentAddCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger) ecso.Command {
 	return &environmentAddCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
+			environmentAPI:  environmentAPI,
+			log:             log,
 		},
 	}
 }
@@ -59,10 +64,7 @@ func (c *environmentAddCommand) UnmarshalCliContext(ctx *cli.Context) error {
 }
 
 func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
-	var (
-		log     = ctx.Config.Logger()
-		project = ctx.Project
-	)
+	project := ctx.Project
 
 	if project.HasEnvironment(c.environmentName) {
 		return fmt.Errorf("An environment named '%s' already exists for this project.", c.environmentName)
@@ -90,8 +92,8 @@ func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.BannerGreen(log, "Successfully added environment '%s' to the project", c.environmentName)
-	log.Printf("Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.environmentName)
+	ui.BannerGreen(c.log, "Successfully added environment '%s' to the project", c.environmentName)
+	c.log.Printf("Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.environmentName)
 
 	return nil
 }
@@ -103,14 +105,19 @@ func (c *environmentAddCommand) Validate(ctx *ecso.CommandContext) error {
 func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 
 	var (
-		log             = ctx.Config.Logger()
 		project         = ctx.Project
-		cfg             = ctx.Config
 		prefs           = ctx.UserPreferences
 		accountDefaults = ecso.AccountDefaults{}
-		registry        = cfg.MustGetAWSClientRegistry("ap-southeast-2")
-		stsAPI          = registry.STSAPI()
+		region          = "ap-southeast-2"
 	)
+
+	reg, err := awsregistry.ForRegion(region)
+
+	if err != nil {
+		return err
+	}
+
+	stsAPI := reg.STSAPI()
 
 	var prompts = struct {
 		Name            string
@@ -158,7 +165,7 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 
 	// TODO Ask if there is an existing environment?
 	// If yes, then ask for the cfn stack id and collect outputs
-	ui.BannerBlue(log, "Adding a new environment to the %s project", project.Name)
+	ui.BannerBlue(c.log, "Adding a new environment to the %s project", project.Name)
 
 	if account := getCurrentAWSAccount(stsAPI); c.account == "" {
 		c.account = account

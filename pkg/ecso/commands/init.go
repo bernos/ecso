@@ -6,18 +6,21 @@ import (
 	"path/filepath"
 
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"gopkg.in/urfave/cli.v1"
 )
 
-func NewInitCommand(projectName string) ecso.Command {
+func NewInitCommand(projectName string, log log.Logger) ecso.Command {
 	return &initCommand{
 		projectName: projectName,
+		log:         log,
 	}
 }
 
 type initCommand struct {
 	projectName string
+	log         log.Logger
 }
 
 func (cmd *initCommand) UnmarshalCliContext(ctx *cli.Context) error {
@@ -25,10 +28,6 @@ func (cmd *initCommand) UnmarshalCliContext(ctx *cli.Context) error {
 }
 
 func (cmd *initCommand) Execute(ctx *ecso.CommandContext) error {
-	var (
-		log = ctx.Config.Logger()
-	)
-
 	wd, err := ecso.GetCurrentProjectDir()
 
 	if err != nil {
@@ -45,20 +44,18 @@ func (cmd *initCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	log.Infof("Created project file at %s", project.ProjectFile())
-	ui.BannerGreen(log, "Successfully created project '%s'.", project.Name)
+	cmd.log.Infof("Created project file at %s", project.ProjectFile())
+	ui.BannerGreen(cmd.log, "Successfully created project '%s'.", project.Name)
 
 	return nil
 }
 
 func (cmd *initCommand) Prompt(ctx *ecso.CommandContext) error {
-	log := ctx.Config.Logger()
-
 	if ctx.Project != nil {
 		return fmt.Errorf("Found an existing project at %s.", ctx.Project.ProjectFile())
 	}
 
-	ui.BannerBlue(log, "Creating a new ecso project")
+	ui.BannerBlue(cmd.log, "Creating a new ecso project")
 
 	wd, err := ecso.GetCurrentProjectDir()
 

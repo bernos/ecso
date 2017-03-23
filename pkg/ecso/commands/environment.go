@@ -4,11 +4,15 @@ import (
 	"fmt"
 
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"gopkg.in/urfave/cli.v1"
 )
 
 type EnvironmentCommand struct {
 	environmentName string
+	environmentAPI  api.EnvironmentAPI
+	log             log.Logger
 }
 
 func (cmd *EnvironmentCommand) UnmarshalCliContext(ctx *cli.Context) error {

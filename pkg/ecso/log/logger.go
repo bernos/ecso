@@ -1,4 +1,4 @@
-package ecso
+package log
 
 import (
 	"fmt"

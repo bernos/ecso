@@ -1,11 +1,17 @@
 package ecso
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/bernos/ecso/pkg/ecso/config"
+)
+
+type CommandFactory func(*config.Config) (Command, error)
 
 // NewDispatcher creates a default Dispatcher for a Project, with the provided Config and
 // UserPreferences
-func NewDispatcher(project *Project, cfg *Config, prefs *UserPreferences, version string) Dispatcher {
-	return DispatcherFunc(func(cmd Command, options ...func(*DispatchOptions)) error {
+func NewDispatcher(project *Project, cfg *config.Config, prefs *UserPreferences, version string) Dispatcher {
+	return DispatcherFunc(func(factory CommandFactory, options ...func(*DispatchOptions)) error {
 		opt := &DispatchOptions{
 			EnsureProjectExists: true,
 		}
@@ -18,7 +24,13 @@ func NewDispatcher(project *Project, cfg *Config, prefs *UserPreferences, versio
 			return fmt.Errorf("No ecso project file was found")
 		}
 
-		ctx := NewCommandContext(project, cfg, prefs, version)
+		ctx := NewCommandContext(project, prefs, version)
+
+		cmd, err := factory(cfg)
+
+		if err != nil {
+			return err
+		}
 
 		if err := cmd.Prompt(ctx); err != nil {
 			return err
@@ -34,16 +46,16 @@ func NewDispatcher(project *Project, cfg *Config, prefs *UserPreferences, versio
 
 // Dispatcher executes an ecso Command
 type Dispatcher interface {
-	Dispatch(Command, ...func(*DispatchOptions)) error
+	Dispatch(CommandFactory, ...func(*DispatchOptions)) error
 }
 
 // DispatcherFunc is an adaptor to allow the use of ordinary functions as
 // an ecso Dispatcher
-type DispatcherFunc func(Command, ...func(*DispatchOptions)) error
+type DispatcherFunc func(CommandFactory, ...func(*DispatchOptions)) error
 
 // Dispatch calls fn(cmd, options...)
-func (fn DispatcherFunc) Dispatch(cmd Command, options ...func(*DispatchOptions)) error {
-	return fn(cmd, options...)
+func (fn DispatcherFunc) Dispatch(factory CommandFactory, options ...func(*DispatchOptions)) error {
+	return fn(factory, options...)
 }
 
 // DispatchOptions alter how a Dispatcher dispatches Commands

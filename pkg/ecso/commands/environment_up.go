@@ -5,6 +5,7 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/templates"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
@@ -17,16 +18,19 @@ const (
 	EnvironmentUpForceOption  = "force"
 )
 
-func NewEnvironmentUpCommand(environmentName string) ecso.Command {
+func NewEnvironmentUpCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger) ecso.Command {
 	return &envUpCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
+			environmentAPI:  environmentAPI,
+			log:             log,
 		},
 	}
 }
 
 type envUpCommand struct {
 	*EnvironmentCommand
+
 	dryRun bool
 	force  bool
 }
@@ -45,46 +49,43 @@ func (cmd *envUpCommand) UnmarshalCliContext(ctx *cli.Context) error {
 func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		project = ctx.Project
-		cfg     = ctx.Config
-		log     = cfg.Logger()
 		env     = project.Environments[cmd.environmentName]
-		ecsoAPI = api.NewEnvironmentAPI(ctx.Config)
 	)
 
-	ui.BannerBlue(log, "Bringing up environment '%s'", env.Name)
+	ui.BannerBlue(cmd.log, "Bringing up environment '%s'", env.Name)
 
 	if cmd.dryRun {
-		log.Infof("THIS IS A DRY RUN - no changes to the environment will be made.")
+		cmd.log.Infof("THIS IS A DRY RUN - no changes to the environment will be made.")
 	}
 
-	if err := cmd.ensureTemplates(ctx, project, env, log); err != nil {
+	if err := cmd.ensureTemplates(ctx, project, env); err != nil {
 		return err
 	}
 
-	if err := ecsoAPI.EnvironmentUp(project, env, cmd.dryRun); err != nil {
+	if err := cmd.environmentAPI.EnvironmentUp(project, env, cmd.dryRun); err != nil {
 		return err
 	}
 
 	if cmd.dryRun {
-		ui.BannerGreen(log, "Review the above changes and re-run the command without the --dry-run option to apply them")
+		ui.BannerGreen(cmd.log, "Review the above changes and re-run the command without the --dry-run option to apply them")
 
 		return nil
 	}
 
-	ui.BannerGreen(log, "Environment '%s' is up and running", env.Name)
+	ui.BannerGreen(cmd.log, "Environment '%s' is up and running", env.Name)
 
-	description, err := ecsoAPI.DescribeEnvironment(env)
+	description, err := cmd.environmentAPI.DescribeEnvironment(env)
 
 	if err != nil {
 		return err
 	}
 
-	ui.PrintEnvironmentDescription(log, description)
+	ui.PrintEnvironmentDescription(cmd.log, description)
 
 	return nil
 }
 
-func (cmd *envUpCommand) ensureTemplates(ctx *ecso.CommandContext, project *ecso.Project, env *ecso.Environment, logger ecso.Logger) error {
+func (cmd *envUpCommand) ensureTemplates(ctx *ecso.CommandContext, project *ecso.Project, env *ecso.Environment) error {
 	dst := env.GetCloudFormationTemplateDir()
 
 	exists, err := util.DirExists(dst)
@@ -93,9 +94,7 @@ func (cmd *envUpCommand) ensureTemplates(ctx *ecso.CommandContext, project *ecso
 		return err
 	}
 
-	envAPI := api.NewEnvironmentAPI(ctx.Config)
-
-	stackExists, err := envAPI.IsEnvironmentUp(env)
+	stackExists, err := cmd.environmentAPI.IsEnvironmentUp(env)
 
 	if err != nil {
 		return err

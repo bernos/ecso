@@ -9,6 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/awsregistry"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
@@ -24,10 +26,12 @@ type row struct {
 	Port              string
 }
 
-func NewServicePsCommand(name string) ecso.Command {
+func NewServicePsCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
 	return &servicePsCommand{
 		ServiceCommand: &ServiceCommand{
-			name: name,
+			name:       name,
+			serviceAPI: serviceAPI,
+			log:        log,
 		},
 	}
 }
@@ -38,16 +42,18 @@ type servicePsCommand struct {
 
 func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		service  = ctx.Project.Services[cmd.name]
-		env      = ctx.Project.Environments[cmd.environment]
-		log      = ctx.Config.Logger()
-		rows     = make([]*row, 0)
-		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		ecsAPI   = registry.ECSAPI()
-		ecsoAPI  = api.NewServiceAPI(ctx.Config)
+		service = ctx.Project.Services[cmd.name]
+		env     = ctx.Project.Environments[cmd.environment]
+		rows    = make([]*row, 0)
 	)
 
-	runningService, err := ecsoAPI.GetECSService(ctx.Project, env, service)
+	reg, err := awsregistry.ForRegion(env.Region)
+	if err != nil {
+		return err
+	}
+
+	ecsAPI := reg.ECSAPI()
+	runningService, err := cmd.serviceAPI.GetECSService(ctx.Project, env, service)
 
 	if err != nil || runningService == nil {
 		return err
@@ -81,9 +87,9 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 		rows = append(rows, newRows...)
 	}
 
-	log.Printf("\n")
-	printRows(rows, log)
-	log.Printf("\n")
+	cmd.log.Printf("\n")
+	printRows(rows, cmd.log)
+	cmd.log.Printf("\n")
 
 	return nil
 }
@@ -126,7 +132,7 @@ func rowsFromTask(task *ecs.Task, ecsAPI ecsiface.ECSAPI) ([]*row, error) {
 	return rows, nil
 }
 
-func printRows(rows []*row, log ecso.Logger) {
+func printRows(rows []*row, log log.Logger) {
 	headers := []string{
 		"CONTAINER",
 		"IMAGE",
