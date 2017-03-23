@@ -9,6 +9,7 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/awsregistry"
 	"github.com/bernos/ecso/pkg/ecso/helpers"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
@@ -21,12 +22,12 @@ type EnvironmentAPI interface {
 }
 
 // New creates a new API
-func NewEnvironmentAPI(cfg *ecso.Config) EnvironmentAPI {
-	return &environmentAPI{cfg}
+func NewEnvironmentAPI(log log.Logger) EnvironmentAPI {
+	return &environmentAPI{log}
 }
 
 type environmentAPI struct {
-	cfg *ecso.Config
+	log log.Logger
 }
 
 type EnvironmentDescription struct {
@@ -40,7 +41,6 @@ type EnvironmentDescription struct {
 
 func (api *environmentAPI) DescribeEnvironment(env *ecso.Environment) (*EnvironmentDescription, error) {
 	var (
-		log         = api.cfg.Logger()
 		stack       = env.GetCloudFormationStackName()
 		cfnConsole  = util.CloudFormationConsoleURL(stack, env.Region)
 		ecsConsole  = util.ClusterConsoleURL(env.GetClusterName(), env.Region)
@@ -53,7 +53,7 @@ func (api *environmentAPI) DescribeEnvironment(env *ecso.Environment) (*Environm
 		return description, err
 	}
 
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child())
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
 
 	outputs, err := cfn.GetStackOutputs(stack)
 
@@ -81,7 +81,7 @@ func (api *environmentAPI) IsEnvironmentUp(env *ecso.Environment) (bool, error) 
 		return false, err
 	}
 
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.cfg.Logger().Child())
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
 
 	return cfn.StackExists(env.GetCloudFormationStackName())
 }
@@ -94,29 +94,28 @@ func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environmen
 	}
 
 	var (
-		log            = api.cfg.Logger()
-		cfnHelper      = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child())
-		r53Helper      = helpers.NewRoute53Helper(reg.Route53API(), log.Child())
+		cfnHelper      = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
+		r53Helper      = helpers.NewRoute53Helper(reg.Route53API(), api.log.Child())
 		zone           = fmt.Sprintf("%s.", env.CloudFormationParameters["DNSZone"])
 		datadogDNSName = fmt.Sprintf("%s.%s.%s", "datadog", env.GetClusterName(), zone)
-		serviceAPI     = NewServiceAPI(api.cfg)
+		serviceAPI     = NewServiceAPI(api.log)
 	)
 
 	for _, service := range p.Services {
 		if err := serviceAPI.ServiceDown(p, env, service); err != nil {
 			return err
 		}
-		log.Printf("\n")
+		api.log.Printf("\n")
 	}
 
-	log.Infof("Deleting environment Cloud Formation stack '%s'", env.GetCloudFormationStackName())
+	api.log.Infof("Deleting environment Cloud Formation stack '%s'", env.GetCloudFormationStackName())
 
 	if err := cfnHelper.DeleteStack(env.GetCloudFormationStackName()); err != nil {
 		return err
 	}
 
-	log.Printf("\n")
-	log.Infof("Deleting %s SRV records", datadogDNSName)
+	api.log.Printf("\n")
+	api.log.Infof("Deleting %s SRV records", datadogDNSName)
 
 	return r53Helper.DeleteResourceRecordSetsByName(
 		datadogDNSName,
@@ -126,7 +125,6 @@ func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environmen
 
 func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun bool) error {
 	var (
-		log      = api.cfg.Logger()
 		stack    = env.GetCloudFormationStackName()
 		template = env.GetCloudFormationTemplateFile()
 		prefix   = env.GetCloudFormationBucketPrefix()
@@ -140,9 +138,9 @@ func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment,
 		return err
 	}
 
-	log.Infof("Deploying Cloud Formation stack for the '%s' environment", env.Name)
+	api.log.Infof("Deploying Cloud Formation stack for the '%s' environment", env.Name)
 
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child())
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
 	exists, err := cfn.StackExists(stack)
 
 	if err != nil {
@@ -175,9 +173,9 @@ func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment,
 			return err
 		}
 
-		log.Printf("\n")
-		log.Infof("The following changes were detected:")
-		log.Printf("\n%s\n", resp)
+		api.log.Printf("\n")
+		api.log.Infof("The following changes were detected:")
+		api.log.Printf("\n%s\n", resp)
 	}
 
 	return err
@@ -185,7 +183,6 @@ func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment,
 
 func (api *environmentAPI) SendNotification(env *ecso.Environment, msg string) error {
 	var (
-		log   = api.cfg.Logger()
 		stack = env.GetCloudFormationStackName()
 	)
 
@@ -195,7 +192,7 @@ func (api *environmentAPI) SendNotification(env *ecso.Environment, msg string) e
 		return err
 	}
 
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child())
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
 
 	outputs, err := cfn.GetStackOutputs(stack)
 

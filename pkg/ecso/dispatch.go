@@ -1,12 +1,16 @@
 package ecso
 
-import "fmt"
+import (
+	"fmt"
 
-type CommandFactory func(*Config) (Command, error)
+	"github.com/bernos/ecso/pkg/ecso/config"
+)
+
+type CommandFactory func(*config.Config) (Command, error)
 
 // NewDispatcher creates a default Dispatcher for a Project, with the provided Config and
 // UserPreferences
-func NewDispatcher(project *Project, cfg *Config, prefs *UserPreferences, version string) Dispatcher {
+func NewDispatcher(project *Project, cfg *config.Config, prefs *UserPreferences, version string) Dispatcher {
 	return DispatcherFunc(func(factory CommandFactory, options ...func(*DispatchOptions)) error {
 		opt := &DispatchOptions{
 			EnsureProjectExists: true,

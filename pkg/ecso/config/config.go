@@ -1,4 +1,4 @@
-package ecso
+package config
 
 import (
 	"io"

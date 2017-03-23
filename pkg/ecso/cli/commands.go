@@ -6,11 +6,12 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/commands"
+	"github.com/bernos/ecso/pkg/ecso/config"
 	"gopkg.in/urfave/cli.v1"
 )
 
 func NewEnvCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-	fn := func(ctx *cli.Context, cfg *ecso.Config) (ecso.Command, error) {
+	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return commands.NewEnvCommand(ctx.Args().First()), nil
 	}
 
@@ -43,8 +44,8 @@ func NewEnvironmentCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewEnvironmentAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-	fn := func(ctx *cli.Context, cfg *ecso.Config) (ecso.Command, error) {
-		return commands.NewEnvironmentAddCommand(ctx.Args().First(), api.NewEnvironmentAPI(cfg), cfg.Logger()), nil
+	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
+		return commands.NewEnvironmentAddCommand(ctx.Args().First(), api.NewEnvironmentAPI(cfg.Logger()), cfg.Logger()), nil
 	}
 
 	return cli.Command{
@@ -82,9 +83,9 @@ func NewEnvironmentAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewEnvironmentDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-	fn := func(ctx *cli.Context, cfg *ecso.Config) (ecso.Command, error) {
+	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
-			return commands.NewEnvironmentDescribeCommand(name, api.NewEnvironmentAPI(cfg), cfg.Logger())
+			return commands.NewEnvironmentDescribeCommand(name, api.NewEnvironmentAPI(cfg.Logger()), cfg.Logger())
 		})
 	}
 
@@ -97,9 +98,9 @@ func NewEnvironmentDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewEnvironmentDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-	fn := func(ctx *cli.Context, cfg *ecso.Config) (ecso.Command, error) {
+	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
-			return commands.NewEnvironmentDownCommand(name, api.NewEnvironmentAPI(cfg), cfg.Logger())
+			return commands.NewEnvironmentDownCommand(name, api.NewEnvironmentAPI(cfg.Logger()), cfg.Logger())
 		})
 	}
 
@@ -119,9 +120,9 @@ func NewEnvironmentDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewEnvironmentRmCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-	fn := func(ctx *cli.Context, cfg *ecso.Config) (ecso.Command, error) {
+	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
-			return commands.NewEnvironmentRmCommand(name, api.NewEnvironmentAPI(cfg), cfg.Logger())
+			return commands.NewEnvironmentRmCommand(name, api.NewEnvironmentAPI(cfg.Logger()), cfg.Logger())
 		})
 	}
 
@@ -141,9 +142,9 @@ func NewEnvironmentRmCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewEnvironmentUpCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-	fn := func(ctx *cli.Context, cfg *ecso.Config) (ecso.Command, error) {
+	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
-			return commands.NewEnvironmentUpCommand(name, api.NewEnvironmentAPI(cfg), cfg.Logger())
+			return commands.NewEnvironmentUpCommand(name, api.NewEnvironmentAPI(cfg.Logger()), cfg.Logger())
 		})
 	}
 
@@ -167,7 +168,7 @@ func NewEnvironmentUpCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewInitCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-	fn := func(ctx *cli.Context, cfg *ecso.Config) (ecso.Command, error) {
+	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return commands.NewInitCommand(ctx.Args().First(), cfg.Logger()), nil
 	}
 
@@ -198,7 +199,7 @@ func NewServiceCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewServiceAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-	fn := func(ctx *cli.Context, cfg *ecso.Config) (ecso.Command, error) {
+	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return commands.NewServiceAddCommand(ctx.Args().First(), cfg.Logger()), nil
 	}
 
@@ -226,9 +227,9 @@ func NewServiceAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewServiceDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-	fn := func(ctx *cli.Context, cfg *ecso.Config) (ecso.Command, error) {
+	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, func(name string) ecso.Command {
-			return commands.NewServiceDescribeCommand(name, api.NewServiceAPI(cfg), cfg.Logger())
+			return commands.NewServiceDescribeCommand(name, api.NewServiceAPI(cfg.Logger()), cfg.Logger())
 		})
 	}
 
@@ -249,9 +250,9 @@ func NewServiceDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewServiceDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-	fn := func(ctx *cli.Context, cfg *ecso.Config) (ecso.Command, error) {
+	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, func(name string) ecso.Command {
-			return commands.NewServiceDownCommand(name, api.NewServiceAPI(cfg), cfg.Logger())
+			return commands.NewServiceDownCommand(name, api.NewServiceAPI(cfg.Logger()), cfg.Logger())
 		})
 	}
 
@@ -276,9 +277,9 @@ func NewServiceDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewServiceEventsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-	fn := func(ctx *cli.Context, cfg *ecso.Config) (ecso.Command, error) {
+	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, func(name string) ecso.Command {
-			return commands.NewServiceEventsCommand(name, api.NewServiceAPI(cfg), cfg.Logger())
+			return commands.NewServiceEventsCommand(name, api.NewServiceAPI(cfg.Logger()), cfg.Logger())
 		})
 	}
 
@@ -298,9 +299,9 @@ func NewServiceEventsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewServiceLogsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-	fn := func(ctx *cli.Context, cfg *ecso.Config) (ecso.Command, error) {
+	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, func(name string) ecso.Command {
-			return commands.NewServiceLogsCommand(name, api.NewServiceAPI(cfg), cfg.Logger())
+			return commands.NewServiceLogsCommand(name, api.NewServiceAPI(cfg.Logger()), cfg.Logger())
 		})
 	}
 
@@ -320,7 +321,7 @@ func NewServiceLogsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewServiceLsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-	fn := func(ctx *cli.Context, cfg *ecso.Config) (ecso.Command, error) {
+	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, func(name string) ecso.Command {
 			return commands.NewServiceLsCommand(name, cfg.Logger())
 		})
@@ -341,9 +342,9 @@ func NewServiceLsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewServicePsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-	fn := func(ctx *cli.Context, cfg *ecso.Config) (ecso.Command, error) {
+	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, func(name string) ecso.Command {
-			return commands.NewServicePsCommand(name, api.NewServiceAPI(cfg), cfg.Logger())
+			return commands.NewServicePsCommand(name, api.NewServiceAPI(cfg.Logger()), cfg.Logger())
 		})
 	}
 
@@ -363,9 +364,9 @@ func NewServicePsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 }
 
 func NewServiceUpCliCommand(dispatcher ecso.Dispatcher) cli.Command {
-	fn := func(ctx *cli.Context, cfg *ecso.Config) (ecso.Command, error) {
+	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, func(name string) ecso.Command {
-			return commands.NewServiceUpCommand(name, api.NewServiceAPI(cfg), cfg.Logger())
+			return commands.NewServiceUpCommand(name, api.NewServiceAPI(cfg.Logger()), cfg.Logger())
 		})
 	}
 

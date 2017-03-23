@@ -2,11 +2,12 @@ package cli
 
 import (
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/config"
 	"gopkg.in/urfave/cli.v1"
 )
 
 // NewApp creates a new `cli.App` interface for the ecso command line utility
-func NewApp(cfg *ecso.Config, dispatcher ecso.Dispatcher) *cli.App {
+func NewApp(cfg *config.Config, dispatcher ecso.Dispatcher) *cli.App {
 	app := cli.NewApp()
 	app.Name = "ecso"
 	app.Usage = "Manage Amazon ECS projects"
@@ -33,10 +34,10 @@ func NewApp(cfg *ecso.Config, dispatcher ecso.Dispatcher) *cli.App {
 }
 
 // factory is a function that creates an `ecso.Command` from a `cli.Context`
-type factory func(*cli.Context, *ecso.Config) (ecso.Command, error)
+type factory func(*cli.Context, *config.Config) (ecso.Command, error)
 
 func CommandFactory(ctx *cli.Context, fn factory) ecso.CommandFactory {
-	return func(cfg *ecso.Config) (ecso.Command, error) {
+	return func(cfg *config.Config) (ecso.Command, error) {
 		command, err := fn(ctx, cfg)
 
 		if err != nil {

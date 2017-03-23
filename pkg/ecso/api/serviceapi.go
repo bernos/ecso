@@ -11,6 +11,7 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/awsregistry"
 	"github.com/bernos/ecso/pkg/ecso/helpers"
+	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
@@ -32,12 +33,12 @@ type ServiceDescription struct {
 }
 
 // New creates a new API
-func NewServiceAPI(cfg *ecso.Config) ServiceAPI {
-	return &serviceAPI{cfg}
+func NewServiceAPI(log log.Logger) ServiceAPI {
+	return &serviceAPI{log}
 }
 
 type serviceAPI struct {
-	cfg *ecso.Config
+	log log.Logger
 }
 
 func (api *serviceAPI) GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ecs.Service, error) {
@@ -48,8 +49,7 @@ func (api *serviceAPI) GetECSService(p *ecso.Project, env *ecso.Environment, s *
 	}
 
 	var (
-		log    = api.cfg.Logger()
-		cfn    = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child())
+		cfn    = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
 		ecsAPI = reg.ECSAPI()
 	)
 
@@ -82,17 +82,13 @@ func (api *serviceAPI) GetECSService(p *ecso.Project, env *ecso.Environment, s *
 }
 
 func (api *serviceAPI) DescribeService(env *ecso.Environment, service *ecso.Service) (*ServiceDescription, error) {
-	var (
-		log = api.cfg.Logger()
-	)
-
 	reg, err := awsregistry.ForRegion(env.Region)
 
 	if err != nil {
 		return nil, err
 	}
 
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child())
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
 
 	envOutputs, err := cfn.GetStackOutputs(env.GetCloudFormationStackName())
 
@@ -126,7 +122,6 @@ func (api *serviceAPI) DescribeService(env *ecso.Environment, service *ecso.Serv
 }
 
 func (api *serviceAPI) ServiceDown(project *ecso.Project, env *ecso.Environment, service *ecso.Service) error {
-	log := api.cfg.Logger()
 	reg, err := awsregistry.ForRegion(env.Region)
 
 	if err != nil {
@@ -137,7 +132,7 @@ func (api *serviceAPI) ServiceDown(project *ecso.Project, env *ecso.Environment,
 		return err
 	}
 
-	log.Printf("\n")
+	api.log.Printf("\n")
 
 	if err := api.clearServiceDNSRecords(reg, env, service); err != nil {
 		return err
@@ -179,10 +174,10 @@ func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, s
 		return err
 	}
 
-	envAPI := NewEnvironmentAPI(api.cfg)
+	envAPI := NewEnvironmentAPI(api.log)
 
 	if err := envAPI.SendNotification(env, fmt.Sprintf("Commenced deployment of %s to %s", service.Name, env.Name)); err != nil {
-		api.cfg.Logger().Printf("WARNING Failed to send deployment commencing notification to sns. %s", err.Error())
+		api.log.Printf("WARNING Failed to send deployment commencing notification to sns. %s", err.Error())
 	}
 
 	// register task
@@ -190,7 +185,7 @@ func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, s
 
 	if err != nil {
 		if err := envAPI.SendNotification(env, fmt.Sprintf("Failed to deploy %s to %s", service.Name, env.Name)); err != nil {
-			api.cfg.Logger().Printf("WARNING Failed to send deployment failure notification to sns. %s", err.Error())
+			api.log.Printf("WARNING Failed to send deployment failure notification to sns. %s", err.Error())
 		}
 		return err
 	}
@@ -198,13 +193,13 @@ func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, s
 	// deploy the service cfn stack
 	if err := api.deployServiceStack(reg, project, env, service, taskDefinition); err != nil {
 		if err := envAPI.SendNotification(env, fmt.Sprintf("Failed to deploy %s to %s", service.Name, env.Name)); err != nil {
-			api.cfg.Logger().Printf("WARNING Failed to send deployment failure notification to sns. %s", err.Error())
+			api.log.Printf("WARNING Failed to send deployment failure notification to sns. %s", err.Error())
 		}
 		return err
 	}
 
 	if err := envAPI.SendNotification(env, fmt.Sprintf("Completed deployment of %s to %s", service.Name, env.Name)); err != nil {
-		api.cfg.Logger().Printf("WARNING Failed to send deployment completed notification to sns. %s", err.Error())
+		api.log.Printf("WARNING Failed to send deployment completed notification to sns. %s", err.Error())
 	}
 
 	return nil
@@ -230,12 +225,10 @@ func (api *serviceAPI) setEnv(project *ecso.Project, env *ecso.Environment, serv
 
 func (api *serviceAPI) deployServiceStack(reg *awsregistry.ClientRegistry, project *ecso.Project, env *ecso.Environment, service *ecso.Service, taskDefinition *ecs.TaskDefinition) error {
 	var (
-		cfg       = api.cfg
-		log       = cfg.Logger()
 		stackName = service.GetCloudFormationStackName(env)
 		prefix    = service.GetCloudFormationBucketPrefix(env)
 		template  = service.GetCloudFormationTemplateFile()
-		cfn       = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child())
+		cfn       = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
 	)
 
 	params, err := getServiceStackParameters(cfn, project, env, service, taskDefinition)
@@ -246,7 +239,7 @@ func (api *serviceAPI) deployServiceStack(reg *awsregistry.ClientRegistry, proje
 
 	tags := getServiceStackTags(project, env, service)
 
-	log.Infof("Deploying service cloudformation stack '%s'...", stackName)
+	api.log.Infof("Deploying service cloudformation stack '%s'...", stackName)
 
 	result, err := cfn.PackageAndDeploy(
 		stackName,
@@ -261,7 +254,7 @@ func (api *serviceAPI) deployServiceStack(reg *awsregistry.ClientRegistry, proje
 	}
 
 	if !result.DidRequireUpdating {
-		log.Printf("  No updates were required to Cloud Formation stack '%s'\n", result.StackID)
+		api.log.Printf("  No updates were required to Cloud Formation stack '%s'\n", result.StackID)
 	}
 
 	return nil
@@ -312,20 +305,18 @@ func getServiceStackTags(project *ecso.Project, env *ecso.Environment, service *
 
 func (api *serviceAPI) registerECSTaskDefinition(reg *awsregistry.ClientRegistry, project *ecso.Project, env *ecso.Environment, service *ecso.Service) (*ecs.TaskDefinition, error) {
 	var (
-		cfg       = api.cfg
-		log       = cfg.Logger()
 		taskName  = service.GetECSTaskDefinitionName(env)
 		ecsClient = reg.ECSAPI()
 	)
 
 	// TODO: fully qualify the path to the service compose file
 	// taskDefinition, err := ConvertToTaskDefinition(taskName, service.ComposeFile)
-	log.Infof("Converting '%s' to task definition...", service.ComposeFile)
+	api.log.Infof("Converting '%s' to task definition...", service.ComposeFile)
 
 	taskDefinition, err := service.GetECSTaskDefinition(env)
 
-	log.Printf("\n")
-	log.Infof("Registering ECS task definition '%s'...", taskName)
+	api.log.Printf("\n")
+	api.log.Infof("Registering ECS task definition '%s'...", taskName)
 
 	if err != nil {
 		return nil, err
@@ -365,7 +356,7 @@ func (api *serviceAPI) registerECSTaskDefinition(reg *awsregistry.ClientRegistry
 		return nil, err
 	}
 
-	log.Printf(
+	api.log.Printf(
 		"  Registered ECS task definition %s:%d\n\n",
 		*resp.TaskDefinition.Family,
 		*resp.TaskDefinition.Revision)
@@ -374,12 +365,11 @@ func (api *serviceAPI) registerECSTaskDefinition(reg *awsregistry.ClientRegistry
 }
 func (api *serviceAPI) clearServiceDNSRecords(reg *awsregistry.ClientRegistry, env *ecso.Environment, service *ecso.Service) error {
 	var (
-		log       = api.cfg.Logger()
-		r53Helper = helpers.NewRoute53Helper(reg.Route53API(), log.Child())
+		r53Helper = helpers.NewRoute53Helper(reg.Route53API(), api.log.Child())
 		dnsName   = fmt.Sprintf("%s.%s.", service.Name, env.CloudFormationParameters["DNSZone"])
 	)
 
-	log.Infof("Deleting any service SRV DNS records for %s...", dnsName)
+	api.log.Infof("Deleting any service SRV DNS records for %s...", dnsName)
 
 	if err := r53Helper.DeleteResourceRecordSetsByName(dnsName, env.CloudFormationParameters["DNSZone"], "Deleted by ecso service down"); err != nil {
 		return err
@@ -390,12 +380,11 @@ func (api *serviceAPI) clearServiceDNSRecords(reg *awsregistry.ClientRegistry, e
 
 func (api *serviceAPI) deleteServiceStack(reg *awsregistry.ClientRegistry, env *ecso.Environment, service *ecso.Service) error {
 	var (
-		log   = api.cfg.Logger()
 		stack = service.GetCloudFormationStackName(env)
-		cfn   = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), log.Child())
+		cfn   = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
 	)
 
-	log.Infof("Deleting cloud formation stack '%s'", stack)
+	api.log.Infof("Deleting cloud formation stack '%s'", stack)
 
 	exists, err := cfn.StackExists(stack)
 
@@ -404,7 +393,7 @@ func (api *serviceAPI) deleteServiceStack(reg *awsregistry.ClientRegistry, env *
 	}
 
 	if !exists {
-		log.Printf("  Stack '%s' does not exist\n", stack)
+		api.log.Printf("  Stack '%s' does not exist\n", stack)
 		return nil
 	}
 

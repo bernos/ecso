@@ -10,6 +10,7 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	ecsocli "github.com/bernos/ecso/pkg/ecso/cli"
+	"github.com/bernos/ecso/pkg/ecso/config"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -18,7 +19,7 @@ func main() {
 		return nil
 	})
 
-	cfg, err := ecso.NewConfig("")
+	cfg, err := config.NewConfig("")
 
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err.Error())

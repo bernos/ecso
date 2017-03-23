@@ -1,6 +1,7 @@
 package ecso
 
 import (
+	"github.com/bernos/ecso/pkg/ecso/config"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -58,12 +59,12 @@ func CommandError(err error) Command {
 type CommandContext struct {
 	EcsoVersion     string
 	Project         *Project
-	Config          *Config
+	Config          *config.Config
 	UserPreferences *UserPreferences
 }
 
 // NewCommandContext creates a CommandContext
-func NewCommandContext(project *Project, config *Config, preferences *UserPreferences, version string) *CommandContext {
+func NewCommandContext(project *Project, config *config.Config, preferences *UserPreferences, version string) *CommandContext {
 	return &CommandContext{
 		Project:         project,
 		Config:          config,

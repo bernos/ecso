@@ -5,6 +5,7 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/cli"
+	"github.com/bernos/ecso/pkg/ecso/config"
 	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
@@ -15,7 +16,7 @@ var (
 
 func main() {
 	project := MustLoadProject(ecso.LoadCurrentProject())
-	cfg := MustLoadConfig(ecso.NewConfig(version))
+	cfg := MustLoadConfig(config.NewConfig(version))
 	prefs := MustLoadUserPreferences(ecso.LoadCurrentUserPreferences())
 	dispatcher := ecso.NewDispatcher(project, cfg, prefs, version)
 	app := cli.NewApp(cfg, dispatcher)
@@ -32,7 +33,7 @@ func ExitWithError(err error, code int) {
 	os.Exit(code)
 }
 
-func MustLoadConfig(cfg *ecso.Config, err error) *ecso.Config {
+func MustLoadConfig(cfg *config.Config, err error) *config.Config {
 	if err != nil {
 		ExitWithError(err, 1)
 	}
