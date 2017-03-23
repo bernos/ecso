@@ -18,7 +18,7 @@ func main() {
 	project := MustLoadProject(ecso.LoadCurrentProject())
 	cfg := MustLoadConfig(config.NewConfig(version))
 	prefs := MustLoadUserPreferences(ecso.LoadCurrentUserPreferences())
-	dispatcher := ecso.NewDispatcher(project, cfg, prefs, version)
+	dispatcher := ecso.NewDispatcher(project, cfg, prefs)
 	app := cli.NewApp(cfg, dispatcher)
 
 	err := app.Run(os.Args)
