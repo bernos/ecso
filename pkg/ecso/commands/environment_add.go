@@ -104,7 +104,6 @@ func (c *environmentAddCommand) Validate(ctx *ecso.CommandContext) error {
 func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 
 	var (
-		log             = ctx.Config.Logger()
 		project         = ctx.Project
 		cfg             = ctx.Config
 		prefs           = ctx.UserPreferences
@@ -159,7 +158,7 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 
 	// TODO Ask if there is an existing environment?
 	// If yes, then ask for the cfn stack id and collect outputs
-	ui.BannerBlue(log, "Adding a new environment to the %s project", project.Name)
+	ui.BannerBlue(c.log, "Adding a new environment to the %s project", project.Name)
 
 	if account := getCurrentAWSAccount(stsAPI); c.account == "" {
 		c.account = account
