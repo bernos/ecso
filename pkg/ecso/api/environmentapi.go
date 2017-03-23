@@ -22,12 +22,16 @@ type EnvironmentAPI interface {
 }
 
 // New creates a new API
-func NewEnvironmentAPI(log log.Logger) EnvironmentAPI {
-	return &environmentAPI{log}
+func NewEnvironmentAPI(log log.Logger, registryFactory awsregistry.RegistryFactory) EnvironmentAPI {
+	return &environmentAPI{
+		log:             log,
+		registryFactory: registryFactory,
+	}
 }
 
 type environmentAPI struct {
-	log log.Logger
+	log             log.Logger
+	registryFactory awsregistry.RegistryFactory
 }
 
 type EnvironmentDescription struct {
@@ -47,7 +51,7 @@ func (api *environmentAPI) DescribeEnvironment(env *ecso.Environment) (*Environm
 		description = &EnvironmentDescription{Name: env.Name}
 	)
 
-	reg, err := awsregistry.ForRegion(env.Region)
+	reg, err := api.registryFactory.ForRegion(env.Region)
 
 	if err != nil {
 		return description, err
@@ -75,7 +79,7 @@ func (api *environmentAPI) DescribeEnvironment(env *ecso.Environment) (*Environm
 }
 
 func (api *environmentAPI) IsEnvironmentUp(env *ecso.Environment) (bool, error) {
-	reg, err := awsregistry.ForRegion(env.Region)
+	reg, err := api.registryFactory.ForRegion(env.Region)
 
 	if err != nil {
 		return false, err
@@ -87,7 +91,7 @@ func (api *environmentAPI) IsEnvironmentUp(env *ecso.Environment) (bool, error) 
 }
 
 func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environment) error {
-	reg, err := awsregistry.ForRegion(env.Region)
+	reg, err := api.registryFactory.ForRegion(env.Region)
 
 	if err != nil {
 		return err
@@ -98,7 +102,7 @@ func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environmen
 		r53Helper      = helpers.NewRoute53Helper(reg.Route53API(), api.log.Child())
 		zone           = fmt.Sprintf("%s.", env.CloudFormationParameters["DNSZone"])
 		datadogDNSName = fmt.Sprintf("%s.%s.%s", "datadog", env.GetClusterName(), zone)
-		serviceAPI     = NewServiceAPI(api.log)
+		serviceAPI     = NewServiceAPI(api.log, api.registryFactory)
 	)
 
 	for _, service := range p.Services {
@@ -132,7 +136,7 @@ func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment,
 		params   = env.CloudFormationParameters
 	)
 
-	reg, err := awsregistry.ForRegion(env.Region)
+	reg, err := api.registryFactory.ForRegion(env.Region)
 
 	if err != nil {
 		return err
@@ -186,7 +190,7 @@ func (api *environmentAPI) SendNotification(env *ecso.Environment, msg string) e
 		stack = env.GetCloudFormationStackName()
 	)
 
-	reg, err := awsregistry.ForRegion(env.Region)
+	reg, err := api.registryFactory.ForRegion(env.Region)
 
 	if err != nil {
 		return err

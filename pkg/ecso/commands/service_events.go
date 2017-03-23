@@ -11,18 +11,21 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
-func NewServiceEventsCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
+func NewServiceEventsCommand(name string, serviceAPI api.ServiceAPI, log log.Logger, registryFactory awsregistry.RegistryFactory) ecso.Command {
 	return &serviceEventsCommand{
 		ServiceCommand: &ServiceCommand{
 			name:       name,
 			serviceAPI: serviceAPI,
 			log:        log,
 		},
+		registryFactory: registryFactory,
 	}
 }
 
 type serviceEventsCommand struct {
 	*ServiceCommand
+
+	registryFactory awsregistry.RegistryFactory
 }
 
 // TODO add GetServiceEvents to the ecso api and call from here, rather than using the helper directly
@@ -33,7 +36,7 @@ func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext) error {
 		count   = 0
 	)
 
-	reg, err := awsregistry.ForRegion(env.Region)
+	reg, err := cmd.registryFactory.ForRegion(env.Region)
 	if err != nil {
 		return err
 	}

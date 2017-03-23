@@ -33,16 +33,20 @@ type ServiceDescription struct {
 }
 
 // New creates a new API
-func NewServiceAPI(log log.Logger) ServiceAPI {
-	return &serviceAPI{log}
+func NewServiceAPI(log log.Logger, registryFactory awsregistry.RegistryFactory) ServiceAPI {
+	return &serviceAPI{
+		log:             log,
+		registryFactory: registryFactory,
+	}
 }
 
 type serviceAPI struct {
-	log log.Logger
+	log             log.Logger
+	registryFactory awsregistry.RegistryFactory
 }
 
 func (api *serviceAPI) GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ecs.Service, error) {
-	reg, err := awsregistry.ForRegion(env.Region)
+	reg, err := api.registryFactory.ForRegion(env.Region)
 
 	if err != nil {
 		return nil, err
@@ -82,7 +86,7 @@ func (api *serviceAPI) GetECSService(p *ecso.Project, env *ecso.Environment, s *
 }
 
 func (api *serviceAPI) DescribeService(env *ecso.Environment, service *ecso.Service) (*ServiceDescription, error) {
-	reg, err := awsregistry.ForRegion(env.Region)
+	reg, err := api.registryFactory.ForRegion(env.Region)
 
 	if err != nil {
 		return nil, err
@@ -122,7 +126,7 @@ func (api *serviceAPI) DescribeService(env *ecso.Environment, service *ecso.Serv
 }
 
 func (api *serviceAPI) ServiceDown(project *ecso.Project, env *ecso.Environment, service *ecso.Service) error {
-	reg, err := awsregistry.ForRegion(env.Region)
+	reg, err := api.registryFactory.ForRegion(env.Region)
 
 	if err != nil {
 		return err
@@ -142,7 +146,7 @@ func (api *serviceAPI) ServiceDown(project *ecso.Project, env *ecso.Environment,
 }
 
 func (api *serviceAPI) ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*cloudwatchlogs.FilteredLogEvent, error) {
-	reg, err := awsregistry.ForRegion(env.Region)
+	reg, err := api.registryFactory.ForRegion(env.Region)
 
 	if err != nil {
 		return nil, err
@@ -162,7 +166,7 @@ func (api *serviceAPI) ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ec
 }
 
 func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, service *ecso.Service) error {
-	reg, err := awsregistry.ForRegion(env.Region)
+	reg, err := api.registryFactory.ForRegion(env.Region)
 
 	if err != nil {
 		return err
@@ -174,7 +178,7 @@ func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, s
 		return err
 	}
 
-	envAPI := NewEnvironmentAPI(api.log)
+	envAPI := NewEnvironmentAPI(api.log, api.registryFactory)
 
 	if err := envAPI.SendNotification(env, fmt.Sprintf("Commenced deployment of %s to %s", service.Name, env.Name)); err != nil {
 		api.log.Printf("WARNING Failed to send deployment commencing notification to sns. %s", err.Error())
@@ -223,7 +227,7 @@ func (api *serviceAPI) setEnv(project *ecso.Project, env *ecso.Environment, serv
 	return nil
 }
 
-func (api *serviceAPI) deployServiceStack(reg *awsregistry.ClientRegistry, project *ecso.Project, env *ecso.Environment, service *ecso.Service, taskDefinition *ecs.TaskDefinition) error {
+func (api *serviceAPI) deployServiceStack(reg awsregistry.Registry, project *ecso.Project, env *ecso.Environment, service *ecso.Service, taskDefinition *ecs.TaskDefinition) error {
 	var (
 		stackName = service.GetCloudFormationStackName(env)
 		prefix    = service.GetCloudFormationBucketPrefix(env)
@@ -303,7 +307,7 @@ func getServiceStackTags(project *ecso.Project, env *ecso.Environment, service *
 	return tags
 }
 
-func (api *serviceAPI) registerECSTaskDefinition(reg *awsregistry.ClientRegistry, project *ecso.Project, env *ecso.Environment, service *ecso.Service) (*ecs.TaskDefinition, error) {
+func (api *serviceAPI) registerECSTaskDefinition(reg awsregistry.Registry, project *ecso.Project, env *ecso.Environment, service *ecso.Service) (*ecs.TaskDefinition, error) {
 	var (
 		taskName  = service.GetECSTaskDefinitionName(env)
 		ecsClient = reg.ECSAPI()
@@ -363,7 +367,7 @@ func (api *serviceAPI) registerECSTaskDefinition(reg *awsregistry.ClientRegistry
 
 	return resp.TaskDefinition, nil
 }
-func (api *serviceAPI) clearServiceDNSRecords(reg *awsregistry.ClientRegistry, env *ecso.Environment, service *ecso.Service) error {
+func (api *serviceAPI) clearServiceDNSRecords(reg awsregistry.Registry, env *ecso.Environment, service *ecso.Service) error {
 	var (
 		r53Helper = helpers.NewRoute53Helper(reg.Route53API(), api.log.Child())
 		dnsName   = fmt.Sprintf("%s.%s.", service.Name, env.CloudFormationParameters["DNSZone"])
@@ -378,7 +382,7 @@ func (api *serviceAPI) clearServiceDNSRecords(reg *awsregistry.ClientRegistry, e
 	return nil
 }
 
-func (api *serviceAPI) deleteServiceStack(reg *awsregistry.ClientRegistry, env *ecso.Environment, service *ecso.Service) error {
+func (api *serviceAPI) deleteServiceStack(reg awsregistry.Registry, env *ecso.Environment, service *ecso.Service) error {
 	var (
 		stack = service.GetCloudFormationStackName(env)
 		cfn   = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
