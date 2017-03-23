@@ -17,7 +17,7 @@ import (
 
 type ServiceAPI interface {
 	DescribeService(env *ecso.Environment, service *ecso.Service) (*ServiceDescription, error)
-	ServiceUp(p *ecso.Project, env *ecso.Environment, s *ecso.Service) error
+	ServiceUp(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ServiceDescription, error)
 	ServiceDown(p *ecso.Project, env *ecso.Environment, s *ecso.Service) error
 	ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*cloudwatchlogs.FilteredLogEvent, error)
 	GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ecs.Service, error)
@@ -230,17 +230,17 @@ func (api *serviceAPI) ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ec
 	return resp.Events, nil
 }
 
-func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, service *ecso.Service) error {
+func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, service *ecso.Service) (*ServiceDescription, error) {
 	reg, err := api.registryFactory.ForRegion(env.Region)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// set env vars so that they are available when converting the docker
 	// compose file to a task definition
 	if err := api.setEnv(project, env, service); err != nil {
-		return err
+		return nil, err
 	}
 
 	envAPI := NewEnvironmentAPI(api.log, api.registryFactory)
@@ -256,7 +256,7 @@ func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, s
 		if err := envAPI.SendNotification(env, fmt.Sprintf("Failed to deploy %s to %s", service.Name, env.Name)); err != nil {
 			api.log.Printf("WARNING Failed to send deployment failure notification to sns. %s", err.Error())
 		}
-		return err
+		return nil, err
 	}
 
 	// deploy the service cfn stack
@@ -264,14 +264,14 @@ func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, s
 		if err := envAPI.SendNotification(env, fmt.Sprintf("Failed to deploy %s to %s", service.Name, env.Name)); err != nil {
 			api.log.Printf("WARNING Failed to send deployment failure notification to sns. %s", err.Error())
 		}
-		return err
+		return nil, err
 	}
 
 	if err := envAPI.SendNotification(env, fmt.Sprintf("Completed deployment of %s to %s", service.Name, env.Name)); err != nil {
 		api.log.Printf("WARNING Failed to send deployment completed notification to sns. %s", err.Error())
 	}
 
-	return nil
+	return api.DescribeService(env, service)
 }
 
 func (api *serviceAPI) setEnv(project *ecso.Project, env *ecso.Environment, service *ecso.Service) error {
