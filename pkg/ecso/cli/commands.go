@@ -353,7 +353,7 @@ func NewServiceLsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 			l := cfg.Logger()
 			r := cfg.AWSRegistryFactory()
 
-			return commands.NewServiceLsCommand(name, l, r)
+			return commands.NewServiceLsCommand(name, api.NewEnvironmentAPI(l, r), l)
 		})
 	}
 

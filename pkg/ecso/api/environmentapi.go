@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/awsregistry"
@@ -19,6 +20,7 @@ type EnvironmentAPI interface {
 	EnvironmentDown(p *ecso.Project, env *ecso.Environment) error
 	IsEnvironmentUp(env *ecso.Environment) (bool, error)
 	SendNotification(env *ecso.Environment, msg string) error
+	GetECSServices(env *ecso.Environment) ([]*ecs.Service, error)
 }
 
 // New creates a new API
@@ -76,6 +78,65 @@ func (api *environmentAPI) DescribeEnvironment(env *ecso.Environment) (*Environm
 	}
 
 	return description, nil
+}
+
+func (api *environmentAPI) GetECSServices(env *ecso.Environment) ([]*ecs.Service, error) {
+	var (
+		count     = 0
+		batchSize = 10
+		batches   = make([][]*string, 0) // [][]service arns
+		services  = make([]*ecs.Service, 0)
+	)
+
+	reg, err := api.registryFactory.ForRegion(env.Region)
+
+	if err != nil {
+		return services, nil
+	}
+
+	params := &ecs.ListServicesInput{
+		Cluster: aws.String(env.GetClusterName()),
+	}
+
+	ecsAPI := reg.ECSAPI()
+
+	// TODO handle pages concurrently
+	if err := ecsAPI.ListServicesPages(params, func(o *ecs.ListServicesOutput, last bool) bool {
+		if count%batchSize == 0 {
+			batches = append(batches, make([]*string, 0))
+		}
+
+		for i, _ := range o.ServiceArns {
+			batch := append(batches[len(batches)-1], o.ServiceArns[i])
+			batches[len(batches)-1] = batch
+			count = count + 1
+		}
+
+		return !last
+	}); err != nil {
+		return services, err
+	}
+
+	for _, batch := range batches {
+		if len(batch) == 0 {
+			continue
+		}
+
+		desc, err := ecsAPI.DescribeServices(&ecs.DescribeServicesInput{
+			Services: batch,
+			Cluster:  aws.String(env.GetClusterName()),
+		})
+
+		if err != nil {
+			return services, err
+		}
+
+		for _, svc := range desc.Services {
+			services = append(services, svc)
+		}
+	}
+
+	return services, nil
 }
 
 func (api *environmentAPI) IsEnvironmentUp(env *ecso.Environment) (bool, error) {

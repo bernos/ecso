@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 	"github.com/bernos/ecso/pkg/ecso"
-	"github.com/bernos/ecso/pkg/ecso/awsregistry"
+	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"gopkg.in/urfave/cli.v1"
@@ -18,18 +16,18 @@ const (
 	ServiceLsEnvironmentOption = "environment"
 )
 
-func NewServiceLsCommand(env string, log log.Logger, registryFactory awsregistry.RegistryFactory) ecso.Command {
+func NewServiceLsCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger) ecso.Command {
 	return &serviceLsCommand{
-		environment:     env,
-		log:             log,
-		registryFactory: registryFactory,
+		EnvironmentCommand: &EnvironmentCommand{
+			environmentName: environmentName,
+			environmentAPI:  environmentAPI,
+			log:             log,
+		},
 	}
 }
 
 type serviceLsCommand struct {
-	environment     string
-	log             log.Logger
-	registryFactory awsregistry.RegistryFactory
+	*EnvironmentCommand
 }
 
 func (cmd *serviceLsCommand) UnmarshalCliContext(ctx *cli.Context) error {
@@ -37,15 +35,9 @@ func (cmd *serviceLsCommand) UnmarshalCliContext(ctx *cli.Context) error {
 }
 
 func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext) error {
-	env := ctx.Project.Environments[cmd.environment]
+	env := ctx.Project.Environments[cmd.environmentName]
 
-	reg, err := cmd.registryFactory.ForRegion(env.Region)
-
-	if err != nil {
-		return err
-	}
-
-	services, err := getServices(env, reg.ECSAPI())
+	services, err := cmd.environmentAPI.GetECSServices(env)
 
 	if err != nil {
 		return err
@@ -54,71 +46,6 @@ func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext) error {
 	printServices(ctx.Project, env, services, cmd.log)
 
 	return nil
-}
-
-func (cmd *serviceLsCommand) Prompt(ctx *ecso.CommandContext) error {
-	return nil
-}
-
-func (cmd *serviceLsCommand) Validate(ctx *ecso.CommandContext) error {
-	if cmd.environment == "" {
-		return fmt.Errorf("Environment is required")
-	}
-
-	if !ctx.Project.HasEnvironment(cmd.environment) {
-		return fmt.Errorf("Environment '%s' not found", cmd.environment)
-	}
-
-	return nil
-}
-
-func getServices(env *ecso.Environment, ecsAPI ecsiface.ECSAPI) ([]*ecs.Service, error) {
-	var (
-		count    = 0
-		batches  = make([][]*string, 0)
-		services = make([]*ecs.Service, 0)
-	)
-
-	params := &ecs.ListServicesInput{
-		Cluster: aws.String(env.GetClusterName()),
-	}
-
-	if err := ecsAPI.ListServicesPages(params, func(o *ecs.ListServicesOutput, last bool) bool {
-		if count%10 == 0 {
-			batches = append(batches, make([]*string, 0))
-		}
-
-		for i, _ := range o.ServiceArns {
-			batch := append(batches[len(batches)-1], o.ServiceArns[i])
-			batches[len(batches)-1] = batch
-			count = count + 1
-		}
-
-		return !last
-	}); err != nil {
-		return services, err
-	}
-
-	for _, batch := range batches {
-		if len(batch) == 0 {
-			continue
-		}
-
-		desc, err := ecsAPI.DescribeServices(&ecs.DescribeServicesInput{
-			Services: batch,
-			Cluster:  aws.String(env.GetClusterName()),
-		})
-
-		if err != nil {
-			return services, err
-		}
-
-		for _, svc := range desc.Services {
-			services = append(services, svc)
-		}
-	}
-
-	return services, nil
 }
 
 func printServices(project *ecso.Project, env *ecso.Environment, services []*ecs.Service, log log.Logger) {
