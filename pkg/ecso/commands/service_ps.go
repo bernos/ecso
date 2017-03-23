@@ -4,12 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/awsregistry"
 	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
@@ -26,21 +23,18 @@ type row struct {
 	Port              string
 }
 
-func NewServicePsCommand(name string, serviceAPI api.ServiceAPI, log log.Logger, registryFactory awsregistry.RegistryFactory) ecso.Command {
+func NewServicePsCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
 	return &servicePsCommand{
 		ServiceCommand: &ServiceCommand{
 			name:       name,
 			serviceAPI: serviceAPI,
 			log:        log,
 		},
-		registryFactory: registryFactory,
 	}
 }
 
 type servicePsCommand struct {
 	*ServiceCommand
-
-	registryFactory awsregistry.RegistryFactory
 }
 
 func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
@@ -50,38 +44,14 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 		rows    = make([]*row, 0)
 	)
 
-	reg, err := cmd.registryFactory.ForRegion(env.Region)
-	if err != nil {
-		return err
-	}
-
-	ecsAPI := reg.ECSAPI()
-	runningService, err := cmd.serviceAPI.GetECSService(ctx.Project, env, service)
-
-	if err != nil || runningService == nil {
-		return err
-	}
-
-	tasks, err := ecsAPI.ListTasks(&ecs.ListTasksInput{
-		Cluster:     aws.String(env.GetClusterName()),
-		ServiceName: runningService.ServiceName,
-	})
+	tasks, err := cmd.serviceAPI.GetECSTasks(ctx.Project, env, service)
 
 	if err != nil {
 		return err
 	}
 
-	resp, err := ecsAPI.DescribeTasks(&ecs.DescribeTasksInput{
-		Cluster: aws.String(env.GetClusterName()),
-		Tasks:   tasks.TaskArns,
-	})
-
-	if err != nil {
-		return err
-	}
-
-	for _, task := range resp.Tasks {
-		newRows, err := rowsFromTask(task, ecsAPI)
+	for _, task := range tasks {
+		newRows, err := rowsFromTask(env, task, cmd.serviceAPI)
 
 		if err != nil {
 			return err
@@ -97,7 +67,7 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func rowsFromTask(task *ecs.Task, ecsAPI ecsiface.ECSAPI) ([]*row, error) {
+func rowsFromTask(env *ecso.Environment, task *ecs.Task, serviceAPI api.ServiceAPI) ([]*row, error) {
 	rows := make([]*row, 0)
 
 	for _, c := range task.Containers {
@@ -111,7 +81,7 @@ func rowsFromTask(task *ecs.Task, ecsAPI ecsiface.ECSAPI) ([]*row, error) {
 			ContainerStatus:   *c.LastStatus,
 		}
 
-		image, err := getContainerImage(*task.TaskDefinitionArn, *c.Name, ecsAPI)
+		image, err := serviceAPI.GetECSContainerImage(*task.TaskDefinitionArn, *c.Name, env)
 
 		if err != nil {
 			return rows, err
@@ -163,24 +133,6 @@ func printRows(rows []*row, log log.Logger) {
 	}
 
 	ui.PrintTable(log, headers, r...)
-}
-
-func getContainerImage(taskDefinitionArn, containerName string, ecsAPI ecsiface.ECSAPI) (string, error) {
-	resp, err := ecsAPI.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
-		TaskDefinition: aws.String(taskDefinitionArn),
-	})
-
-	if err != nil {
-		return "", err
-	}
-
-	for _, c := range resp.TaskDefinition.ContainerDefinitions {
-		if *c.Name == containerName {
-			return *c.Image, nil
-		}
-	}
-
-	return "", nil
 }
 
 func getIDFromArn(arn string) string {

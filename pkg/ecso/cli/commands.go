@@ -377,7 +377,7 @@ func NewServicePsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 			l := cfg.Logger()
 			r := cfg.AWSRegistryFactory()
 
-			return commands.NewServicePsCommand(name, api.NewServiceAPI(l, r), l, r)
+			return commands.NewServicePsCommand(name, api.NewServiceAPI(l, r), l)
 		})
 	}
 

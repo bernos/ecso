@@ -21,6 +21,8 @@ type ServiceAPI interface {
 	ServiceDown(p *ecso.Project, env *ecso.Environment, s *ecso.Service) error
 	ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*cloudwatchlogs.FilteredLogEvent, error)
 	GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ecs.Service, error)
+	GetECSTasks(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*ecs.Task, error)
+	GetECSContainerImage(taskDefinitionArn, containerName string, env *ecso.Environment) (string, error)
 }
 
 type ServiceDescription struct {
@@ -83,6 +85,69 @@ func (api *serviceAPI) GetECSService(p *ecso.Project, env *ecso.Environment, s *
 	}
 
 	return nil, nil
+}
+
+func (api *serviceAPI) GetECSContainerImage(taskDefinitionArn, containerName string, env *ecso.Environment) (string, error) {
+	reg, err := api.registryFactory.ForRegion(env.Region)
+
+	if err != nil {
+		return "", err
+	}
+
+	ecsAPI := reg.ECSAPI()
+
+	resp, err := ecsAPI.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
+		TaskDefinition: aws.String(taskDefinitionArn),
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	for _, c := range resp.TaskDefinition.ContainerDefinitions {
+		if *c.Name == containerName {
+			return *c.Image, nil
+		}
+	}
+
+	return "", nil
+}
+
+func (api *serviceAPI) GetECSTasks(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*ecs.Task, error) {
+	result := make([]*ecs.Task, 0)
+	reg, err := api.registryFactory.ForRegion(env.Region)
+
+	if err != nil {
+		return result, err
+	}
+
+	runningService, err := api.GetECSService(p, env, s)
+
+	if err != nil || runningService == nil {
+		return result, err
+	}
+
+	ecsAPI := reg.ECSAPI()
+
+	tasks, err := ecsAPI.ListTasks(&ecs.ListTasksInput{
+		Cluster:     aws.String(env.GetClusterName()),
+		ServiceName: runningService.ServiceName,
+	})
+
+	if err != nil {
+		return result, err
+	}
+
+	resp, err := ecsAPI.DescribeTasks(&ecs.DescribeTasksInput{
+		Cluster: aws.String(env.GetClusterName()),
+		Tasks:   tasks.TaskArns,
+	})
+
+	if err != nil {
+		return result, err
+	}
+
+	return resp.Tasks, nil
 }
 
 func (api *serviceAPI) DescribeService(env *ecso.Environment, service *ecso.Service) (*ServiceDescription, error) {
