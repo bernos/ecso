@@ -322,7 +322,7 @@ func NewServiceLogsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 func NewServiceLsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeServiceCommand(ctx, func(name string) ecso.Command {
+		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
 			return commands.NewServiceLsCommand(name, cfg.Logger())
 		})
 	}
