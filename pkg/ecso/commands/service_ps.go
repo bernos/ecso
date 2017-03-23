@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/awsregistry"
 	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
@@ -41,13 +42,17 @@ type servicePsCommand struct {
 
 func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		service  = ctx.Project.Services[cmd.name]
-		env      = ctx.Project.Environments[cmd.environment]
-		rows     = make([]*row, 0)
-		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		ecsAPI   = registry.ECSAPI()
+		service = ctx.Project.Services[cmd.name]
+		env     = ctx.Project.Environments[cmd.environment]
+		rows    = make([]*row, 0)
 	)
 
+	reg, err := awsregistry.ForRegion(env.Region)
+	if err != nil {
+		return err
+	}
+
+	ecsAPI := reg.ECSAPI()
 	runningService, err := cmd.serviceAPI.GetECSService(ctx.Project, env, service)
 
 	if err != nil || runningService == nil {

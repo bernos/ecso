@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/awsregistry"
 	"github.com/bernos/ecso/pkg/ecso/helpers"
 	"github.com/bernos/ecso/pkg/ecso/log"
 )
@@ -27,12 +28,15 @@ type serviceEventsCommand struct {
 // TODO add GetServiceEvents to the ecso api and call from here, rather than using the helper directly
 func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
-		env       = ctx.Project.Environments[cmd.environment]
-		service   = ctx.Project.Services[cmd.name]
-		registry  = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		ecsHelper = helpers.NewECSHelper(registry.ECSAPI(), cmd.log.Child())
-		count     = 0
+		env     = ctx.Project.Environments[cmd.environment]
+		service = ctx.Project.Services[cmd.name]
+		count   = 0
 	)
+
+	reg, err := awsregistry.ForRegion(env.Region)
+	if err != nil {
+		return err
+	}
 
 	runningService, err := cmd.serviceAPI.GetECSService(ctx.Project, env, service)
 
@@ -40,6 +44,7 @@ func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
+	ecsHelper := helpers.NewECSHelper(reg.ECSAPI(), cmd.log.Child())
 	cancel := ecsHelper.LogServiceEvents(*runningService.ServiceName, env.GetClusterName(), func(e *ecs.ServiceEvent, err error) {
 		if err != nil {
 			cmd.log.Errorf("%s\n", err.Error())

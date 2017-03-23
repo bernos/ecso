@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
+	"github.com/bernos/ecso/pkg/ecso/awsregistry"
 	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 
@@ -105,12 +106,18 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 
 	var (
 		project         = ctx.Project
-		cfg             = ctx.Config
 		prefs           = ctx.UserPreferences
 		accountDefaults = ecso.AccountDefaults{}
-		registry        = cfg.MustGetAWSClientRegistry("ap-southeast-2")
-		stsAPI          = registry.STSAPI()
+		region          = "ap-southeast-2"
 	)
+
+	reg, err := awsregistry.ForRegion(region)
+
+	if err != nil {
+		return err
+	}
+
+	stsAPI := reg.STSAPI()
 
 	var prompts = struct {
 		Name            string

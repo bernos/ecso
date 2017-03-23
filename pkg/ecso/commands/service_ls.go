@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/awsregistry"
 	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"gopkg.in/urfave/cli.v1"
@@ -34,13 +35,15 @@ func (cmd *serviceLsCommand) UnmarshalCliContext(ctx *cli.Context) error {
 }
 
 func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext) error {
-	var (
-		env      = ctx.Project.Environments[cmd.environment]
-		registry = ctx.Config.MustGetAWSClientRegistry(env.Region)
-		ecsAPI   = registry.ECSAPI()
-	)
+	env := ctx.Project.Environments[cmd.environment]
 
-	services, err := getServices(env, ecsAPI)
+	reg, err := awsregistry.ForRegion(env.Region)
+
+	if err != nil {
+		return err
+	}
+
+	services, err := getServices(env, reg.ECSAPI())
 
 	if err != nil {
 		return err
