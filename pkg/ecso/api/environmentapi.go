@@ -166,6 +166,7 @@ func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environmen
 		serviceAPI     = NewServiceAPI(api.log, api.registryFactory)
 	)
 
+	// TODO do these concurrently
 	for _, service := range p.Services {
 		if err := serviceAPI.ServiceDown(p, env, service); err != nil {
 			return err

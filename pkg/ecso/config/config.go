@@ -42,3 +42,15 @@ func NewConfig(version string, options ...func(*Config)) (*Config, error) {
 
 	return cfg, nil
 }
+
+func WithLogger(l log.Logger) func(*Config) {
+	return func(cfg *Config) {
+		cfg.l = l
+	}
+}
+
+func WithAWSRegistryFactory(r awsregistry.RegistryFactory) func(*Config) {
+	return func(cfg *Config) {
+		cfg.r = r
+	}
+}
