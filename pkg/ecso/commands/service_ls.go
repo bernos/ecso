@@ -18,16 +18,18 @@ const (
 	ServiceLsEnvironmentOption = "environment"
 )
 
-func NewServiceLsCommand(env string, log log.Logger) ecso.Command {
+func NewServiceLsCommand(env string, log log.Logger, registryFactory awsregistry.RegistryFactory) ecso.Command {
 	return &serviceLsCommand{
-		environment: env,
-		log:         log,
+		environment:     env,
+		log:             log,
+		registryFactory: registryFactory,
 	}
 }
 
 type serviceLsCommand struct {
-	environment string
-	log         log.Logger
+	environment     string
+	log             log.Logger
+	registryFactory awsregistry.RegistryFactory
 }
 
 func (cmd *serviceLsCommand) UnmarshalCliContext(ctx *cli.Context) error {
@@ -37,7 +39,7 @@ func (cmd *serviceLsCommand) UnmarshalCliContext(ctx *cli.Context) error {
 func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext) error {
 	env := ctx.Project.Environments[cmd.environment]
 
-	reg, err := awsregistry.ForRegion(env.Region)
+	reg, err := cmd.registryFactory.ForRegion(env.Region)
 
 	if err != nil {
 		return err

@@ -27,6 +27,8 @@ type environmentAddCommand struct {
 	// name            string
 	*EnvironmentCommand
 
+	registryFactory awsregistry.RegistryFactory
+
 	vpcID           string
 	albSubnets      string
 	instanceSubnets string
@@ -38,13 +40,14 @@ type environmentAddCommand struct {
 	datadogAPIKey   string
 }
 
-func NewEnvironmentAddCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger) ecso.Command {
+func NewEnvironmentAddCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger, registryFactory awsregistry.RegistryFactory) ecso.Command {
 	return &environmentAddCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
 			environmentAPI:  environmentAPI,
 			log:             log,
 		},
+		registryFactory: registryFactory,
 	}
 }
 
@@ -111,7 +114,7 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 		region          = "ap-southeast-2"
 	)
 
-	reg, err := awsregistry.ForRegion(region)
+	reg, err := c.registryFactory.ForRegion(region)
 
 	if err != nil {
 		return err

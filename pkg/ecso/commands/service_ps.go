@@ -26,18 +26,21 @@ type row struct {
 	Port              string
 }
 
-func NewServicePsCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
+func NewServicePsCommand(name string, serviceAPI api.ServiceAPI, log log.Logger, registryFactory awsregistry.RegistryFactory) ecso.Command {
 	return &servicePsCommand{
 		ServiceCommand: &ServiceCommand{
 			name:       name,
 			serviceAPI: serviceAPI,
 			log:        log,
 		},
+		registryFactory: registryFactory,
 	}
 }
 
 type servicePsCommand struct {
 	*ServiceCommand
+
+	registryFactory awsregistry.RegistryFactory
 }
 
 func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
@@ -47,7 +50,7 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 		rows    = make([]*row, 0)
 	)
 
-	reg, err := awsregistry.ForRegion(env.Region)
+	reg, err := cmd.registryFactory.ForRegion(env.Region)
 	if err != nil {
 		return err
 	}
