@@ -23,6 +23,40 @@ type row struct {
 	Port              string
 }
 
+type rows []*row
+
+func (r rows) TableHeader() []string {
+	return []string{
+		"CONTAINER",
+		"IMAGE",
+		"STATUS",
+		"TASK NAME",
+		"CONTAINER INSTANCE",
+		"DESIRED STATUS",
+		"CURRENT STATUS",
+		"PORT",
+	}
+}
+
+func (r rows) TableRows() []map[string]string {
+	trs := make([]map[string]string, len(r))
+
+	for i, row := range r {
+		trs[i] = map[string]string{
+			"CONTAINER":          row.ContainerName,
+			"IMAGE":              row.ImageName,
+			"STATUS":             row.ContainerStatus,
+			"TASK NAME":          row.TaskName,
+			"CONTAINER INSTANCE": row.ContainerInstance,
+			"DESIRED STATUS":     row.DesiredStatus,
+			"CURRENT STATUS":     row.CurrentStatus,
+			"PORT":               row.Port,
+		}
+	}
+
+	return trs
+}
+
 func NewServicePsCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
 	return &servicePsCommand{
 		ServiceCommand: &ServiceCommand{
@@ -41,7 +75,6 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)
-		rows    = make([]*row, 0)
 	)
 
 	tasks, err := cmd.serviceAPI.GetECSTasks(ctx.Project, env, service)
@@ -50,89 +83,81 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	for _, task := range tasks {
-		newRows, err := rowsFromTask(env, task, cmd.serviceAPI)
+	rows, err := cmd.rowsFromTasks(tasks, env)
 
-		if err != nil {
-			return err
-		}
-
-		rows = append(rows, newRows...)
+	if err != nil {
+		return err
 	}
 
 	cmd.log.Printf("\n")
-	printRows(rows, cmd.log)
+	ui.PrintTable(cmd.log, rows.TableHeader(), rows.TableRows()...)
 	cmd.log.Printf("\n")
 
 	return nil
 }
 
-func rowsFromTask(env *ecso.Environment, task *ecs.Task, serviceAPI api.ServiceAPI) ([]*row, error) {
-	rows := make([]*row, 0)
+func (cmd *servicePsCommand) rowsFromTasks(tasks []*ecs.Task, env *ecso.Environment) (rows, error) {
+	rs := make([]*row, 0)
 
-	for _, c := range task.Containers {
-		row := &row{
-			TaskID:            getIDFromArn(*task.TaskArn),
-			TaskName:          getIDFromArn(*task.TaskDefinitionArn),
-			ContainerInstance: getIDFromArn(*task.ContainerInstanceArn),
-			DesiredStatus:     *task.DesiredStatus,
-			CurrentStatus:     *task.LastStatus,
-			ContainerName:     *c.Name,
-			ContainerStatus:   *c.LastStatus,
-		}
-
-		image, err := serviceAPI.GetECSContainerImage(*task.TaskDefinitionArn, *c.Name, env)
+	for _, task := range tasks {
+		newRows, err := cmd.rowsFromTask(env, task)
 
 		if err != nil {
-			return rows, err
+			return nil, err
 		}
 
-		row.ImageName = image
-
-		if len(c.NetworkBindings) > 0 {
-			ports := make([]string, 0)
-
-			for _, b := range c.NetworkBindings {
-				ports = append(ports, fmt.Sprintf("%d:%d/%s", *b.ContainerPort, *b.HostPort, *b.Protocol))
-			}
-
-			row.Port = strings.Join(ports, ",")
-		}
-
-		rows = append(rows, row)
+		rs = append(rs, newRows...)
 	}
 
-	return rows, nil
+	return rows(rs), nil
 }
 
-func printRows(rows []*row, log log.Logger) {
-	headers := []string{
-		"CONTAINER",
-		"IMAGE",
-		"STATUS",
-		"TASK NAME",
-		"CONTAINER INSTANCE",
-		"DESIRED STATUS",
-		"CURRENT STATUS",
-		"PORT",
-	}
+func (cmd *servicePsCommand) rowsFromTask(env *ecso.Environment, task *ecs.Task) (rows, error) {
+	rs := make([]*row, 0)
 
-	r := make([]map[string]string, len(rows))
+	for _, container := range task.Containers {
+		row, err := cmd.rowFromContainer(task, container, env)
 
-	for i, row := range rows {
-		r[i] = map[string]string{
-			"CONTAINER":          row.ContainerName,
-			"IMAGE":              row.ImageName,
-			"STATUS":             row.ContainerStatus,
-			"TASK NAME":          row.TaskName,
-			"CONTAINER INSTANCE": row.ContainerInstance,
-			"DESIRED STATUS":     row.DesiredStatus,
-			"CURRENT STATUS":     row.CurrentStatus,
-			"PORT":               row.Port,
+		if err != nil {
+			return rows(rs), err
 		}
+
+		rs = append(rs, row)
 	}
 
-	ui.PrintTable(log, headers, r...)
+	return rows(rs), nil
+}
+
+func (cmd *servicePsCommand) rowFromContainer(task *ecs.Task, container *ecs.Container, env *ecso.Environment) (*row, error) {
+	row := &row{
+		TaskID:            getIDFromArn(*task.TaskArn),
+		TaskName:          getIDFromArn(*task.TaskDefinitionArn),
+		ContainerInstance: getIDFromArn(*task.ContainerInstanceArn),
+		DesiredStatus:     *task.DesiredStatus,
+		CurrentStatus:     *task.LastStatus,
+		ContainerName:     *container.Name,
+		ContainerStatus:   *container.LastStatus,
+	}
+
+	image, err := cmd.serviceAPI.GetECSContainerImage(*task.TaskDefinitionArn, *container.Name, env)
+
+	if err != nil {
+		return nil, err
+	}
+
+	row.ImageName = image
+
+	if len(container.NetworkBindings) > 0 {
+		ports := make([]string, 0)
+
+		for _, b := range container.NetworkBindings {
+			ports = append(ports, fmt.Sprintf("%d:%d/%s", *b.ContainerPort, *b.HostPort, *b.Protocol))
+		}
+
+		row.Port = strings.Join(ports, ",")
+	}
+
+	return row, nil
 }
 
 func getIDFromArn(arn string) string {
