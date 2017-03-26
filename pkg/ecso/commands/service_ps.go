@@ -9,6 +9,7 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
+	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
 type row struct {
@@ -90,7 +91,7 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	cmd.log.Printf("\n")
-	ui.PrintTable(cmd.log, rows.TableHeader(), rows.TableRows()...)
+	ui.PrintTable(cmd.log, rows)
 	cmd.log.Printf("\n")
 
 	return nil
@@ -130,9 +131,9 @@ func (cmd *servicePsCommand) rowsFromTask(env *ecso.Environment, task *ecs.Task)
 
 func (cmd *servicePsCommand) rowFromContainer(task *ecs.Task, container *ecs.Container, env *ecso.Environment) (*row, error) {
 	row := &row{
-		TaskID:            getIDFromArn(*task.TaskArn),
-		TaskName:          getIDFromArn(*task.TaskDefinitionArn),
-		ContainerInstance: getIDFromArn(*task.ContainerInstanceArn),
+		TaskID:            util.GetIDFromArn(*task.TaskArn),
+		TaskName:          util.GetIDFromArn(*task.TaskDefinitionArn),
+		ContainerInstance: util.GetIDFromArn(*task.ContainerInstanceArn),
 		DesiredStatus:     *task.DesiredStatus,
 		CurrentStatus:     *task.LastStatus,
 		ContainerName:     *container.Name,
@@ -158,9 +159,4 @@ func (cmd *servicePsCommand) rowFromContainer(task *ecs.Task, container *ecs.Con
 	}
 
 	return row, nil
-}
-
-func getIDFromArn(arn string) string {
-	tokens := strings.Split(arn, "/")
-	return tokens[len(tokens)-1]
 }

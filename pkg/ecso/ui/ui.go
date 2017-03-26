@@ -164,7 +164,14 @@ func ChoiceVar(dst *int, prompt string, choices []string) error {
 	}
 }
 
-func PrintTable(logger log.Logger, headers []string, rows ...map[string]string) {
+type TableDataProvider interface {
+	TableHeader() []string
+	TableRows() []map[string]string
+}
+
+func PrintTable(logger log.Logger, data TableDataProvider) {
+	headers := data.TableHeader()
+	rows := data.TableRows()
 	format := ""
 
 	for _, h := range headers {

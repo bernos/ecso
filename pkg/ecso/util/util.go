@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 )
 
 func DirExists(dir string) (bool, error) {
@@ -42,4 +43,9 @@ func CloudFormationConsoleURL(stackID, region string) string {
 
 func CloudWatchLogsConsoleURL(logGroup, region string) string {
 	return fmt.Sprintf("https://%s.console.aws.amazon.com/cloudwatch/home?region=%s#logStream:group=%s", region, region, logGroup)
+}
+
+func GetIDFromArn(arn string) string {
+	tokens := strings.Split(arn, "/")
+	return tokens[len(tokens)-1]
 }

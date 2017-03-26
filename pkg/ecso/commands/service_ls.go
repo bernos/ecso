@@ -9,7 +9,7 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
-	"gopkg.in/urfave/cli.v1"
+	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
 const (
@@ -30,10 +30,6 @@ type serviceLsCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *serviceLsCommand) UnmarshalCliContext(ctx *cli.Context) error {
-	return nil
-}
-
 func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext) error {
 	env := cmd.Environment(ctx)
 
@@ -43,32 +39,35 @@ func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	printServices(ctx.Project, env, services, cmd.log)
+	ui.PrintTable(cmd.log, servicesToRows(ctx.Project, env, services))
 
 	return nil
 }
 
-func printServices(project *ecso.Project, env *ecso.Environment, services []*ecs.Service, log log.Logger) {
-	headers := []string{"SERVICE", "ECS SERVICE", "TASK", "DESIRED", "RUNNING", "STATUS"}
-	rows := make([]map[string]string, len(services))
+func servicesToRows(project *ecso.Project, env *ecso.Environment, services []*ecs.Service) serviceLsRows {
+	a := make([]*serviceLsRow, len(services))
 
-	for i, service := range services {
-		rows[i] = map[string]string{
-			"SERVICE":     localServiceName(*service.ServiceName, env, project),
-			"ECS SERVICE": *service.ServiceName,
-			"TASK":        taskDefinitionName(*service.TaskDefinition),
-			"DESIRED":     fmt.Sprintf("%d", *service.DesiredCount),
-			"RUNNING":     fmt.Sprintf("%d", *service.RunningCount),
-			"STATUS":      *service.Status,
-		}
+	for i, s := range services {
+		a[i] = serviceToRow(project, env, s)
 	}
 
-	ui.PrintTable(log, headers, rows...)
+	return serviceLsRows(a)
 }
 
-func localServiceName(ecsServiceName string, env *ecso.Environment, project *ecso.Project) string {
+func serviceToRow(project *ecso.Project, env *ecso.Environment, service *ecs.Service) *serviceLsRow {
+	return &serviceLsRow{
+		Name:           localServiceName(service, env, project),
+		ECSServiceName: *service.ServiceName,
+		ECSTask:        util.GetIDFromArn(*service.TaskDefinition),
+		Desired:        *service.DesiredCount,
+		Running:        *service.RunningCount,
+		Status:         *service.Status,
+	}
+}
+
+func localServiceName(ecsService *ecs.Service, env *ecso.Environment, project *ecso.Project) string {
 	for _, s := range project.Services {
-		if strings.HasPrefix(ecsServiceName, s.GetECSTaskDefinitionName(env)+"-Service") {
+		if strings.HasPrefix(*ecsService.ServiceName, s.GetECSTaskDefinitionName(env)+"-Service") {
 			return s.Name
 		}
 	}
@@ -76,12 +75,41 @@ func localServiceName(ecsServiceName string, env *ecso.Environment, project *ecs
 	return ""
 }
 
-func taskDefinitionName(arn string) string {
-	tokens := strings.Split(arn, "/")
-	return tokens[len(tokens)-1]
+type serviceLsRow struct {
+	Name           string
+	ECSServiceName string
+	ECSTask        string
+	Desired        int64
+	Running        int64
+	Status         string
 }
 
-func serviceName(arn string) string {
-	tokens := strings.Split(arn, "/")
-	return tokens[len(tokens)-1]
+type serviceLsRows []*serviceLsRow
+
+func (s serviceLsRows) TableHeader() []string {
+	return []string{
+		"SERVICE",
+		"ECS SERVICE",
+		"TASK",
+		"DESIRED",
+		"RUNNING",
+		"STATUS",
+	}
+}
+
+func (s serviceLsRows) TableRows() []map[string]string {
+	trs := make([]map[string]string, len(s))
+
+	for i, row := range s {
+		trs[i] = map[string]string{
+			"SERVICE":     row.Name,
+			"ECS SERVICE": row.ECSServiceName,
+			"TASK":        row.ECSTask,
+			"DESIRED":     fmt.Sprintf("%d", row.Desired),
+			"RUNNING":     fmt.Sprintf("%d", row.Running),
+			"STATUS":      row.Status,
+		}
+	}
+
+	return trs
 }
