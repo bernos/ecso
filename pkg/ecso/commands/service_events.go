@@ -6,29 +6,23 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/awsregistry"
-	"github.com/bernos/ecso/pkg/ecso/helpers"
 	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
-func NewServiceEventsCommand(name string, serviceAPI api.ServiceAPI, log log.Logger, registryFactory awsregistry.RegistryFactory) ecso.Command {
+func NewServiceEventsCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
 	return &serviceEventsCommand{
 		ServiceCommand: &ServiceCommand{
 			name:       name,
 			serviceAPI: serviceAPI,
 			log:        log,
 		},
-		registryFactory: registryFactory,
 	}
 }
 
 type serviceEventsCommand struct {
 	*ServiceCommand
-
-	registryFactory awsregistry.RegistryFactory
 }
 
-// TODO add GetServiceEvents to the ecso api and call from here, rather than using the helper directly
 func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext) error {
 	var (
 		env     = cmd.Environment(ctx)
@@ -36,25 +30,17 @@ func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext) error {
 		count   = 0
 	)
 
-	reg, err := cmd.registryFactory.ForRegion(env.Region)
-	if err != nil {
-		return err
-	}
-
-	runningService, err := cmd.serviceAPI.GetECSService(ctx.Project, env, service)
-
-	if err != nil || runningService == nil {
-		return err
-	}
-
-	ecsHelper := helpers.NewECSHelper(reg.ECSAPI(), cmd.log.Child())
-	cancel := ecsHelper.LogServiceEvents(*runningService.ServiceName, env.GetClusterName(), func(e *ecs.ServiceEvent, err error) {
+	cancel, err := cmd.serviceAPI.ServiceEvents(ctx.Project, env, service, func(e *ecs.ServiceEvent, err error) {
 		if err != nil {
 			cmd.log.Errorf("%s\n", err.Error())
 		} else {
 			cmd.log.Printf("%s %s\n", *e.CreatedAt, *e.Message)
 		}
 	})
+
+	if err != nil {
+		return err
+	}
 
 	defer cancel()
 

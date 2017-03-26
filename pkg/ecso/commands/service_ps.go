@@ -90,9 +90,7 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	cmd.log.Printf("\n")
 	ui.PrintTable(cmd.log, rows)
-	cmd.log.Printf("\n")
 
 	return nil
 }

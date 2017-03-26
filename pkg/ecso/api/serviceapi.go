@@ -19,6 +19,7 @@ type ServiceAPI interface {
 	DescribeService(env *ecso.Environment, service *ecso.Service) (*ServiceDescription, error)
 	ServiceUp(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ServiceDescription, error)
 	ServiceDown(p *ecso.Project, env *ecso.Environment, s *ecso.Service) error
+	ServiceEvents(p *ecso.Project, env *ecso.Environment, s *ecso.Service, f func(*ecs.ServiceEvent, error)) (cancel func(), err error)
 	ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*cloudwatchlogs.FilteredLogEvent, error)
 	GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ecs.Service, error)
 	GetECSTasks(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*ecs.Task, error)
@@ -208,6 +209,28 @@ func (api *serviceAPI) ServiceDown(project *ecso.Project, env *ecso.Environment,
 	}
 
 	return nil
+}
+
+func (api *serviceAPI) ServiceEvents(p *ecso.Project, env *ecso.Environment, s *ecso.Service, f func(*ecs.ServiceEvent, error)) (cancel func(), err error) {
+	reg, err := api.registryFactory.ForRegion(env.Region)
+
+	if err != nil {
+		return nil, err
+	}
+
+	runningService, err := api.GetECSService(p, env, s)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if runningService == nil {
+		return nil, fmt.Errorf("No service named %s is running", s.Name)
+	}
+
+	h := helpers.NewECSHelper(reg.ECSAPI(), api.log.Child())
+
+	return h.LogServiceEvents(*runningService.ServiceArn, env.GetClusterName(), f), nil
 }
 
 func (api *serviceAPI) ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*cloudwatchlogs.FilteredLogEvent, error) {

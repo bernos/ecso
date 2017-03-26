@@ -303,7 +303,7 @@ func NewServiceEventsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 			l := cfg.Logger()
 			r := cfg.AWSRegistryFactory()
 
-			return commands.NewServiceEventsCommand(name, api.NewServiceAPI(l, r), l, r)
+			return commands.NewServiceEventsCommand(name, api.NewServiceAPI(l, r), l)
 		})
 	}
 
