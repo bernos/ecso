@@ -21,6 +21,7 @@ type EnvironmentAPI interface {
 	IsEnvironmentUp(env *ecso.Environment) (bool, error)
 	SendNotification(env *ecso.Environment, msg string) error
 	GetECSServices(env *ecso.Environment) ([]*ecs.Service, error)
+	GetECSTasks(env *ecso.Environment) ([]*ecs.Task, error)
 }
 
 // New creates a new API
@@ -137,6 +138,36 @@ func (api *environmentAPI) GetECSServices(env *ecso.Environment) ([]*ecs.Service
 	}
 
 	return services, nil
+}
+
+func (api *environmentAPI) GetECSTasks(env *ecso.Environment) ([]*ecs.Task, error) {
+	taskArns := make([]*string, 0)
+	reg, err := api.registryFactory.ForRegion(env.Region)
+
+	if err != nil {
+		return nil, err
+	}
+
+	ecsAPI := reg.ECSAPI()
+	params := &ecs.ListTasksInput{
+		Cluster: aws.String(env.GetClusterName()),
+	}
+
+	err = ecsAPI.ListTasksPages(params, func(o *ecs.ListTasksOutput, lastPage bool) bool {
+		taskArns = append(taskArns, o.TaskArns...)
+		return !lastPage
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := ecsAPI.DescribeTasks(&ecs.DescribeTasksInput{
+		Cluster: aws.String(env.GetClusterName()),
+		Tasks:   taskArns,
+	})
+
+	return resp.Tasks, err
 }
 
 func (api *environmentAPI) IsEnvironmentUp(env *ecso.Environment) (bool, error) {
