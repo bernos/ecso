@@ -34,7 +34,7 @@ func ClusterConsoleURL(cluster, region string) string {
 }
 
 func ServiceConsoleURL(service, cluster, region string) string {
-	return fmt.Sprintf("https://%s.console.aws.amazon.com/ecs/home?region=%s#/clusters/%s/services/%s/tasks", region, region, cluster, service)
+	return fmt.Sprintf("https://%s.console.aws.amazon.com/ecs/home?region=%s#/clusters/%s/services/%s/tasks", region, region, cluster, GetIDFromArn(service))
 }
 
 func CloudFormationConsoleURL(stackID, region string) string {
