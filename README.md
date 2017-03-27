@@ -98,6 +98,10 @@ running ecso. Just copy, paste and edit the following json to ~/.ecso.json
 }
 ```
 
+# ecso environment diagram
+
+![ecso environment](/docs/images/ecso-environment.png)
+
 # Building ecso
 
 ## Developing
