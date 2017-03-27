@@ -35,6 +35,7 @@ func NewEnvironmentCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 		Usage: "Manage ecso environments",
 		Subcommands: []cli.Command{
 			NewEnvironmentAddCliCommand(dispatcher),
+			NewEnvironmentPsCliCommand(dispatcher),
 			NewEnvironmentUpCliCommand(dispatcher),
 			NewEnvironmentRmCliCommand(dispatcher),
 			NewEnvironmentDescribeCliCommand(dispatcher),
@@ -125,6 +126,25 @@ func NewEnvironmentDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 			},
 		},
 		Action: MakeAction(dispatcher, fn),
+	}
+}
+
+func NewEnvironmentPsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
+		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
+			l := cfg.Logger()
+			r := cfg.AWSRegistryFactory()
+
+			return commands.NewEnvironmentPsCommand(name, api.NewEnvironmentAPI(l, r), l)
+		})
+	}
+
+	return cli.Command{
+		Name:        "ps",
+		Usage:       "Lists containers running in an environment",
+		Description: "",
+		ArgsUsage:   "ENVIRONMENT",
+		Action:      MakeAction(dispatcher, fn),
 	}
 }
 

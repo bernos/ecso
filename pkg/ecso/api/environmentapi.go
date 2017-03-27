@@ -22,6 +22,7 @@ type EnvironmentAPI interface {
 	SendNotification(env *ecso.Environment, msg string) error
 	GetECSServices(env *ecso.Environment) ([]*ecs.Service, error)
 	GetECSTasks(env *ecso.Environment) ([]*ecs.Task, error)
+	GetECSContainers(env *ecso.Environment) (ContainerList, error)
 }
 
 // New creates a new API
@@ -81,6 +82,22 @@ func (api *environmentAPI) DescribeEnvironment(env *ecso.Environment) (*Environm
 	return description, nil
 }
 
+func (api *environmentAPI) GetECSContainers(env *ecso.Environment) (ContainerList, error) {
+	reg, err := api.registryFactory.ForRegion(env.Region)
+
+	if err != nil {
+		return nil, err
+	}
+
+	tasks, err := api.GetECSTasks(env)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return LoadContainerList(tasks, reg.ECSAPI())
+}
+
 func (api *environmentAPI) GetECSServices(env *ecso.Environment) ([]*ecs.Service, error) {
 	var (
 		count     = 0
@@ -92,7 +109,7 @@ func (api *environmentAPI) GetECSServices(env *ecso.Environment) ([]*ecs.Service
 	reg, err := api.registryFactory.ForRegion(env.Region)
 
 	if err != nil {
-		return services, nil
+		return nil, err
 	}
 
 	params := &ecs.ListServicesInput{

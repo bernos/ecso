@@ -21,8 +21,10 @@ type ServiceAPI interface {
 	ServiceDown(p *ecso.Project, env *ecso.Environment, s *ecso.Service) error
 	ServiceEvents(p *ecso.Project, env *ecso.Environment, s *ecso.Service, f func(*ecs.ServiceEvent, error)) (cancel func(), err error)
 	ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*cloudwatchlogs.FilteredLogEvent, error)
+	GetECSContainers(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (ContainerList, error)
 	GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ecs.Service, error)
 	GetECSTasks(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*ecs.Task, error)
+
 	GetECSContainerImage(taskDefinitionArn, containerName string, env *ecso.Environment) (string, error)
 }
 
@@ -46,6 +48,22 @@ func NewServiceAPI(log log.Logger, registryFactory awsregistry.RegistryFactory) 
 type serviceAPI struct {
 	log             log.Logger
 	registryFactory awsregistry.RegistryFactory
+}
+
+func (api *serviceAPI) GetECSContainers(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (ContainerList, error) {
+	reg, err := api.registryFactory.ForRegion(env.Region)
+
+	if err != nil {
+		return nil, err
+	}
+
+	tasks, err := api.GetECSTasks(p, env, s)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return LoadContainerList(tasks, reg.ECSAPI())
 }
 
 func (api *serviceAPI) GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ecs.Service, error) {
