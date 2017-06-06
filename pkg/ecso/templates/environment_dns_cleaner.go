@@ -12,6 +12,10 @@ Parameters:
         Description: Select the DNS zone to clean
         Type: String
 
+    LogGroupName:
+        Description: The name of the cloudwatch log group to send container logs to
+        Type: String
+
 Resources:
     TaskDefinition:
         Type: AWS::ECS::TaskDefinition
@@ -36,14 +40,9 @@ Resources:
                   LogConfiguration:
                     LogDriver: awslogs
                     Options:
-                        awslogs-group: !Ref AWS::StackName
+                        awslogs-group: !Ref LogGroupName
                         awslogs-region: !Ref AWS::Region
-
-    CloudWatchLogsGroup:
-        Type: AWS::Logs::LogGroup
-        Properties:
-            LogGroupName: !Ref AWS::StackName
-            RetentionInDays: 30
+                        awslogs-stream-prefix: daemon-services/dns-cleaner
 
     TaskRole:
         Type: AWS::IAM::Role

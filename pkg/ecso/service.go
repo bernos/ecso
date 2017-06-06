@@ -51,6 +51,10 @@ func (s *Service) GetCloudWatchLogGroupName(env *Environment) string {
 	return fmt.Sprintf("%s-%s-%s", s.project.Name, env.Name, s.Name)
 }
 
+func (s *Service) GetCloudWatchLogStreamPrefix(env *Environment) string {
+	return s.Name
+}
+
 func (s *Service) GetECSTaskDefinitionName(env *Environment) string {
 	return fmt.Sprintf("%s-%s-%s", s.project.Name, env.Name, s.Name)
 }

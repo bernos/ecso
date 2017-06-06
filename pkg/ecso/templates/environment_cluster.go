@@ -48,6 +48,10 @@ Parameters:
         Description: The arn of the sns topic to send ecs cluster events to
         Type: String
 
+    LogGroupName:
+        Description: The name of the cloudwatch logs group to send cluster logs to
+        Type: String
+
 Mappings:
 
     # These are the latest ECS optimized AMIs as of November 2016:
@@ -114,11 +118,6 @@ Resources:
             Action: "lambda:InvokeFunction"
             Principal: "events.amazonaws.com"
             SourceArn: !GetAtt CloudWatchEvents.Arn
-
-    CloudWatchLogsGroup:
-        Type: AWS::Logs::LogGroup
-        Properties:
-            RetentionInDays: 7
 
     ECSAutoScalingGroup:
         Type: AWS::AutoScaling::AutoScalingGroup
@@ -398,38 +397,38 @@ Resources:
                                 state_file = /var/awslogs/state/agent-state
                                 [/var/log/ecs/ecs-start-task.log]
                                 file = /var/log/ecs/ecs-start-task.log
-                                log_group_name = ${CloudWatchLogsGroup}
-                                log_stream_name = {instance_id}/ecs-start-task.log
+                                log_group_name = ${LogGroupName}
+                                log_stream_name = cluster/{instance_id}/ecs-start-task.log
                                 datetime_format =
                                 [/var/log/cloud-init.log]
                                 file = /var/log/cloud-init.log
-                                log_group_name = ${CloudWatchLogsGroup}
-                                log_stream_name = {instance_id}/cloud-init.log
+                                log_group_name = ${LogGroupName}
+                                log_stream_name = cluster/{instance_id}/cloud-init.log
                                 datetime_format =
                                 [/var/log/cloud-init-output.log]
                                 file = /var/log/cloud-init-output.log
-                                log_group_name = ${CloudWatchLogsGroup}
-                                log_stream_name = {instance_id}/cloud-init-output.log
+                                log_group_name = ${LogGroupName}
+                                log_stream_name = cluster/{instance_id}/cloud-init-output.log
                                 datetime_format =
                                 [/var/log/cfn-init.log]
                                 file = /var/log/cfn-init.log
-                                log_group_name = ${CloudWatchLogsGroup}
-                                log_stream_name = {instance_id}/cfn-init.log
+                                log_group_name = ${LogGroupName}
+                                log_stream_name = cluster/{instance_id}/cfn-init.log
                                 datetime_format =
                                 [/var/log/cfn-hup.log]
                                 file = /var/log/cfn-hup.log
-                                log_group_name = ${CloudWatchLogsGroup}
-                                log_stream_name = {instance_id}/cfn-hup.log
+                                log_group_name = ${LogGroupName}
+                                log_stream_name = cluster/{instance_id}/cfn-hup.log
                                 datetime_format =
                                 [/var/log/cfn-wire.log]
                                 file = /var/log/cfn-wire.log
-                                log_group_name = ${CloudWatchLogsGroup}
-                                log_stream_name = {instance_id}/cfn-wire.log
+                                log_group_name = ${LogGroupName}
+                                log_stream_name = cluster/{instance_id}/cfn-wire.log
                                 datetime_format =
                                 [/var/log/ecssd_agent.log]
                                 file = /var/log/ecssd_agent.log
-                                log_group_name = ${CloudWatchLogsGroup}
-                                log_stream_name = {instance_id}/ecssd-agent.log
+                                log_group_name = ${LogGroupName}
+                                log_stream_name = cluster/{instance_id}/ecssd-agent.log
                                 datetime_format = %Y-%m-%dT%H:%M:%S%z
 
                     services:
@@ -559,12 +558,7 @@ Resources:
                   Resource: arn:aws:logs:*:*:*
 
 Outputs:
-
     Cluster:
         Description: A reference to the ECS cluster
         Value: !Ref ECSCluster
-
-    LogGroup:
-        Description: A reference to the CloudWatch logs group
-        Value: !Ref CloudWatchLogsGroup
 `))

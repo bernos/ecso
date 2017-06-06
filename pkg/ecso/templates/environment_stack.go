@@ -87,6 +87,10 @@ Resources:
             TemplateURL: ./dd-agent.yaml
             Parameters:
                 EnvironmentName: !Ref AWS::StackName
+                LogGroupName:
+                    Fn::GetAtt:
+                    - Logs
+                    - Outputs.LogGroup
 
     DNSCleanerTaskDefinition:
         Type: AWS::CloudFormation::Stack
@@ -95,6 +99,10 @@ Resources:
             Parameters:
                 EnvironmentName: !Ref AWS::StackName
                 DNSZone: !Ref DNSZone
+                LogGroupName:
+                    Fn::GetAtt:
+                    - Logs
+                    - Outputs.LogGroup
 
     ALB:
         Type: AWS::CloudFormation::Stack
@@ -110,6 +118,13 @@ Resources:
                   - SecurityGroups
                   - Outputs.LoadBalancerSecurityGroup
 
+    Logs:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: ./logging.yaml
+            Properties:
+                EnvironmentName: !Ref AWS::StackName
+
     ECS:
         Type: AWS::CloudFormation::Stack
         Properties:
@@ -121,6 +136,10 @@ Resources:
                 VPC: !Ref VPC
                 DNSZone: !Ref DNSZone
                 DataDogAPIKey: !Ref DataDogAPIKey
+                LogGroupName:
+                    Fn::GetAtt:
+                    - Logs
+                    - Outputs.LogGroup
                 NotificationsTopic:
                   Fn::GetAtt:
                   - SNS

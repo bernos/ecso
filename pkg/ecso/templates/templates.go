@@ -15,6 +15,7 @@ func GetEnvironmentTemplates(project *ecso.Project, env *ecso.Environment) map[s
 
 	return map[string]*template.Template{
 		p("stack.yaml"):           environmentStackTemplate,
+		p("logging.yaml"):         environmentLoggingTemplate,
 		p("ecs-cluster.yaml"):     environmentClusterTemplate,
 		p("load-balancers.yaml"):  environmentALBTemplate,
 		p("security-groups.yaml"): environmentSecurityGroupTemplate,

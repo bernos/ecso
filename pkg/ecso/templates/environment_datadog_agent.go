@@ -7,6 +7,9 @@ Parameters:
     EnvironmentName:
         Description: An environment name that will be prefixed to resource names
         Type: String
+    LogGroupName:
+        Description: The name of the cloudwatch log group to send container logs to
+        Type: String
 
 Resources:
     TaskDefinition:
@@ -52,12 +55,7 @@ Resources:
                   LogConfiguration:
                     LogDriver: awslogs
                     Options:
-                        awslogs-group: !Ref AWS::StackName
+                        awslogs-group: !Ref LogGroupName
                         awslogs-region: !Ref AWS::Region
-
-    CloudWatchLogsGroup:
-        Type: AWS::Logs::LogGroup
-        Properties:
-            LogGroupName: !Ref AWS::StackName
-            RetentionInDays: 30
+                        awslogs-stream-prefix: daemon-services/datadog
 `))

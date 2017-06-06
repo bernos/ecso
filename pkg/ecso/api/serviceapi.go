@@ -260,9 +260,25 @@ func (api *serviceAPI) ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ec
 
 	cwLogsAPI := reg.CloudWatchLogsAPI()
 
+	streams, err := cwLogsAPI.DescribeLogStreams(&cloudwatchlogs.DescribeLogStreamsInput{
+		LogGroupName:        aws.String(s.GetCloudWatchLogGroupName(env)),
+		LogStreamNamePrefix: aws.String(s.GetCloudWatchLogStreamPrefix(env)),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	streamNames := make([]*string, 0)
+
+	for _, stream := range streams.LogStreams {
+		streamNames = append(streamNames, stream.LogStreamName)
+	}
+
 	resp, err := cwLogsAPI.FilterLogEvents(&cloudwatchlogs.FilterLogEventsInput{
-		LogGroupName: aws.String(s.GetCloudWatchLogGroupName(env)),
-		Interleaved:  aws.Bool(true),
+		LogGroupName:   aws.String(s.GetCloudWatchLogGroupName(env)),
+		Interleaved:    aws.Bool(true),
+		LogStreamNames: streamNames,
 	})
 
 	if err != nil {
@@ -439,7 +455,7 @@ func (api *serviceAPI) registerECSTaskDefinition(reg awsregistry.Registry, proje
 			Options: map[string]*string{
 				"awslogs-region":        aws.String(env.Region),
 				"awslogs-group":         aws.String(service.GetCloudWatchLogGroupName(env)),
-				"awslogs-stream-prefix": aws.String(service.Name),
+				"awslogs-stream-prefix": aws.String(service.GetCloudWatchLogStreamPrefix(env)),
 			},
 		})
 
