@@ -202,7 +202,7 @@ Outputs:
         Description: A reference to the CloudWatch logs group
         Value:
           Fn::GetAtt:
-            - ECS
+            - Logs
             - Outputs.LogGroup
 
     Listener:
