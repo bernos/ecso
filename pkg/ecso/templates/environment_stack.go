@@ -122,8 +122,8 @@ Resources:
         Type: AWS::CloudFormation::Stack
         Properties:
             TemplateURL: ./logging.yaml
-            Properties:
-                EnvironmentName: !Ref AWS::StackName
+            Parameters:
+                LogGroupName: !Ref AWS::StackName
 
     ECS:
         Type: AWS::CloudFormation::Stack
