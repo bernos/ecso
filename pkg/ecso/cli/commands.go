@@ -81,6 +81,10 @@ func NewEnvironmentAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 				Name:  commands.EnvironmentAddInstanceTypeOption,
 				Usage: "The type of container instances to create",
 			},
+			cli.StringFlag{
+				Name:  commands.EnvironmentAddKeyPairOption,
+				Usage: "The keypair to use when accessing EC2 instances",
+			},
 		},
 		Action: MakeAction(dispatcher, fn),
 	}

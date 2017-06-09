@@ -21,6 +21,7 @@ const (
 	EnvironmentAddInstanceTypeOption    = "instance-type"
 	EnvironmentAddRegionOption          = "region"
 	EnvironmentAddSizeOption            = "size"
+	EnvironmentAddKeyPairOption         = "keypair"
 )
 
 type environmentAddCommand struct {
@@ -36,6 +37,7 @@ type environmentAddCommand struct {
 	account         string
 	instanceType    string
 	size            int
+	keyPair         string
 	dnsZone         string
 	datadogAPIKey   string
 }
@@ -84,6 +86,7 @@ func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
 			"DNSZone":         c.dnsZone,
 			"ClusterSize":     fmt.Sprintf("%d", c.size),
 			"DataDogAPIKey":   c.datadogAPIKey,
+			"KeyPair":         c.keyPair,
 		},
 		CloudFormationTags: map[string]string{
 			"environment": c.environmentName,
@@ -130,6 +133,7 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 		InstanceSubnets string
 		InstanceType    string
 		Size            string
+		KeyPair         string
 		DNSZone         string
 		DataDogAPIKey   string
 	}{
@@ -140,6 +144,7 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 		InstanceSubnets: "Which subnets would you like to deploy the ECS container instances to (provide a comma separated list of subnet ids)?",
 		InstanceType:    "What type of instances would you like to add to the ECS cluster?",
 		Size:            "How many instances would you like to add to the ECS cluster?",
+		KeyPair:         "Which keypair would you like to use to access the EC2 isntances in the cluster?",
 		DNSZone:         "Which DNS zone would you like to use for service discovery?",
 		DataDogAPIKey:   "What is your Data Dog API key?",
 	}
@@ -153,6 +158,7 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 		InstanceType    func(string) error
 		DNSZone         func(string) error
 		Size            func(int) error
+		KeyPair         func(string) error
 		DataDogAPIKey   func(string) error
 	}{
 		Name:            environmentNameValidator(ctx.Project),
@@ -163,6 +169,7 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 		InstanceType:    ui.ValidateRequired("Instance type is required"),
 		DNSZone:         ui.ValidateRequired("DNS zone is required"),
 		Size:            ui.ValidateIntBetween(2, 100),
+		KeyPair:         ui.ValidateRequired("KeyPair is required"),
 		DataDogAPIKey:   ui.ValidateRequired("DataDog API key is required"),
 	}
 
@@ -203,6 +210,10 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 	}
 
 	if err := ui.AskIntIfEmptyVar(&c.size, prompts.Size, 4, validators.Size); err != nil {
+		return err
+	}
+
+	if err := ui.AskStringIfEmptyVar(&c.keyPair, prompts.KeyPair, accountDefaults.KeyPair, validators.KeyPair); err != nil {
 		return err
 	}
 

@@ -16,9 +16,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/bernos/ecso/pkg/ecso/log"
+	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
 var (
@@ -118,8 +118,7 @@ func (h *cfnHelper) Package(templateFile, prefix string) (string, error) {
 		return "", err
 	}
 
-	bucket, err := h.getDefaultCloudFormationBucket()
-
+	bucket, err := util.GetEcsoBucket(h.stsClient, h.region)
 	if err != nil {
 		return "", err
 	}
@@ -543,14 +542,4 @@ func (h *cfnHelper) validateTemplateFile(file string) error {
 	}
 
 	return h.validateTemplate(templateBody)
-}
-
-func (h *cfnHelper) getDefaultCloudFormationBucket() (string, error) {
-	resp, err := h.stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
-
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("ecso-%s-%s", h.region, *resp.Account), nil
 }

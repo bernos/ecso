@@ -23,6 +23,11 @@ Parameters:
         Type: Number
         Default: 4
 
+    MaxClusterSize:
+        Description: What is the maximum cluster size for autoscaling?
+        Type: Number
+        Default: 8
+
     VPC:
         Description: Choose which VPC this ECS cluster should be deployed to
         Type: AWS::EC2::VPC::Id
@@ -46,6 +51,10 @@ Parameters:
 
     NotificationsTopic:
         Description: The arn of the sns topic to send ecs cluster events to
+        Type: String
+
+    KeyPair:
+        Description: The keypair to add to each EC2 instance in the cluster
         Type: String
 
     LogGroupName:
@@ -125,7 +134,7 @@ Resources:
             VPCZoneIdentifier: !Ref Subnets
             LaunchConfigurationName: !Ref ECSLaunchConfiguration
             MinSize: !Ref ClusterSize
-            MaxSize: !Ref ClusterSize
+            MaxSize: !Ref MaxClusterSize
             DesiredCapacity: !Ref ClusterSize
             Tags:
                 - Key: Name
@@ -250,6 +259,7 @@ Resources:
         Properties:
             ImageId:  !FindInMap [AWSRegionToAMI, !Ref "AWS::Region", AMI]
             InstanceType: !Ref InstanceType
+            KeyName: !Ref KeyPair
             SecurityGroups:
                 - !Ref SecurityGroup
             IamInstanceProfile: !Ref ECSInstanceProfile

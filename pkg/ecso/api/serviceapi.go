@@ -24,7 +24,6 @@ type ServiceAPI interface {
 	GetECSContainers(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (ContainerList, error)
 	GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ecs.Service, error)
 	GetECSTasks(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*ecs.Task, error)
-	GetCloudWatchLogGroupName(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (string, error)
 	GetECSContainerImage(taskDefinitionArn, containerName string, env *ecso.Environment) (string, error)
 }
 
@@ -64,27 +63,6 @@ func (api *serviceAPI) GetECSContainers(p *ecso.Project, env *ecso.Environment, 
 	}
 
 	return LoadContainerList(tasks, reg.ECSAPI())
-}
-
-func (api *serviceAPI) GetCloudWatchLogGroupName(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (string, error) {
-	reg, err := api.registryFactory.ForRegion(env.Region)
-	if err != nil {
-		return "", err
-	}
-
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
-
-	outputs, err := cfn.GetStackOutputs(env.GetCloudFormationStackName())
-	if err != nil {
-		return "", err
-	}
-
-	name, ok := outputs["LogGroup"]
-	if ok {
-		return name, nil
-	}
-
-	return name, fmt.Errorf("Could not find loggroup output")
 }
 
 func (api *serviceAPI) GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ecs.Service, error) {
@@ -200,13 +178,11 @@ func (api *serviceAPI) DescribeService(env *ecso.Environment, service *ecso.Serv
 	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
 
 	envOutputs, err := cfn.GetStackOutputs(env.GetCloudFormationStackName())
-
 	if err != nil {
 		return nil, err
 	}
 
 	serviceOutputs, err := cfn.GetStackOutputs(service.GetCloudFormationStackName(env))
-
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +191,7 @@ func (api *serviceAPI) DescribeService(env *ecso.Environment, service *ecso.Serv
 		Name:                     service.Name,
 		ECSConsoleURL:            util.ServiceConsoleURL(serviceOutputs["Service"], env.GetClusterName(), env.Region),
 		CloudFormationConsoleURL: util.CloudFormationConsoleURL(service.GetCloudFormationStackName(env), env.Region),
-		CloudWatchLogsConsoleURL: util.CloudWatchLogsConsoleURL(serviceOutputs["CloudWatchLogsGroup"], env.Region),
+		CloudWatchLogsConsoleURL: util.CloudWatchLogsConsoleURL(service.GetCloudWatchLogGroup(env), env.Region),
 		CloudFormationOutputs:    make(map[string]string),
 	}
 
@@ -278,15 +254,10 @@ func (api *serviceAPI) ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ec
 		return nil, err
 	}
 
-	logGroupName, err := api.GetCloudWatchLogGroupName(p, env, s)
-	if err != nil {
-		return nil, err
-	}
-
 	cwLogsAPI := reg.CloudWatchLogsAPI()
 
 	streams, err := cwLogsAPI.DescribeLogStreams(&cloudwatchlogs.DescribeLogStreamsInput{
-		LogGroupName:        aws.String(logGroupName),
+		LogGroupName:        aws.String(s.GetCloudWatchLogGroup(env)),
 		LogStreamNamePrefix: aws.String(s.GetCloudWatchLogStreamPrefix(env)),
 	})
 
@@ -301,7 +272,7 @@ func (api *serviceAPI) ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ec
 	}
 
 	resp, err := cwLogsAPI.FilterLogEvents(&cloudwatchlogs.FilterLogEventsInput{
-		LogGroupName:   aws.String(logGroupName),
+		LogGroupName:   aws.String(s.GetCloudWatchLogGroup(env)),
 		Interleaved:    aws.Bool(true),
 		LogStreamNames: streamNames,
 	})
@@ -461,11 +432,6 @@ func (api *serviceAPI) registerECSTaskDefinition(reg awsregistry.Registry, proje
 		ecsClient = reg.ECSAPI()
 	)
 
-	logGroupName, err := api.GetCloudWatchLogGroupName(project, env, service)
-	if err != nil {
-		return nil, err
-	}
-
 	// TODO: fully qualify the path to the service compose file
 	// taskDefinition, err := ConvertToTaskDefinition(taskName, service.ComposeFile)
 	api.log.Infof("Converting '%s' to task definition...", service.ComposeFile)
@@ -484,7 +450,7 @@ func (api *serviceAPI) registerECSTaskDefinition(reg awsregistry.Registry, proje
 			LogDriver: aws.String(ecs.LogDriverAwslogs),
 			Options: map[string]*string{
 				"awslogs-region":        aws.String(env.Region),
-				"awslogs-group":         aws.String(logGroupName),
+				"awslogs-group":         aws.String(service.GetCloudWatchLogGroup(env)),
 				"awslogs-stream-prefix": aws.String(service.GetCloudWatchLogStreamPrefix(env)),
 			},
 		})

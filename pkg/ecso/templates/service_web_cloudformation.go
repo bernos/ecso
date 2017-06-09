@@ -119,12 +119,6 @@ Resources:
                 - Name: ServiceName
                   Value: !Sub ${Service.Name}
 
-    CloudWatchLogsGroup:
-        Type: AWS::Logs::LogGroup
-        Properties:
-            LogGroupName: !Ref AWS::StackName
-            RetentionInDays: 365
-
     TargetGroup:
         Type: AWS::ElasticLoadBalancingV2::TargetGroup
         Properties:
@@ -199,10 +193,6 @@ Outputs:
     ServiceRole:
         Description: The IAM role for the service
         Value: !Ref ServiceRole
-
-    CloudWatchLogsGroup:
-        Description: Reference to the cloudwatch logs group
-        Value: !Ref CloudWatchLogsGroup
 
     Service:
         Description: Reference to the ecs service

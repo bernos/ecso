@@ -40,6 +40,10 @@ Parameters:
         Type: String
         Default: ""
 
+    KeyPair:
+        Description: The keypair to add to each EC2 instance in the cluster
+        Type: String
+
     PagerDutyEndpoint:
         Description: The url of PagerDuty service endpoint to notify
         Type: String
@@ -131,6 +135,7 @@ Resources:
             TemplateURL: ./ecs-cluster.yaml
             Parameters:
                 EnvironmentName: !Ref AWS::StackName
+                KeyPair: !Ref KeyPair
                 InstanceType: !Ref InstanceType
                 ClusterSize: !Ref ClusterSize
                 VPC: !Ref VPC

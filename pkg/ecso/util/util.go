@@ -5,6 +5,9 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 )
 
 func DirExists(dir string) (bool, error) {
@@ -48,4 +51,13 @@ func CloudWatchLogsConsoleURL(logGroup, region string) string {
 func GetIDFromArn(arn string) string {
 	tokens := strings.Split(arn, "/")
 	return tokens[len(tokens)-1]
+}
+
+func GetEcsoBucket(stsClient stsiface.STSAPI, region string) (string, error) {
+	resp, err := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("ecso-%s-%s", region, *resp.Account), nil
 }

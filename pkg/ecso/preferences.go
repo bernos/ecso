@@ -18,6 +18,7 @@ type AccountDefaults struct {
 	InstanceSubnets string
 	DNSZone         string
 	DataDogAPIKey   string
+	KeyPair         string
 }
 
 func LoadCurrentUserPreferences() (*UserPreferences, error) {

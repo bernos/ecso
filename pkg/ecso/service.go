@@ -47,6 +47,10 @@ func (s *Service) GetCloudFormationBucketPrefix(env *Environment) string {
 	return path.Join(base, "templates", "services", s.Name)
 }
 
+func (s *Service) GetCloudWatchLogGroup(env *Environment) string {
+	return env.GetCloudWatchLogGroup()
+}
+
 func (s *Service) GetCloudWatchLogStreamPrefix(env *Environment) string {
 	return fmt.Sprintf("services/%s", s.Name)
 }
