@@ -1,0 +1,128 @@
+package resources
+
+import "text/template"
+
+func init() {
+	EnvironmentCloudFormationTemplates.Add(NewCloudFormationTemplate("instance-drainer.yaml", environmentInstanceDrainerLambda))
+}
+
+var environmentInstanceDrainerLambda = template.Must(template.New("environmentInstanceDrainerLambda").Parse(`
+Parameters:
+
+    EnvironmentName:
+        Description: An environment name that will be prefixed to resource names
+        Type: String
+
+    AutoScalingTopicArn:
+        Description: Arn of the autoscaling notification topic
+        Type: String
+
+    AutoScalingGroupName:
+        Description: Name of the ASG to watch
+        Type: String
+
+    S3BucketName:
+        Description: Name of the S3 bucket containing the Lambda source code
+        Type: String
+
+    S3Key:
+        Description: Path in the S3 bucket to the lambda source code
+        Type: String
+
+Resources:
+    LambdaFunction:
+        Type: AWS::Lambda::Function
+        Properties:
+            FunctionName: !Sub ${EnvironmentName}-ECS-Instance-Drainer
+            Handler: index.lambda_handler
+            Role: !GetAtt LambdaExecutionRole.Arn
+            Runtime: python2.7
+            Timeout: 300
+            Description: A Lambda function which ensures that ecs tasks are properly drained from terminating EC2 instances
+            Code:
+                S3Bucket: !Ref S3BucketName
+                S3Key: !Ref S3Key
+
+    LambdaSubscription:
+        Type: AWS::SNS::Subscription
+        Properties:
+            Protocol: lambda
+            TopicArn: !Ref AutoScalingTopicArn
+            Endpoint: !GetAtt LambdaFunction.Arn
+
+    InvokeLambdaPermission:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref LambdaFunction
+            Action: lambda:InvokeFunction
+            Principal: sns.amazonaws.com
+            SourceArn: !Ref AutoScalingTopicArn
+
+    ASGTerminateHookRole:
+        Type: AWS::IAM::Role
+        Properties:
+            Path: "/"
+            ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/service-role/AutoScalingNotificationAccessRole
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - Effect: Allow
+                      Action:
+                          - sts:AssumeRole
+                      Principal:
+                          Service:
+                              - autoscaling.amazonaws.com
+
+    ASGTerminateHook:
+        Type: AWS::AutoScaling::LifecycleHook
+        Properties:
+            AutoScalingGroupName: !Ref AutoScalingGroupName
+            DefaultResult: ABANDON
+            HeartbeatTimeout: 900
+            LifecycleTransition: autoscaling:EC2_INSTANCE_TERMINATING
+            NotificationTargetARN: !Ref AutoScalingTopicArn
+            RoleARN: !GetAtt ASGTerminateHookRole.Arn
+
+    LambdaExecutionRole:
+        Type: AWS::IAM::Role
+        Properties:
+            Path: "/"
+            ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/service-role/AutoScalingNotificationAccessRole
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - Effect: Allow
+                      Action:
+                          - sts:AssumeRole
+                      Principal:
+                          Service:
+                              - lambda.amazonaws.com
+            Policies:
+                - PolicyName: root
+                  PolicyDocument:
+                      Version: '2012-10-17'
+                      Statement:
+                          - Effect: Allow
+                            Resource: "*"
+                            Action:
+                                - autoscaling:CompleteLifecycleAction
+                                - logs:CreateLogGroup
+                                - logs:CreateLogStream
+                                - logs:PutLogEvents
+                                - ec2:DescribeInstances
+                                - ec2:DescribeInstanceAttribute
+                                - ec2:DescribeInstanceStatus
+                                - ec2:DescribeHosts
+                                - ecs:ListContainerInstances
+                                - ecs:SubmitContainerStateChange
+                                - ecs:SubmitTaskStateChange
+                                - ecs:DescribeContainerInstances
+                                - ecs:UpdateContainerInstancesState
+                                - ecs:ListTasks
+                                - ecs:DescribeTasks
+                                - sns:Publish
+                                - sns:ListSubscriptions
+
+`))

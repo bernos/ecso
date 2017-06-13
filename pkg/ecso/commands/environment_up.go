@@ -6,7 +6,7 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/log"
-	"github.com/bernos/ecso/pkg/ecso/templates"
+	"github.com/bernos/ecso/pkg/ecso/resources"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
 
@@ -104,5 +104,6 @@ func (cmd *envUpCommand) ensureTemplates(ctx *ecso.CommandContext, project *ecso
 		return fmt.Errorf("This looks like the first time you've run `environment up` for the %s environment from this repository, however there is already a CloudFormation stack up and running. This could mean that someone has already created the %s environment for the %s project. If you really know what you are doing, you can rerun `environment up` with the `--force` flag.", env.Name, env.Name, project.Name)
 	}
 
-	return templates.WriteEnvironmentFiles(project, env, nil)
+	return resources.EnvironmentCloudFormationTemplates.WriteTo(dst, nil)
+	// return templates.WriteEnvironmentFiles(project, env, nil)
 }
