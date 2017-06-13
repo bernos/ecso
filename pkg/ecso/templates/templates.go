@@ -23,6 +23,7 @@ func GetEnvironmentTemplates(project *ecso.Project, env *ecso.Environment) map[s
 		p("sns.yaml"):                             environmentSNSTemplate,
 		p("alarms.yaml"):                          environmentAlarmsTemplate,
 		p("dns-cleaner.yaml"):                     environmentDNSCleanerTemplate,
+		p("instance-drainer.yaml"):                environmentInstanceDrainerLambda,
 		p("resources/lambda/instance-drainer.py"): environmentInstanceDrainerLambdaSource,
 	}
 }

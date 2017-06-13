@@ -270,6 +270,7 @@ func (api *environmentAPI) uploadResourcesToS3(env *ecso.Environment) error {
 
 	// get list of resource filepaths
 	return filepath.Walk(env.GetResourceDir(), func(file string, info os.FileInfo, err error) error {
+		api.log.Infof("walk %s", file)
 		if err != nil {
 			return err
 		}
@@ -291,7 +292,7 @@ func (api *environmentAPI) uploadResourcesToS3(env *ecso.Environment) error {
 				Body:   reader,
 			}
 
-			api.log.Printf("Uploading resource '%s' to 's3://%s/%s'\n", file, bucket, prefix)
+			api.log.Infof("Uploading resource '%s' to 's3://%s/%s'\n", file, bucket, prefix)
 
 			if _, err := uploader.Upload(params); err != nil {
 				return err
@@ -350,16 +351,22 @@ func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment,
 	if err != nil {
 		return err
 	}
-
+	// TODO we need bucket etc... out here in EnvironmentUp, so should pass it to uploadResourcesToS3 as params
 	if err := api.uploadResourcesToS3(env); err != nil {
 		return err
 	}
 
 	api.log.Infof("Deploying Cloud Formation stack for the '%s' environment", env.Name)
 
+	stsClient := reg.STSAPI()
 	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
-	exists, err := cfn.StackExists(stack)
 
+	exists, err := cfn.StackExists(stack)
+	if err != nil {
+		return err
+	}
+
+	bucket, err := util.GetEcsoBucket(stsClient, env.Region)
 	if err != nil {
 		return err
 	}
@@ -369,6 +376,8 @@ func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment,
 	}
 
 	tags["ecso-version"] = p.EcsoVersion
+	params["S3BucketName"] = bucket
+	params["S3KeyPrefix"] = env.GetBaseBucketPrefix()
 
 	var result *helpers.DeploymentResult
 

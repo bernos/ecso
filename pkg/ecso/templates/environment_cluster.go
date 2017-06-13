@@ -128,6 +128,9 @@ Resources:
             Principal: "events.amazonaws.com"
             SourceArn: !GetAtt CloudWatchEvents.Arn
 
+    ASGSNSTopic:
+        Type: AWS::SNS::Topic
+
     ECSAutoScalingGroup:
         Type: AWS::AutoScaling::AutoScalingGroup
         Properties:
@@ -136,6 +139,13 @@ Resources:
             MinSize: !Ref ClusterSize
             MaxSize: !Ref MaxClusterSize
             DesiredCapacity: !Ref ClusterSize
+            NotificationConfigurations:
+                - TopicARN: !Ref ASGSNSTopic
+                  NotificationTypes:
+                      - autoscaling:EC2_INSTANCE_LAUNCH
+                      - autoscaling:EC2_INSTANCE_LAUNCH_ERROR
+                      - autoscaling:EC2_INSTANCE_TERMINATE
+                      - autoscaling:EC2_INSTANCE_TERMINATE_ERROR
             Tags:
                 - Key: Name
                   Value: !Sub ${EnvironmentName} ECS host
@@ -568,6 +578,14 @@ Resources:
                   Resource: arn:aws:logs:*:*:*
 
 Outputs:
+    ASGSNSTopic:
+        Description: A reference to the autoscaling group notifications topic
+        Value: !Ref ASGSNSTopic
+
+    AutoScalingGroupName:
+        Description: A reference to the autoscaling group name
+        Value: !Ref ECSAutoScalingGroup
+
     Cluster:
         Description: A reference to the ECS cluster
         Value: !Ref ECSCluster

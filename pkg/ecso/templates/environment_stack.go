@@ -10,6 +10,14 @@ Description: >
 
 Parameters:
 
+    S3BucketName:
+        Description: The name of the S3 bucket to upload resources to
+        Type: String
+
+    S3KeyPrefix:
+        Description: The path in the S3 bucket to upload resources to
+        Type: String
+
     VPC:
         Description: Choose which VPC this ECS cluster should be deployed to
         Type: AWS::EC2::VPC::Id
@@ -121,6 +129,23 @@ Resources:
                   Fn::GetAtt:
                   - SecurityGroups
                   - Outputs.LoadBalancerSecurityGroup
+
+    InstanceDrainerLambda:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: ./instance-drainer.yaml
+            Parameters:
+                EnvironmentName: !Ref AWS::StackName
+                AutoScalingTopicArn:
+                    Fn::GetAtt:
+                    - ECS
+                    - Outputs.ASGSNSTopic
+                AutoScalingGroupName:
+                    Fn::GetAtt:
+                    - ECS
+                    - Outputs.AutoScalingGroupName
+                S3BucketName: !Ref S3BucketName
+                S3Key: !Sub ${S3KeyPrefix}/resources/lambda/instance-drainer.py
 
     Logs:
         Type: AWS::CloudFormation::Stack
