@@ -149,7 +149,7 @@ Resources:
                     - ECS
                     - Outputs.AutoScalingGroupName
                 S3BucketName: !Ref S3BucketName
-                S3Key: !Sub ${S3KeyPrefix}/resources/lambda/instance-drainer.py
+                S3Key: !Sub ${S3KeyPrefix}/resources/lambda/instance-drainer-` + InstanceDrainerLambdaVersion + `.zip
 
     Logs:
         Type: AWS::CloudFormation::Stack

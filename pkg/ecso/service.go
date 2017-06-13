@@ -30,6 +30,10 @@ type ServiceConfiguration struct {
 	CloudFormationParameters map[string]string
 }
 
+func (s *Service) Dir() string {
+	return filepath.Join(s.project.Dir(), "services", s.Name)
+}
+
 func (s *Service) GetCloudFormationTemplateDir() string {
 	return filepath.Join(s.project.Dir(), ".ecso", "services", s.Name)
 }
@@ -94,4 +98,8 @@ func (s *Service) GetECSTaskDefinition(env *Environment) (*ecs.TaskDefinition, e
 	logrus.SetLevel(logrus.ErrorLevel)
 
 	return utils.ConvertToTaskDefinition(name, context, p.ServiceConfigs)
+}
+
+func (s *Service) SetProject(p *Project) {
+	s.project = p
 }

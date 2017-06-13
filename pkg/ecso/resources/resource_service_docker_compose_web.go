@@ -1,6 +1,8 @@
-package templates
+package resources
 
 import "text/template"
+
+var WebServiceDockerComposeFile = NewTextFile("docker-compose.yaml", webServiceComposeFileTemplate)
 
 var webServiceComposeFileTemplate = template.Must(template.New("webServiceComposeFile").Parse(`
 version: '2'

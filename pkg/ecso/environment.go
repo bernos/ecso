@@ -50,3 +50,7 @@ func (e *Environment) GetCloudFormationTemplateFile() string {
 func (e *Environment) GetClusterName() string {
 	return fmt.Sprintf("%s-%s", e.project.Name, e.Name)
 }
+
+func (e *Environment) SetProject(p *Project) {
+	e.project = p
+}

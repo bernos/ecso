@@ -1,6 +1,8 @@
-package templates
+package resources
 
 import "text/template"
+
+var WebServiceCloudFormationTemplate = NewCloudFormationTemplate("stack.yaml", webServiceCloudFormationTemplate)
 
 var webServiceCloudFormationTemplate = template.Must(template.New("webServiceCloudFormationFile").Parse(`
 Parameters:

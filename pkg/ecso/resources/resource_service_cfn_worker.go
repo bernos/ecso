@@ -1,6 +1,8 @@
-package templates
+package resources
 
 import "text/template"
+
+var WorkerServiceCloudFormationTemplate = NewCloudFormationTemplate("stack.yaml", workerCloudFormationTemplate)
 
 var workerCloudFormationTemplate = template.Must(template.New("workerCloudFormationFile").Parse(`
 Parameters:

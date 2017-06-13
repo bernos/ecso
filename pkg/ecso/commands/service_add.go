@@ -6,7 +6,7 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/log"
-	"github.com/bernos/ecso/pkg/ecso/templates"
+	"github.com/bernos/ecso/pkg/ecso/resources"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -54,6 +54,8 @@ func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext) error {
 		},
 	}
 
+	service.SetProject(project)
+
 	if len(cmd.route) > 0 {
 		service.Route = cmd.route
 		service.RoutePriority = len(ctx.Project.Services) + 1
@@ -68,7 +70,7 @@ func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext) error {
 		Project: project,
 	}
 
-	if err := templates.WriteServiceFiles(project, service, templateData); err != nil {
+	if err := resources.WriteServiceFiles(service, templateData); err != nil {
 		return err
 	}
 

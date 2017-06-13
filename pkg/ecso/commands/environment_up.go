@@ -62,6 +62,10 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
+	if err := cmd.ensureResources(ctx, project, env); err != nil {
+		return err
+	}
+
 	if err := cmd.environmentAPI.EnvironmentUp(project, env, cmd.dryRun); err != nil {
 		return err
 	}
@@ -105,5 +109,15 @@ func (cmd *envUpCommand) ensureTemplates(ctx *ecso.CommandContext, project *ecso
 	}
 
 	return resources.EnvironmentCloudFormationTemplates.WriteTo(dst, nil)
-	// return templates.WriteEnvironmentFiles(project, env, nil)
+}
+
+func (cmd *envUpCommand) ensureResources(ctx *ecso.CommandContext, project *ecso.Project, env *ecso.Environment) error {
+	dst := env.GetResourceDir()
+
+	exists, err := util.DirExists(dst)
+	if err != nil || exists {
+		return err
+	}
+
+	return resources.EnvironmentResources.WriteTo(dst, nil)
 }
