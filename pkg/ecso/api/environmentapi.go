@@ -2,17 +2,11 @@ package api
 
 import (
 	"fmt"
-	"os"
-	"path"
-	"path/filepath"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/awsregistry"
@@ -244,132 +238,39 @@ func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environmen
 		"Deleted by ecso environment rm")
 }
 
-func (api *environmentAPI) uploadResourcesToS3(env *ecso.Environment) error {
+func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun bool) error {
+	var (
+		version  = util.VersionFromTime(time.Now())
+		stack    = env.GetCloudFormationStackName()
+		template = env.GetCloudFormationTemplateFile()
+		prefix   = env.GetBaseBucketPrefix(version)
+		tags     = env.CloudFormationTags
+		params   = env.CloudFormationParameters
+	)
+
 	reg, err := api.registryFactory.ForRegion(env.Region)
+	if err != nil {
+		return err
+	}
+
+	stsClient := reg.STSAPI()
+	s3Helper := helpers.NewS3Helper(reg.S3API(), env.Region, api.log.Child())
+
+	bucket, err := util.GetEcsoBucket(stsClient, env.Region)
 	if err != nil {
 		return err
 	}
 
 	api.log.Infof("Uploading resources for the '%s' environment to S3", env.Name)
 
-	stsClient := reg.STSAPI()
-	s3Client := reg.S3API()
-	uploader := s3manager.NewUploaderWithClient(s3Client)
-
-	// ensure bucket exists
-	bucket, err := util.GetEcsoBucket(stsClient, env.Region)
-	if err != nil {
+	if err := s3Helper.UploadDir(env.GetResourceDir(), bucket, env.GetResourceBucketPrefix(version)); err != nil {
 		return err
 	}
 
-	if err := api.ensureBucket(bucket, env.Region, s3Client); err != nil {
-		return err
-	}
-
-	prefix := env.GetResourceBucketPrefix()
-
-	// get list of resource filepaths
-	return filepath.Walk(env.GetResourceDir(), func(file string, info os.FileInfo, err error) error {
-		api.log.Infof("walk %s", file)
-		if err != nil {
-			return err
-		}
-
-		if !info.IsDir() {
-			reader, err := os.Open(file)
-
-			if err != nil {
-				return err
-			}
-
-			defer reader.Close()
-
-			key := path.Join(prefix, string(file[len(env.GetResourceDir()):]))
-
-			params := &s3manager.UploadInput{
-				Bucket: &bucket,
-				Key:    aws.String(key),
-				Body:   reader,
-			}
-
-			api.log.Infof("Uploading resource '%s' to 's3://%s/%s'\n", file, bucket, prefix)
-
-			if _, err := uploader.Upload(params); err != nil {
-				return err
-			}
-
-		}
-
-		return nil
-	})
-}
-
-func (api *environmentAPI) ensureBucket(bucket, region string, s3Client s3iface.S3API) error {
-	params := &s3.HeadBucketInput{
-		Bucket: aws.String(bucket), // Required
-	}
-
-	_, err := s3Client.HeadBucket(params)
-
-	if err != nil {
-		if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() == "NotFound" {
-			return api.createBucket(bucket, region, s3Client)
-		}
-
-		return err
-	}
-
-	return nil
-}
-
-func (api *environmentAPI) createBucket(bucket, region string, s3Client s3iface.S3API) error {
-	params := &s3.CreateBucketInput{
-		Bucket: aws.String(bucket), // Required
-		CreateBucketConfiguration: &s3.CreateBucketConfiguration{
-			LocationConstraint: aws.String(region),
-		},
-	}
-
-	api.log.Printf("Creating bucket '%s' in region '%s'\n", bucket, region)
-
-	_, err := s3Client.CreateBucket(params)
-
-	return err
-}
-
-func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun bool) error {
-	var (
-		stack    = env.GetCloudFormationStackName()
-		template = env.GetCloudFormationTemplateFile()
-		prefix   = env.GetCloudFormationBucketPrefix()
-		tags     = env.CloudFormationTags
-		params   = env.CloudFormationParameters
-	)
-
-	reg, err := api.registryFactory.ForRegion(env.Region)
-
-	if err != nil {
-		return err
-	}
-	// TODO we need bucket etc... out here in EnvironmentUp, so should pass it to uploadResourcesToS3 as params
-	if err := api.uploadResourcesToS3(env); err != nil {
-		return err
-	}
-
+	api.log.Printf("\n")
 	api.log.Infof("Deploying Cloud Formation stack for the '%s' environment", env.Name)
 
-	stsClient := reg.STSAPI()
 	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
-
-	exists, err := cfn.StackExists(stack)
-	if err != nil {
-		return err
-	}
-
-	bucket, err := util.GetEcsoBucket(stsClient, env.Region)
-	if err != nil {
-		return err
-	}
 
 	if tags == nil {
 		tags = make(map[string]string)
@@ -377,15 +278,9 @@ func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment,
 
 	tags["ecso-version"] = p.EcsoVersion
 	params["S3BucketName"] = bucket
-	params["S3KeyPrefix"] = env.GetBaseBucketPrefix()
+	params["S3KeyPrefix"] = env.GetBaseBucketPrefix(version)
 
-	var result *helpers.DeploymentResult
-
-	if exists {
-		result, err = cfn.PackageAndDeploy(stack, template, prefix, tags, params, dryRun)
-	} else {
-		result, err = cfn.PackageAndCreate(stack, template, prefix, tags, params, dryRun)
-	}
+	result, err := cfn.PackageAndDeploy(stack, template, prefix, tags, params, dryRun)
 
 	if dryRun {
 		cfnAPI := reg.CloudFormationAPI()

@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
@@ -60,4 +61,8 @@ func GetEcsoBucket(stsClient stsiface.STSAPI, region string) (string, error) {
 	}
 
 	return fmt.Sprintf("ecso-%s-%s", region, *resp.Account), nil
+}
+
+func VersionFromTime(t time.Time) string {
+	return t.Format("2006-01-02_15-04-05")
 }

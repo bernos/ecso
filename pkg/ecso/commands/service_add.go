@@ -54,13 +54,13 @@ func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext) error {
 		},
 	}
 
-	service.SetProject(project)
-
 	if len(cmd.route) > 0 {
 		service.Route = cmd.route
 		service.RoutePriority = len(ctx.Project.Services) + 1
 		service.Port = cmd.port
 	}
+
+	project.AddService(service)
 
 	templateData := struct {
 		Service *ecso.Service
@@ -73,8 +73,6 @@ func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext) error {
 	if err := resources.WriteServiceFiles(service, templateData); err != nil {
 		return err
 	}
-
-	ctx.Project.AddService(service)
 
 	if err := ctx.Project.Save(); err != nil {
 		return err

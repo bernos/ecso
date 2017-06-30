@@ -124,6 +124,7 @@ func (p *Project) AddEnvironment(environment *Environment) {
 		p.Environments = make(map[string]*Environment)
 	}
 	p.Environments[environment.Name] = environment
+	environment.project = p
 }
 
 func (p *Project) AddService(service *Service) {
@@ -131,4 +132,5 @@ func (p *Project) AddService(service *Service) {
 		p.Services = make(map[string]*Service)
 	}
 	p.Services[service.Name] = service
+	service.project = p
 }

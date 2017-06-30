@@ -2,18 +2,18 @@ package helpers
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/cloudformation/cloudformationiface"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
@@ -37,11 +37,11 @@ type DeploymentResult struct {
 // cloud formation
 type CloudFormationHelper interface {
 	PackageAndDeploy(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
-	PackageAndCreate(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
+	// PackageAndCreate(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
 	Package(templateFile, prefix string) (string, error)
 	DeleteStack(serviceName string) error
-	Deploy(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error)
-	Create(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error)
+	DeployTemplateURL(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error)
+	// CreateTemplateURL(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error)
 	StackExists(stackName string) (bool, error)
 	WaitForChangeset(changeset string, status ...string) (*cloudformation.DescribeChangeSetOutput, error)
 	GetChangeSet(changeset string) (*cloudformation.DescribeChangeSetOutput, error)
@@ -98,7 +98,7 @@ func (h *cfnHelper) PackageAndDeploy(stackName, templateFile, prefix string, tag
 		return nil, err
 	}
 
-	return h.Deploy(templateBody, stackName, params, tags, dryRun)
+	return h.DeployTemplateURL(templateBody, stackName, params, tags, dryRun)
 
 }
 
@@ -109,7 +109,7 @@ func (h *cfnHelper) PackageAndCreate(stackName, templateFile, prefix string, tag
 		return nil, err
 	}
 
-	return h.Create(templateBody, stackName, params, tags, dryRun)
+	return h.CreateTemplateURL(templateBody, stackName, params, tags, dryRun)
 
 }
 
@@ -123,31 +123,36 @@ func (h *cfnHelper) Package(templateFile, prefix string) (string, error) {
 		return "", err
 	}
 
+	templatePrefix := path.Join(prefix, "templates")
 	basedir := filepath.Dir(templateFile)
 	templateBody, err := ioutil.ReadFile(templateFile)
-
 	if err != nil {
 		return "", err
 	}
 
-	if err := h.ensureBucket(bucket); err != nil {
+	if err := h.uploadChildTemplates(basedir, string(templateBody), bucket, templatePrefix); err != nil {
 		return "", err
 	}
 
-	if err := h.uploadChildTemplates(basedir, string(templateBody), bucket, prefix, os.Open); err != nil {
+	body := updateNestedTemplateURLs(string(templateBody), h.region, bucket, templatePrefix)
+	key := path.Join(templatePrefix, "stack.yaml")
+
+	if err := h.uploadTemplate(strings.NewReader(body), bucket, key); err != nil {
 		return "", err
 	}
 
-	return updateNestedTemplateURLs(string(templateBody), h.region, bucket, prefix), nil
+	// TODO: upload tags and params. Return prefix to package in S3, and change deploy/create funcs so that
+	// they accept the base prefix, rather than the full template url
+	return fmt.Sprintf("https://s3-%s.amazonaws.com/%s/%s", h.region, bucket, key), nil
 }
 
-func (h *cfnHelper) Create(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error) {
+func (h *cfnHelper) CreateTemplateURL(templateURL, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error) {
 	input := &cloudformation.CreateStackInput{
 		StackName:       aws.String(stackName),
 		DisableRollback: aws.Bool(true),
 		Parameters:      make([]*cloudformation.Parameter, 0),
 		Tags:            make([]*cloudformation.Tag, 0),
-		TemplateBody:    aws.String(templateBody),
+		TemplateURL:     aws.String(templateURL),
 		Capabilities: []*string{
 			aws.String("CAPABILITY_NAMED_IAM"),
 			aws.String("CAPABILITY_IAM"),
@@ -195,13 +200,13 @@ func (h *cfnHelper) Create(templateBody, stackName string, params, tags map[stri
 	})
 }
 
-func (h *cfnHelper) Deploy(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error) {
+func (h *cfnHelper) DeployTemplateURL(templateURL, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error) {
 	input := &cloudformation.CreateChangeSetInput{
 		StackName:           aws.String(stackName),
 		ChangeSetName:       aws.String(fmt.Sprintf("%s-%d", stackName, time.Now().Unix())),
 		Parameters:          make([]*cloudformation.Parameter, 0),
 		Tags:                make([]*cloudformation.Tag, 0),
-		TemplateBody:        aws.String(templateBody),
+		TemplateURL:         aws.String(templateURL),
 		UsePreviousTemplate: aws.Bool(false),
 		Capabilities: []*string{
 			aws.String("CAPABILITY_NAMED_IAM"),
@@ -445,63 +450,23 @@ func (h *cfnHelper) LogStackEvents(stackID string, logger func(*cloudformation.S
 	}
 }
 
-func (h *cfnHelper) ensureBucket(bucket string) error {
-	params := &s3.HeadBucketInput{
-		Bucket: aws.String(bucket), // Required
-	}
+func (h *cfnHelper) uploadChildTemplates(basedir, templateBody, bucket, prefix string) error {
+	files := findNestedTemplateFiles(templateBody)
 
-	_, err := h.s3Client.HeadBucket(params)
-
-	if err != nil {
-		if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() == "NotFound" {
-			return h.createBucket(bucket)
-		}
-
-		return err
-	}
-
-	return nil
-}
-
-func (h *cfnHelper) createBucket(bucket string) error {
-	params := &s3.CreateBucketInput{
-		Bucket: aws.String(bucket), // Required
-		CreateBucketConfiguration: &s3.CreateBucketConfiguration{
-			LocationConstraint: aws.String(h.region),
-		},
-	}
-
-	h.logger.Printf("Creating bucket '%s' in region '%s'\n", bucket, h.region)
-
-	_, err := h.s3Client.CreateBucket(params)
-
-	return err
-}
-
-func (h *cfnHelper) uploadChildTemplates(basedir, templateBody, bucket, prefix string, op func(string) (*os.File, error)) error {
-	for _, file := range findNestedTemplateFiles(templateBody) {
-
+	for _, file := range files {
 		if err := h.validateTemplateFile(filepath.Join(basedir, file)); err != nil {
 			return err
 		}
+	}
 
-		reader, err := op(filepath.Join(basedir, file))
+	s3Helper := NewS3Helper(h.s3Client, h.region, h.logger)
+	err := s3Helper.EnsureBucket(bucket)
+	if err != nil {
+		return err
+	}
 
-		if err != nil {
-			return err
-		}
-
-		defer reader.Close()
-
-		params := &s3manager.UploadInput{
-			Bucket: &bucket,
-			Key:    aws.String(path.Join(prefix, file)),
-			Body:   reader,
-		}
-
-		h.logger.Printf("Uploading template '%s' to 's3://%s/%s'\n", file, bucket, prefix)
-
-		if _, err := h.uploader.Upload(params); err != nil {
+	for _, file := range files {
+		if err := h.uploadTemplateFile(basedir, file, bucket, prefix); err != nil {
 			return err
 		}
 	}
@@ -525,12 +490,33 @@ func updateNestedTemplateURLs(templateBody, region, bucket, prefix string) strin
 	return childTemplateRegexp.ReplaceAllString(templateBody, repl)
 }
 
-func (h *cfnHelper) validateTemplate(body []byte) error {
-	_, err := h.cfnClient.ValidateTemplate(&cloudformation.ValidateTemplateInput{
-		TemplateBody: aws.String(string(body)),
-	})
+func (h *cfnHelper) uploadTemplateFile(basedir, file, bucket, prefix string) error {
+	reader, err := os.Open(path.Join(basedir, file))
+	if err != nil {
+		return err
+	}
 
-	return err
+	defer reader.Close()
+
+	key := path.Join(prefix, file)
+
+	return h.uploadTemplate(reader, bucket, key)
+}
+
+func (h *cfnHelper) uploadTemplate(r io.Reader, bucket, key string) error {
+	params := &s3manager.UploadInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+		Body:   r,
+	}
+
+	h.logger.Printf("Uploading cloudformation template to 's3://%s/%s'\n", bucket, key)
+
+	if _, err := h.uploader.Upload(params); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (h *cfnHelper) validateTemplateFile(file string) error {
@@ -542,4 +528,12 @@ func (h *cfnHelper) validateTemplateFile(file string) error {
 	}
 
 	return h.validateTemplate(templateBody)
+}
+
+func (h *cfnHelper) validateTemplate(body []byte) error {
+	_, err := h.cfnClient.ValidateTemplate(&cloudformation.ValidateTemplateInput{
+		TemplateBody: aws.String(string(body)),
+	})
+
+	return err
 }

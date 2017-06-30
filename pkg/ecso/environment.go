@@ -23,16 +23,16 @@ func (e *Environment) GetCloudWatchLogGroup() string {
 	return fmt.Sprintf("%s-%s", e.project.Name, e.Name)
 }
 
-func (e *Environment) GetBaseBucketPrefix() string {
-	return fmt.Sprintf("%s-%s", e.project.Name, e.Name)
+func (e *Environment) GetBaseBucketPrefix(version string) string {
+	return path.Join(fmt.Sprintf("%s-%s", e.project.Name, e.Name), "environment", version)
 }
 
-func (e *Environment) GetCloudFormationBucketPrefix() string {
-	return path.Join(e.GetBaseBucketPrefix(), "templates", "infrastructure")
-}
+// func (e *Environment) GetCloudFormationBucketPrefix() string {
+// 	return path.Join(e.GetBaseBucketPrefix(), "templates", "infrastructure")
+// }
 
-func (e *Environment) GetResourceBucketPrefix() string {
-	return path.Join(e.GetBaseBucketPrefix(), "resources")
+func (e *Environment) GetResourceBucketPrefix(version string) string {
+	return path.Join(e.GetBaseBucketPrefix(version), "resources")
 }
 
 func (e *Environment) GetCloudFormationTemplateDir() string {

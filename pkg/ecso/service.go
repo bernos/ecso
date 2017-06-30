@@ -46,10 +46,15 @@ func (s *Service) GetCloudFormationStackName(env *Environment) string {
 	return fmt.Sprintf("%s-%s-%s", s.project.Name, env.Name, s.Name)
 }
 
-func (s *Service) GetCloudFormationBucketPrefix(env *Environment) string {
+func (s *Service) GetDeploymentBucketPrefix(env *Environment, version string) string {
 	base := fmt.Sprintf("%s-%s", s.project.Name, env.Name)
-	return path.Join(base, "templates", "services", s.Name)
+	return path.Join(base, "services", s.Name, version)
 }
+
+// func (s *Service) GetCloudFormationBucketPrefix(env *Environment) string {
+// 	base := fmt.Sprintf("%s-%s", s.project.Name, env.Name)
+// 	return path.Join(base, "templates", "services", s.Name)
+// }
 
 func (s *Service) GetCloudWatchLogGroup(env *Environment) string {
 	return env.GetCloudWatchLogGroup()

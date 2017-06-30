@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
@@ -313,8 +314,10 @@ func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, s
 		return nil, err
 	}
 
+	version := util.VersionFromTime(time.Now())
+
 	// deploy the service cfn stack
-	if err := api.deployServiceStack(reg, project, env, service, taskDefinition); err != nil {
+	if err := api.deployServiceStack(reg, project, env, service, taskDefinition, version); err != nil {
 		if err := envAPI.SendNotification(env, fmt.Sprintf("Failed to deploy %s to %s", service.Name, env.Name)); err != nil {
 			api.log.Printf("WARNING Failed to send deployment failure notification to sns. %s", err.Error())
 		}
@@ -346,12 +349,13 @@ func (api *serviceAPI) setEnv(project *ecso.Project, env *ecso.Environment, serv
 	return nil
 }
 
-func (api *serviceAPI) deployServiceStack(reg awsregistry.Registry, project *ecso.Project, env *ecso.Environment, service *ecso.Service, taskDefinition *ecs.TaskDefinition) error {
+func (api *serviceAPI) deployServiceStack(reg awsregistry.Registry, project *ecso.Project, env *ecso.Environment, service *ecso.Service, taskDefinition *ecs.TaskDefinition, version string) error {
 	var (
 		stackName = service.GetCloudFormationStackName(env)
-		prefix    = service.GetCloudFormationBucketPrefix(env)
-		template  = service.GetCloudFormationTemplateFile()
-		cfn       = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
+		// prefix    = service.GetCloudFormationBucketPrefix(env)
+		prefix   = service.GetDeploymentBucketPrefix(env, version)
+		template = service.GetCloudFormationTemplateFile()
+		cfn      = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
 	)
 
 	params, err := getServiceStackParameters(cfn, project, env, service, taskDefinition)
