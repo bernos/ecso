@@ -43,6 +43,11 @@ Parameters:
         Description: The ARN of the task definition for the service
         Type: String
 
+    DeregistrationDelay:
+        Description: How many seconds to wait for container connections to drain before deregistering a container during deployment
+        Type: Number
+        Default: 10
+
 Resources:
 
     Service:
@@ -134,6 +139,9 @@ Resources:
             HealthCheckProtocol: HTTP
             HealthCheckTimeoutSeconds: 5
             HealthyThresholdCount: 2
+            TargetGroupAttributes:
+                - Key: deregistration_delay.timeout_seconds
+                  Value: !Ref DeregistrationDelay
 
     ListenerRule:
         Type: AWS::ElasticLoadBalancingV2::ListenerRule
