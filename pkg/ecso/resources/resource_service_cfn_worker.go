@@ -35,6 +35,11 @@ Resources:
             Cluster: !Ref Cluster
             DesiredCount: !Ref DesiredCount
             TaskDefinition: !Ref TaskDefinition
+            PlacementStrategies:
+                - Type: spread
+                  Field: "attribute:ecs.availability-zone"
+                - Type: spread
+                  Field: host
             DeploymentConfiguration:
                 MaximumPercent: 200
                 MinimumHealthyPercent: 100
