@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"bytes"
+	"encoding/json"
 	"os"
 	"path"
 	"path/filepath"
@@ -17,6 +19,8 @@ type S3Helper interface {
 	EnsureBucket(bucket string) error
 	CreateBucket(bucket string) error
 	UploadDir(dir, bucket, prefix string) error
+	UploadObjectJSON(o interface{}, bucket, key string) error
+	DownloadObjectJSON(o interface{}, bucket, key string) error
 }
 
 type s3Helper struct {
@@ -64,6 +68,47 @@ func (h *s3Helper) CreateBucket(bucket string) error {
 	_, err := h.s3Client.CreateBucket(params)
 
 	return err
+}
+
+func (h *s3Helper) UploadObjectJSON(o interface{}, bucket, key string) error {
+	uploader := s3manager.NewUploaderWithClient(h.s3Client)
+
+	if err := h.EnsureBucket(bucket); err != nil {
+		return err
+	}
+
+	b, err := json.Marshal(o)
+	if err != nil {
+		return err
+	}
+
+	params := &s3manager.UploadInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+		Body:   bytes.NewReader(b),
+	}
+
+	if _, err := uploader.Upload(params); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (h *s3Helper) DownloadObjectJSON(o interface{}, bucket, key string) error {
+	params := &s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	}
+
+	resp, err := h.s3Client.GetObject(params)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	return json.NewDecoder(resp.Body).Decode(o)
 }
 
 func (h *s3Helper) UploadDir(dir, bucket, prefix string) error {

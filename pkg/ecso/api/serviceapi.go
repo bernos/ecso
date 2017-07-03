@@ -286,27 +286,25 @@ func (api *serviceAPI) ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ec
 }
 
 func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, service *ecso.Service) (*ServiceDescription, error) {
-	reg, err := api.registryFactory.ForRegion(env.Region)
+	version := util.VersionFromTime(time.Now())
 
+	reg, err := api.registryFactory.ForRegion(env.Region)
 	if err != nil {
 		return nil, err
 	}
 
-	// set env vars so that they are available when converting the docker
-	// compose file to a task definition
-	if err := api.setEnv(project, env, service); err != nil {
+	bucket, err := util.GetEcsoBucket(reg.STSAPI(), env.Region)
+	if err != nil {
 		return nil, err
 	}
 
 	envAPI := NewEnvironmentAPI(api.log, api.registryFactory)
-
 	if err := envAPI.SendNotification(env, fmt.Sprintf("Commenced deployment of %s to %s", service.Name, env.Name)); err != nil {
 		api.log.Printf("WARNING Failed to send deployment commencing notification to sns. %s", err.Error())
 	}
 
 	// register task
 	taskDefinition, err := api.registerECSTaskDefinition(reg, project, env, service)
-
 	if err != nil {
 		if err := envAPI.SendNotification(env, fmt.Sprintf("Failed to deploy %s to %s", service.Name, env.Name)); err != nil {
 			api.log.Printf("WARNING Failed to send deployment failure notification to sns. %s", err.Error())
@@ -314,10 +312,8 @@ func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, s
 		return nil, err
 	}
 
-	version := util.VersionFromTime(time.Now())
-
 	// deploy the service cfn stack
-	if err := api.deployServiceStack(reg, project, env, service, taskDefinition, version); err != nil {
+	if err := api.deployServiceStack(reg, bucket, project, env, service, taskDefinition, version); err != nil {
 		if err := envAPI.SendNotification(env, fmt.Sprintf("Failed to deploy %s to %s", service.Name, env.Name)); err != nil {
 			api.log.Printf("WARNING Failed to send deployment failure notification to sns. %s", err.Error())
 		}
@@ -349,13 +345,12 @@ func (api *serviceAPI) setEnv(project *ecso.Project, env *ecso.Environment, serv
 	return nil
 }
 
-func (api *serviceAPI) deployServiceStack(reg awsregistry.Registry, project *ecso.Project, env *ecso.Environment, service *ecso.Service, taskDefinition *ecs.TaskDefinition, version string) error {
+func (api *serviceAPI) deployServiceStack(reg awsregistry.Registry, bucket string, project *ecso.Project, env *ecso.Environment, service *ecso.Service, taskDefinition *ecs.TaskDefinition, version string) error {
 	var (
 		stackName = service.GetCloudFormationStackName(env)
-		// prefix    = service.GetCloudFormationBucketPrefix(env)
-		prefix   = service.GetDeploymentBucketPrefix(env, version)
-		template = service.GetCloudFormationTemplateFile()
-		cfn      = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
+		prefix    = service.GetDeploymentBucketPrefix(env, version)
+		template  = service.GetCloudFormationTemplateFile()
+		cfn       = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
 	)
 
 	params, err := getServiceStackParameters(cfn, project, env, service, taskDefinition)
@@ -371,6 +366,7 @@ func (api *serviceAPI) deployServiceStack(reg awsregistry.Registry, project *ecs
 	result, err := cfn.PackageAndDeploy(
 		stackName,
 		template,
+		bucket,
 		prefix,
 		tags,
 		params,
@@ -439,6 +435,12 @@ func (api *serviceAPI) registerECSTaskDefinition(reg awsregistry.Registry, proje
 	// TODO: fully qualify the path to the service compose file
 	// taskDefinition, err := ConvertToTaskDefinition(taskName, service.ComposeFile)
 	api.log.Infof("Converting '%s' to task definition...", service.ComposeFile)
+
+	// set env vars so that they are available when converting the docker
+	// compose file to a task definition
+	if err := api.setEnv(project, env, service); err != nil {
+		return nil, err
+	}
 
 	taskDefinition, err := service.GetECSTaskDefinition(env)
 

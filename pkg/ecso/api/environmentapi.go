@@ -239,48 +239,28 @@ func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environmen
 }
 
 func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun bool) error {
-	var (
-		version  = util.VersionFromTime(time.Now())
-		stack    = env.GetCloudFormationStackName()
-		template = env.GetCloudFormationTemplateFile()
-		prefix   = env.GetBaseBucketPrefix(version)
-		tags     = env.CloudFormationTags
-		params   = env.CloudFormationParameters
-	)
+	version := util.VersionFromTime(time.Now())
+
+	api.log.Infof("Updating environment to version %s", version)
 
 	reg, err := api.registryFactory.ForRegion(env.Region)
 	if err != nil {
 		return err
 	}
 
-	stsClient := reg.STSAPI()
-	s3Helper := helpers.NewS3Helper(reg.S3API(), env.Region, api.log.Child())
-
-	bucket, err := util.GetEcsoBucket(stsClient, env.Region)
+	bucket, err := util.GetEcsoBucket(reg.STSAPI(), env.Region)
 	if err != nil {
 		return err
 	}
 
-	api.log.Infof("Uploading resources for the '%s' environment to S3", env.Name)
-
-	if err := s3Helper.UploadDir(env.GetResourceDir(), bucket, env.GetResourceBucketPrefix(version)); err != nil {
+	if err := api.uploadEnvironmentResources(reg, bucket, env, version); err != nil {
 		return err
 	}
 
-	api.log.Printf("\n")
-	api.log.Infof("Deploying Cloud Formation stack for the '%s' environment", env.Name)
-
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
-
-	if tags == nil {
-		tags = make(map[string]string)
+	result, err := api.deployEnvironmentStack(reg, bucket, p, env, version, dryRun)
+	if err != nil {
+		return err
 	}
-
-	tags["ecso-version"] = p.EcsoVersion
-	params["S3BucketName"] = bucket
-	params["S3KeyPrefix"] = env.GetBaseBucketPrefix(version)
-
-	result, err := cfn.PackageAndDeploy(stack, template, prefix, tags, params, dryRun)
 
 	if dryRun {
 		cfnAPI := reg.CloudFormationAPI()
@@ -299,7 +279,7 @@ func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment,
 		api.log.Printf("\n%s\n", resp)
 	}
 
-	return err
+	return nil
 }
 
 func (api *environmentAPI) SendNotification(env *ecso.Environment, msg string) error {
@@ -335,4 +315,44 @@ func (api *environmentAPI) SendNotification(env *ecso.Environment, msg string) e
 	}
 
 	return nil
+}
+
+func (api *environmentAPI) deployEnvironmentStack(reg awsregistry.Registry, bucket string, project *ecso.Project, env *ecso.Environment, version string, dryRun bool) (*helpers.DeploymentResult, error) {
+	var (
+		stackName = env.GetCloudFormationStackName()
+		prefix    = env.GetDeploymentBucketPrefix(version)
+		template  = env.GetCloudFormationTemplateFile()
+		tags      = env.CloudFormationTags
+		params    = env.CloudFormationParameters
+	)
+
+	api.log.Infof("Deploying Cloud Formation stack for the '%s' environment", env.Name)
+
+	cfn := helpers.NewCloudFormationHelper(
+		env.Region,
+		reg.CloudFormationAPI(),
+		reg.S3API(),
+		reg.STSAPI(),
+		api.log.Child())
+
+	if tags == nil {
+		tags = make(map[string]string)
+	}
+
+	tags["ecso-cli-version"] = project.EcsoVersion
+	tags["version"] = version
+
+	params["S3BucketName"] = bucket
+	params["Version"] = version
+	params["S3KeyPrefix"] = env.GetBaseBucketPrefix()
+
+	return cfn.PackageAndDeploy(stackName, template, bucket, prefix, tags, params, dryRun)
+}
+
+func (api *environmentAPI) uploadEnvironmentResources(reg awsregistry.Registry, bucket string, env *ecso.Environment, version string) error {
+	api.log.Infof("Uploading resources for the '%s' environment to S3", env.Name)
+
+	s3Helper := helpers.NewS3Helper(reg.S3API(), env.Region, api.log.Child())
+
+	return s3Helper.UploadDir(env.GetResourceDir(), bucket, env.GetResourceBucketPrefix())
 }

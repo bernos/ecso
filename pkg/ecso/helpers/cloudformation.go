@@ -18,12 +18,52 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/bernos/ecso/pkg/ecso/log"
-	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
 var (
 	childTemplateRegexp = regexp.MustCompile(`(\s*)TemplateURL:\s*(\./)*(.+)`)
 )
+
+// Package is our unit of deployment. It refers to a set of cloudformation templates and
+// related resources which have been uploaded to S3, and which can be deployed using the
+// CloudFormationHelper.Deploy method
+type Package struct {
+	bucket string
+	prefix string
+	region string
+}
+
+func NewPackage(bucket, prefix, region string) *Package {
+	return &Package{bucket, prefix, region}
+}
+
+func (p *Package) GetBucketPrefix() string {
+	return p.prefix
+}
+
+func (p *Package) GetTemplateBucketPrefix() string {
+	return fmt.Sprintf("%s/templates", p.GetBucketPrefix())
+}
+
+func (p *Package) GetTemplateBucketKey() string {
+	return fmt.Sprintf("%s/stack.yaml", p.GetTemplateBucketPrefix())
+}
+
+func (p *Package) GetTagsBucketKey() string {
+	return fmt.Sprintf("%s/tags.json", p.GetBucketPrefix())
+}
+
+func (p *Package) GetParamsBucketKey() string {
+	return fmt.Sprintf("%s/params.json", p.GetBucketPrefix())
+}
+
+func (p *Package) GetTemplateURL() string {
+	return fmt.Sprintf("https://s3-%s.amazonaws.com/%s/%s", p.region, p.bucket, p.GetTemplateBucketKey())
+}
+
+func (p *Package) GetURL() string {
+	return fmt.Sprintf("https://s3-%s.amazonaws.com/%s/%s", p.region, p.bucket, p.GetBucketPrefix())
+}
 
 // DeploymentResult holds information about a successful cloud formation
 // template deployment
@@ -36,16 +76,14 @@ type DeploymentResult struct {
 // CloudFormationHelper contains high level helper functions for dealing with
 // cloud formation
 type CloudFormationHelper interface {
-	PackageAndDeploy(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
-	// PackageAndCreate(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
-	Package(templateFile, prefix string) (string, error)
 	DeleteStack(serviceName string) error
-	DeployTemplateURL(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error)
-	// CreateTemplateURL(templateBody, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error)
-	StackExists(stackName string) (bool, error)
-	WaitForChangeset(changeset string, status ...string) (*cloudformation.DescribeChangeSetOutput, error)
+	Deploy(pkg *Package, stackName string, dryRun bool) (*DeploymentResult, error)
 	GetChangeSet(changeset string) (*cloudformation.DescribeChangeSetOutput, error)
 	GetStackOutputs(stackName string) (map[string]string, error)
+	Package(templateFile, bucket, prefix string, tags, params map[string]string) (*Package, error)
+	PackageAndDeploy(stackName, templateFile, bucket, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
+	StackExists(stackName string) (bool, error)
+	WaitForChangeset(changeset string, status ...string) (*cloudformation.DescribeChangeSetOutput, error)
 }
 
 // NewCloudFormationHelper creates a CloudFormationHelper
@@ -91,122 +129,92 @@ func (h *cfnHelper) GetStackOutputs(stackName string) (map[string]string, error)
 	return outputs, nil
 }
 
-func (h *cfnHelper) PackageAndDeploy(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error) {
-	templateBody, err := h.Package(templateFile, prefix)
+func (h *cfnHelper) PackageAndDeploy(stackName, templateFile, bucket, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error) {
+	pkg, err := h.Package(templateFile, bucket, prefix, tags, params)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return h.DeployTemplateURL(templateBody, stackName, params, tags, dryRun)
-
+	return h.Deploy(pkg, stackName, dryRun)
 }
 
-func (h *cfnHelper) PackageAndCreate(stackName, templateFile, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error) {
-	templateBody, err := h.Package(templateFile, prefix)
+// Package creates a Package from local cloudformation template file. Any child templates in the
+// template file will be uploaded to S3, as well as the template file itself. Before the template
+// is uploaded, and relative references to child templates will be updated with the fully qualified
+// S3 url that they were uploaded to. The resulting Package can be deployed using the Deploy method
+func (h *cfnHelper) Package(templateFile, bucket, prefix string, tags, params map[string]string) (*Package, error) {
+	pkg := NewPackage(bucket, prefix, h.region)
 
-	if err != nil {
-		return nil, err
-	}
+	h.logger.Printf("Creating deployment package at %s\n", pkg.GetURL())
 
-	return h.CreateTemplateURL(templateBody, stackName, params, tags, dryRun)
-
-}
-
-func (h *cfnHelper) Package(templateFile, prefix string) (string, error) {
 	if err := h.validateTemplateFile(templateFile); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	bucket, err := util.GetEcsoBucket(h.stsClient, h.region)
-	if err != nil {
-		return "", err
-	}
-
-	templatePrefix := path.Join(prefix, "templates")
+	templatePrefix := pkg.GetTemplateBucketPrefix()
 	basedir := filepath.Dir(templateFile)
 	templateBody, err := ioutil.ReadFile(templateFile)
 	if err != nil {
-		return "", err
+		return pkg, err
 	}
 
 	if err := h.uploadChildTemplates(basedir, string(templateBody), bucket, templatePrefix); err != nil {
-		return "", err
+		return pkg, err
 	}
 
 	body := updateNestedTemplateURLs(string(templateBody), h.region, bucket, templatePrefix)
-	key := path.Join(templatePrefix, "stack.yaml")
 
-	if err := h.uploadTemplate(strings.NewReader(body), bucket, key); err != nil {
-		return "", err
+	if err := h.validateTemplate([]byte(body)); err != nil {
+		return pkg, err
+	}
+
+	if err := h.uploadTemplate(strings.NewReader(body), bucket, pkg.GetTemplateBucketKey()); err != nil {
+		return pkg, err
 	}
 
 	// TODO: upload tags and params. Return prefix to package in S3, and change deploy/create funcs so that
 	// they accept the base prefix, rather than the full template url
-	return fmt.Sprintf("https://s3-%s.amazonaws.com/%s/%s", h.region, bucket, key), nil
-}
+	s3Helper := NewS3Helper(h.s3Client, h.region, h.logger)
 
-func (h *cfnHelper) CreateTemplateURL(templateURL, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error) {
-	input := &cloudformation.CreateStackInput{
-		StackName:       aws.String(stackName),
-		DisableRollback: aws.Bool(true),
-		Parameters:      make([]*cloudformation.Parameter, 0),
-		Tags:            make([]*cloudformation.Tag, 0),
-		TemplateURL:     aws.String(templateURL),
-		Capabilities: []*string{
-			aws.String("CAPABILITY_NAMED_IAM"),
-			aws.String("CAPABILITY_IAM"),
-		},
-	}
-
-	for k, v := range params {
-		input.Parameters = append(input.Parameters, &cloudformation.Parameter{
-			ParameterKey:   aws.String(k),
-			ParameterValue: aws.String(v),
-		})
-	}
-
-	for k, v := range tags {
-		input.Tags = append(input.Tags, &cloudformation.Tag{
-			Key:   aws.String(k),
-			Value: aws.String(v),
-		})
-	}
-
-	resp, err := h.cfnClient.CreateStack(input)
-
-	if err != nil {
+	h.logger.Printf("Uploading cloud formation tags to %s\n", pkg.GetTagsBucketKey())
+	if err := s3Helper.UploadObjectJSON(tags, bucket, pkg.GetTagsBucketKey()); err != nil {
 		return nil, err
 	}
 
-	result := &DeploymentResult{
-		StackID: *resp.StackId,
+	h.logger.Printf("Uploading cloud formation params to %s\n", pkg.GetParamsBucketKey())
+	if err := s3Helper.UploadObjectJSON(params, bucket, pkg.GetParamsBucketKey()); err != nil {
+		return nil, err
 	}
 
-	childLogger := h.logger.Child()
-
-	cancel := h.LogStackEvents(*resp.StackId, func(ev *cloudformation.StackEvent, err error) {
-		if ev != nil {
-			childLogger.Printf("%s: %s\n", *ev.LogicalResourceId, *ev.ResourceStatus)
-		}
-	})
-
-	defer cancel()
-
-	h.logger.Printf("Waiting for stack creation to complete...\n")
-
-	return result, h.cfnClient.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
-		StackName: resp.StackId,
-	})
+	return pkg, nil
 }
 
-func (h *cfnHelper) DeployTemplateURL(templateURL, stackName string, params, tags map[string]string, dryRun bool) (*DeploymentResult, error) {
+func (h *cfnHelper) Deploy(pkg *Package, stackName string, dryRun bool) (*DeploymentResult, error) {
+	h.logger.Printf("Deploying package from %s", pkg.GetURL())
+
+	s3Helper := NewS3Helper(h.s3Client, h.region, h.logger)
+
+	// Download params and tags
+	params := make(map[string]string)
+	tags := make(map[string]string)
+
+	h.logger.Printf("Downloading stack params \n")
+	if err := s3Helper.DownloadObjectJSON(&params, pkg.bucket, pkg.GetParamsBucketKey()); err != nil {
+		return nil, err
+	}
+
+	h.logger.Printf("Downloading stack tags \n")
+	if err := s3Helper.DownloadObjectJSON(&tags, pkg.bucket, pkg.GetTagsBucketKey()); err != nil {
+		return nil, err
+	}
+
 	input := &cloudformation.CreateChangeSetInput{
 		StackName:           aws.String(stackName),
 		ChangeSetName:       aws.String(fmt.Sprintf("%s-%d", stackName, time.Now().Unix())),
 		Parameters:          make([]*cloudformation.Parameter, 0),
 		Tags:                make([]*cloudformation.Tag, 0),
-		TemplateURL:         aws.String(templateURL),
+		TemplateURL:         aws.String(pkg.GetTemplateURL()),
 		UsePreviousTemplate: aws.Bool(false),
 		Capabilities: []*string{
 			aws.String("CAPABILITY_NAMED_IAM"),

@@ -22,6 +22,10 @@ Parameters:
         Description: The path in the S3 bucket to upload resources to
         Type: String
 
+    Version:
+        Description: The environment version
+        Type: String
+
     VPC:
         Description: Choose which VPC this ECS cluster should be deployed to
         Type: AWS::EC2::VPC::Id
