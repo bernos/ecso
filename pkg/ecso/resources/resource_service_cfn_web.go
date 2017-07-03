@@ -48,6 +48,10 @@ Parameters:
         Type: Number
         Default: 10
 
+    Version:
+        Description: The version of the service
+        Type: String
+
 Resources:
 
     Service:

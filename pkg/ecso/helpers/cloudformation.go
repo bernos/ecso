@@ -191,7 +191,7 @@ func (h *cfnHelper) Package(templateFile, bucket, prefix string, tags, params ma
 }
 
 func (h *cfnHelper) Deploy(pkg *Package, stackName string, dryRun bool) (*DeploymentResult, error) {
-	h.logger.Printf("Deploying package from %s", pkg.GetURL())
+	h.logger.Printf("Deploying package from %s\n", pkg.GetURL())
 
 	s3Helper := NewS3Helper(h.s3Client, h.region, h.logger)
 

@@ -353,13 +353,13 @@ func (api *serviceAPI) deployServiceStack(reg awsregistry.Registry, bucket strin
 		cfn       = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
 	)
 
-	params, err := getServiceStackParameters(cfn, project, env, service, taskDefinition)
+	params, err := getServiceStackParameters(cfn, project, env, service, taskDefinition, version)
 
 	if err != nil {
 		return err
 	}
 
-	tags := getServiceStackTags(project, env, service)
+	tags := getServiceStackTags(project, env, service, version)
 
 	api.log.Infof("Deploying service cloudformation stack '%s'...", stackName)
 
@@ -383,7 +383,7 @@ func (api *serviceAPI) deployServiceStack(reg awsregistry.Registry, bucket strin
 	return nil
 }
 
-func getServiceStackParameters(cfn helpers.CloudFormationHelper, project *ecso.Project, env *ecso.Environment, service *ecso.Service, taskDefinition *ecs.TaskDefinition) (map[string]string, error) {
+func getServiceStackParameters(cfn helpers.CloudFormationHelper, project *ecso.Project, env *ecso.Environment, service *ecso.Service, taskDefinition *ecs.TaskDefinition, version string) (map[string]string, error) {
 
 	outputs, err := cfn.GetStackOutputs(env.GetCloudFormationStackName())
 
@@ -394,6 +394,7 @@ func getServiceStackParameters(cfn helpers.CloudFormationHelper, project *ecso.P
 	params := map[string]string{
 		"Cluster":        outputs["Cluster"],
 		"AlertsTopic":    outputs["AlertsTopic"],
+		"Version":        version,
 		"DesiredCount":   fmt.Sprintf("%d", service.DesiredCount),
 		"TaskDefinition": *taskDefinition.TaskDefinitionArn,
 	}
@@ -413,10 +414,12 @@ func getServiceStackParameters(cfn helpers.CloudFormationHelper, project *ecso.P
 	return params, nil
 }
 
-func getServiceStackTags(project *ecso.Project, env *ecso.Environment, service *ecso.Service) map[string]string {
+func getServiceStackTags(project *ecso.Project, env *ecso.Environment, service *ecso.Service, version string) map[string]string {
 	tags := map[string]string{
-		"project":     project.Name,
-		"environment": env.Name,
+		"project":          project.Name,
+		"environment":      env.Name,
+		"ecso-cli-version": project.EcsoVersion,
+		"version":          version,
 	}
 
 	for k, v := range service.Tags {

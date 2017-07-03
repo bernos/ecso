@@ -23,6 +23,10 @@ Parameters:
         Description: The ARN of the task definition for the service
         Type: String
 
+    Version:
+        Description: The version of the service
+        Type: String
+
 Resources:
 
     Service:
