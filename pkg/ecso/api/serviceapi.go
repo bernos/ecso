@@ -22,6 +22,7 @@ type ServiceAPI interface {
 	ServiceDown(p *ecso.Project, env *ecso.Environment, s *ecso.Service) error
 	ServiceEvents(p *ecso.Project, env *ecso.Environment, s *ecso.Service, f func(*ecs.ServiceEvent, error)) (cancel func(), err error)
 	ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*cloudwatchlogs.FilteredLogEvent, error)
+	ServiceRollback(p *ecso.Project, env *ecso.Environment, s *ecso.Service, version string) (*ServiceDescription, error)
 	GetECSContainers(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (ContainerList, error)
 	GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ecs.Service, error)
 	GetECSTasks(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*ecs.Task, error)
@@ -285,6 +286,37 @@ func (api *serviceAPI) ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ec
 	return resp.Events, nil
 }
 
+func (api *serviceAPI) ServiceRollback(project *ecso.Project, env *ecso.Environment, service *ecso.Service, version string) (*ServiceDescription, error) {
+
+	reg, err := api.registryFactory.ForRegion(env.Region)
+	if err != nil {
+		return nil, err
+	}
+
+	bucket, err := util.GetEcsoBucket(reg.STSAPI(), env.Region)
+	if err != nil {
+		return nil, err
+	}
+
+	envAPI := NewEnvironmentAPI(api.log, api.registryFactory)
+	if err := envAPI.SendNotification(env, fmt.Sprintf("Commenced rollback of %s version %s to %s", service.Name, version, env.Name)); err != nil {
+		api.log.Printf("WARNING Failed to send rollback commencing notification to sns. %s", err.Error())
+	}
+
+	// deploy the service cfn stack
+	if err := api.deployServiceStack(reg, bucket, project, env, service, version); err != nil {
+		if err := envAPI.SendNotification(env, fmt.Sprintf("Failed to deploy %s to %s", service.Name, env.Name)); err != nil {
+			api.log.Printf("WARNING Failed to send deployment failure notification to sns. %s", err.Error())
+		}
+		return nil, err
+	}
+
+	if err := envAPI.SendNotification(env, fmt.Sprintf("Completed rollback of %s version %s to %s", service.Name, version, env.Name)); err != nil {
+		api.log.Printf("WARNING Failed to send deployment completed notification to sns. %s", err.Error())
+	}
+
+	return api.DescribeService(env, service)
+}
 func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, service *ecso.Service) (*ServiceDescription, error) {
 	version := util.VersionFromTime(time.Now())
 
@@ -313,7 +345,7 @@ func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, s
 	}
 
 	// deploy the service cfn stack
-	if err := api.deployServiceStack(reg, bucket, project, env, service, taskDefinition, version); err != nil {
+	if err := api.packageAndDeployServiceStack(reg, bucket, project, env, service, taskDefinition, version); err != nil {
 		if err := envAPI.SendNotification(env, fmt.Sprintf("Failed to deploy %s to %s", service.Name, env.Name)); err != nil {
 			api.log.Printf("WARNING Failed to send deployment failure notification to sns. %s", err.Error())
 		}
@@ -345,7 +377,26 @@ func (api *serviceAPI) setEnv(project *ecso.Project, env *ecso.Environment, serv
 	return nil
 }
 
-func (api *serviceAPI) deployServiceStack(reg awsregistry.Registry, bucket string, project *ecso.Project, env *ecso.Environment, service *ecso.Service, taskDefinition *ecs.TaskDefinition, version string) error {
+func (api *serviceAPI) deployServiceStack(reg awsregistry.Registry, bucket string, project *ecso.Project, env *ecso.Environment, service *ecso.Service, version string) error {
+	var (
+		stackName = service.GetCloudFormationStackName(env)
+		prefix    = service.GetDeploymentBucketPrefix(env, version)
+		cfn       = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
+	)
+
+	api.log.Infof("Deploying service cloudformation stack '%s'...", stackName)
+
+	pkg := helpers.NewPackage(bucket, prefix, env.Region)
+
+	_, err := cfn.Deploy(pkg, stackName, false)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (api *serviceAPI) packageAndDeployServiceStack(reg awsregistry.Registry, bucket string, project *ecso.Project, env *ecso.Environment, service *ecso.Service, taskDefinition *ecs.TaskDefinition, version string) error {
 	var (
 		stackName = service.GetCloudFormationStackName(env)
 		prefix    = service.GetDeploymentBucketPrefix(env, version)
@@ -363,15 +414,12 @@ func (api *serviceAPI) deployServiceStack(reg awsregistry.Registry, bucket strin
 
 	api.log.Infof("Deploying service cloudformation stack '%s'...", stackName)
 
-	result, err := cfn.PackageAndDeploy(
-		stackName,
-		template,
-		bucket,
-		prefix,
-		tags,
-		params,
-		false)
+	pkg, err := cfn.Package(template, bucket, prefix, tags, params)
+	if err != nil {
+		return err
+	}
 
+	result, err := cfn.Deploy(pkg, stackName, false)
 	if err != nil {
 		return err
 	}

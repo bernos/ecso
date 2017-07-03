@@ -346,7 +346,12 @@ func (api *environmentAPI) deployEnvironmentStack(reg awsregistry.Registry, buck
 	params["Version"] = version
 	params["S3KeyPrefix"] = env.GetBaseBucketPrefix()
 
-	return cfn.PackageAndDeploy(stackName, template, bucket, prefix, tags, params, dryRun)
+	pkg, err := cfn.Package(template, bucket, prefix, tags, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return cfn.Deploy(pkg, stackName, dryRun)
 }
 
 func (api *environmentAPI) uploadEnvironmentResources(reg awsregistry.Registry, bucket string, env *ecso.Environment, version string) error {

@@ -233,6 +233,7 @@ func NewServiceCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 			NewServiceEventsCliCommand(dispatcher),
 			NewServiceLogsCliCommand(dispatcher),
 			NewServiceDescribeCliCommand(dispatcher),
+			NewServiceRollbackCliCommand(dispatcher),
 		},
 	}
 }
@@ -414,6 +415,36 @@ func NewServicePsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 				Name:   commands.ServiceEnvironmentOption,
 				Usage:  "The name of the environment",
 				EnvVar: "ECSO_ENVIRONMENT",
+			},
+		},
+		Action: MakeAction(dispatcher, fn),
+	}
+}
+
+func NewServiceRollbackCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
+		return makeServiceCommand(ctx, func(name string) ecso.Command {
+			l := cfg.Logger()
+			r := cfg.AWSRegistryFactory()
+
+			return commands.NewServiceRollbackCommand(name, api.NewServiceAPI(l, r), l)
+		})
+	}
+
+	return cli.Command{
+		Name:        "rollback",
+		Usage:       "Rollback a service to an earlier version",
+		Description: "Replace the currently running service with a previously deployed service version",
+		ArgsUsage:   "SERVICE",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:   commands.ServiceEnvironmentOption,
+				Usage:  "The name of the environment to deploy to",
+				EnvVar: "ECSO_ENVIRONMENT",
+			},
+			cli.StringFlag{
+				Name:  commands.ServiceRollbackVersionOption,
+				Usage: "The version to rollback to",
 			},
 		},
 		Action: MakeAction(dispatcher, fn),
