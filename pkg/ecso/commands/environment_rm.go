@@ -5,7 +5,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
-	"gopkg.in/urfave/cli.v1"
 )
 
 const (
@@ -24,20 +23,6 @@ func NewEnvironmentRmCommand(environmentName string, environmentAPI api.Environm
 
 type environmentRmCommand struct {
 	*EnvironmentCommand
-}
-
-func (cmd *environmentRmCommand) UnmarshalCliContext(ctx *cli.Context) error {
-	if err := cmd.EnvironmentCommand.UnmarshalCliContext(ctx); err != nil {
-		return err
-	}
-
-	force := ctx.Bool(EnvironmentRmForceOption)
-
-	if !force {
-		return ecso.NewOptionRequiredError(EnvironmentRmForceOption)
-	}
-
-	return nil
 }
 
 func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext) error {
@@ -59,6 +44,19 @@ func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	ui.BannerGreen(cmd.log, "Successfully removed '%s' environment", env.Name)
+
+	return nil
+}
+
+func (cmd *environmentRmCommand) Validate(ctx *ecso.CommandContext) error {
+	if err := cmd.EnvironmentCommand.Validate(ctx); err != nil {
+		return err
+	}
+
+	force := ctx.Options.Bool(EnvironmentRmForceOption)
+	if !force {
+		return ecso.NewOptionRequiredError(EnvironmentRmForceOption)
+	}
 
 	return nil
 }

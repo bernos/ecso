@@ -44,10 +44,6 @@ func CommandFactory(ctx *cli.Context, fn factory) ecso.CommandFactory {
 			return nil, cli.NewExitError(err.Error(), 1)
 		}
 
-		if err := command.UnmarshalCliContext(ctx); err != nil {
-			return nil, cli.NewExitError(err.Error(), 1)
-		}
-
 		return command, nil
 	}
 }

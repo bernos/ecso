@@ -9,8 +9,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/resources"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
-
-	"gopkg.in/urfave/cli.v1"
 )
 
 const (
@@ -35,18 +33,10 @@ type envUpCommand struct {
 	force  bool
 }
 
-func (cmd *envUpCommand) UnmarshalCliContext(ctx *cli.Context) error {
-	if err := cmd.EnvironmentCommand.UnmarshalCliContext(ctx); err != nil {
-		return err
-	}
-
-	cmd.dryRun = ctx.Bool(EnvironmentUpDryRunOption)
-	cmd.force = ctx.Bool(EnvironmentUpForceOption)
-
-	return nil
-}
-
 func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
+	cmd.dryRun = ctx.Options.Bool(EnvironmentUpDryRunOption)
+	cmd.force = ctx.Options.Bool(EnvironmentUpForceOption)
+
 	var (
 		project = ctx.Project
 		env     = cmd.Environment(ctx)

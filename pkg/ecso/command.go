@@ -2,15 +2,8 @@ package ecso
 
 import "gopkg.in/urfave/cli.v1"
 
-// CliContextUnmarshaller is an interface that can unmarshal a
-// Context struct from the urfave/cli package
-type CliContextUnmarshaller interface {
-	UnmarshalCliContext(c *cli.Context) error
-}
-
 // Command represents a single ecso command
 type Command interface {
-	CliContextUnmarshaller
 	Prompt(ctx *CommandContext) error
 	Validate(ctx *CommandContext) error
 	Execute(ctx *CommandContext) error
@@ -73,4 +66,6 @@ func NewCommandContext(project *Project, preferences *UserPreferences, version s
 // CommandOptions are optional settings used to alter command execution behaviour
 type CommandOptions interface {
 	String(name string) string
+	Bool(name string) bool
+	Int(name string) int
 }

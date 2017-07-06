@@ -7,7 +7,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
-	"gopkg.in/urfave/cli.v1"
 )
 
 const (
@@ -26,17 +25,6 @@ func NewServiceRollbackCommand(name string, serviceAPI api.ServiceAPI, log log.L
 
 type serviceRollbackCommand struct {
 	*ServiceCommand
-	version string
-}
-
-func (cmd *serviceRollbackCommand) UnmarshalCliContext(ctx *cli.Context) error {
-	if err := cmd.ServiceCommand.UnmarshalCliContext(ctx); err != nil {
-		return err
-	}
-
-	cmd.version = ctx.String(ServiceRollbackVersionOption)
-
-	return nil
 }
 
 func (cmd *serviceRollbackCommand) Validate(ctx *ecso.CommandContext) error {
@@ -44,7 +32,7 @@ func (cmd *serviceRollbackCommand) Validate(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	if cmd.version == "" {
+	if ctx.Options.String(ServiceRollbackVersionOption) == "" {
 		return fmt.Errorf("Version is required")
 	}
 
@@ -56,16 +44,17 @@ func (cmd *serviceRollbackCommand) Execute(ctx *ecso.CommandContext) error {
 		project = ctx.Project
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)
+		version = ctx.Options.String(ServiceRollbackVersionOption)
 	)
 
 	ui.BannerBlue(
 		cmd.log,
 		"Rolling back service '%s' to version '%s' in the '%s' environment",
 		service.Name,
-		cmd.version,
+		version,
 		env.Name)
 
-	description, err := cmd.serviceAPI.ServiceRollback(project, env, service, cmd.version)
+	description, err := cmd.serviceAPI.ServiceRollback(project, env, service, version)
 	if err != nil {
 		return err
 	}
@@ -76,7 +65,7 @@ func (cmd *serviceRollbackCommand) Execute(ctx *ecso.CommandContext) error {
 		cmd.log,
 		"Rolled back service '%s' to version '%s' in the '%s' environment",
 		service.Name,
-		cmd.version,
+		version,
 		env.Name)
 
 	return nil

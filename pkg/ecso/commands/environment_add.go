@@ -10,8 +10,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/awsregistry"
 	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
-
-	"gopkg.in/urfave/cli.v1"
 )
 
 const (
@@ -51,21 +49,6 @@ func NewEnvironmentAddCommand(environmentName string, environmentAPI api.Environ
 		},
 		registryFactory: registryFactory,
 	}
-}
-
-func (c *environmentAddCommand) UnmarshalCliContext(ctx *cli.Context) error {
-	if err := c.EnvironmentCommand.UnmarshalCliContext(ctx); err != nil {
-		return err
-	}
-
-	c.albSubnets = ctx.String(EnvironmentAddALBSubnetsOption)
-	c.instanceSubnets = ctx.String(EnvironmentAddInstanceSubnetsOption)
-	c.instanceType = ctx.String(EnvironmentAddInstanceTypeOption)
-	c.region = ctx.String(EnvironmentAddRegionOption)
-	c.size = ctx.Int(EnvironmentAddSizeOption)
-	c.vpcID = ctx.String(EnvironmentAddVPCOption)
-
-	return nil
 }
 
 func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
@@ -109,6 +92,12 @@ func (c *environmentAddCommand) Validate(ctx *ecso.CommandContext) error {
 }
 
 func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
+	c.albSubnets = ctx.Options.String(EnvironmentAddALBSubnetsOption)
+	c.instanceSubnets = ctx.Options.String(EnvironmentAddInstanceSubnetsOption)
+	c.instanceType = ctx.Options.String(EnvironmentAddInstanceTypeOption)
+	c.region = ctx.Options.String(EnvironmentAddRegionOption)
+	c.size = ctx.Options.Int(EnvironmentAddSizeOption)
+	c.vpcID = ctx.Options.String(EnvironmentAddVPCOption)
 
 	var (
 		project         = ctx.Project

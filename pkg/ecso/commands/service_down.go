@@ -5,7 +5,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
-	"gopkg.in/urfave/cli.v1"
 )
 
 const (
@@ -24,20 +23,6 @@ func NewServiceDownCommand(name string, serviceAPI api.ServiceAPI, log log.Logge
 
 type serviceDownCommand struct {
 	*ServiceCommand
-}
-
-func (cmd *serviceDownCommand) UnmarshalCliContext(ctx *cli.Context) error {
-	if err := cmd.ServiceCommand.UnmarshalCliContext(ctx); err != nil {
-		return err
-	}
-
-	force := ctx.Bool(ServiceDownForceOption)
-
-	if !force {
-		return ecso.NewOptionRequiredError(ServiceDownForceOption)
-	}
-
-	return nil
 }
 
 func (cmd *serviceDownCommand) Execute(ctx *ecso.CommandContext) error {
@@ -61,6 +46,20 @@ func (cmd *serviceDownCommand) Execute(ctx *ecso.CommandContext) error {
 		"Successfully terminated the '%s' service in the '%s' environment",
 		service.Name,
 		env.Name)
+
+	return nil
+}
+
+func (cmd *serviceDownCommand) Validate(ctx *ecso.CommandContext) error {
+	if err := cmd.ServiceCommand.Validate(ctx); err != nil {
+		return err
+	}
+
+	force := ctx.Options.Bool(ServiceDownForceOption)
+
+	if !force {
+		return ecso.NewOptionRequiredError(ServiceDownForceOption)
+	}
 
 	return nil
 }
