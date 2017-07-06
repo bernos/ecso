@@ -374,12 +374,17 @@ func NewServiceLogsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 
 func NewServiceLsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
-			l := cfg.Logger()
-			r := cfg.AWSRegistryFactory()
 
-			return commands.NewServiceLsCommand(name, api.NewEnvironmentAPI(l, r), l)
-		})
+		l := cfg.Logger()
+		r := cfg.AWSRegistryFactory()
+
+		e := ctx.String(commands.ServiceLsEnvironmentOption)
+
+		if e == "" {
+			return nil, ecso.NewArgumentRequiredError("environment")
+		}
+
+		return commands.NewServiceLsCommand(e, api.NewEnvironmentAPI(l, r), l), nil
 	}
 
 	return cli.Command{
