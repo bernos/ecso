@@ -85,6 +85,7 @@ type CloudFormationHelper interface {
 	Package(templateFile, bucket, prefix string, tags, params map[string]string) (*Package, error)
 	StackExists(stackName string) (bool, error)
 	WaitForChangeset(changeset string, status ...string) (*cloudformation.DescribeChangeSetOutput, error)
+	PackageIsUploadedToS3(pkg *Package) (bool, error)
 }
 
 // NewCloudFormationHelper creates a CloudFormationHelper
@@ -180,12 +181,7 @@ func (h *cfnHelper) Package(templateFile, bucket, prefix string, tags, params ma
 	return pkg, nil
 }
 
-func (h *cfnHelper) Deploy(pkg *Package, stackName string, dryRun bool) (*DeploymentResult, error) {
-	h.logger.Printf("Deploying package from %s\n", pkg.GetURL())
-
-	s3Helper := NewS3Helper(h.s3Client, h.region, h.logger)
-
-	// First, ensure that the package exists in S3
+func (h *cfnHelper) PackageIsUploadedToS3(pkg *Package) (bool, error) {
 	if _, err := h.s3Client.HeadObject(&s3.HeadObjectInput{
 		Bucket: aws.String(pkg.bucket),
 		Key:    aws.String(pkg.GetTemplateBucketKey()),
@@ -193,11 +189,28 @@ func (h *cfnHelper) Deploy(pkg *Package, stackName string, dryRun bool) (*Deploy
 		if awsErr, ok := err.(awserr.Error); ok {
 			// process SDK error
 			if awsErr.Code() == "NotFound" {
-				return nil, fmt.Errorf("Deployment package not found at %s", pkg.GetBucketPrefix())
+				return false, nil
 			}
 		}
 
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (h *cfnHelper) Deploy(pkg *Package, stackName string, dryRun bool) (*DeploymentResult, error) {
+	h.logger.Printf("Deploying package from %s\n", pkg.GetURL())
+
+	s3Helper := NewS3Helper(h.s3Client, h.region, h.logger)
+
+	versionExists, err := h.PackageIsUploadedToS3(pkg)
+	if err != nil {
 		return nil, err
+	}
+
+	if !versionExists {
+		return nil, fmt.Errorf("Deployment package not found at %s", pkg.GetBucketPrefix())
 	}
 
 	// Download params and tags

@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/awsregistry"
 	"github.com/bernos/ecso/pkg/ecso/helpers"
@@ -27,6 +29,34 @@ type ServiceAPI interface {
 	GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ecs.Service, error)
 	GetECSTasks(p *ecso.Project, env *ecso.Environment, s *ecso.Service) ([]*ecs.Task, error)
 	GetECSContainerImage(taskDefinitionArn, containerName string, env *ecso.Environment) (string, error)
+	GetAvailableVersions(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (ServiceVersionList, error)
+}
+
+type ServiceVersion struct {
+	Service string
+	Label   string
+}
+
+type ServiceVersionList []*ServiceVersion
+
+func (cs ServiceVersionList) TableHeader() []string {
+	return []string{
+		"SERVICE",
+		"VERSION",
+	}
+}
+
+func (cs ServiceVersionList) TableRows() []map[string]string {
+	trs := make([]map[string]string, len(cs))
+
+	for i, c := range cs {
+		trs[i] = map[string]string{
+			"SERVICE": c.Service,
+			"VERSION": c.Label,
+		}
+	}
+
+	return trs
 }
 
 type ServiceDescription struct {
@@ -65,6 +95,48 @@ func (api *serviceAPI) GetECSContainers(p *ecso.Project, env *ecso.Environment, 
 	}
 
 	return LoadContainerList(tasks, reg.ECSAPI())
+}
+
+func (api *serviceAPI) GetAvailableVersions(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (ServiceVersionList, error) {
+	reg, err := api.registryFactory.ForRegion(env.Region)
+	if err != nil {
+		return nil, err
+	}
+
+	bucket, err := util.GetEcsoBucket(reg.STSAPI(), env.Region)
+	if err != nil {
+		return nil, err
+	}
+
+	s3Client := reg.S3API()
+	prefix := s.GetDeploymentBucketPrefix(env)
+
+	resp, err := s3Client.ListObjects(&s3.ListObjectsInput{
+		Bucket: aws.String(bucket),
+		Prefix: aws.String(prefix),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	versions := make([]*ServiceVersion, 0)
+	labels := make(map[string]bool)
+
+	for _, o := range resp.Contents {
+		suffix := strings.TrimPrefix(*o.Key, prefix+"/")
+		tokens := strings.Split(suffix, "/")
+		labels[tokens[0]] = true
+	}
+
+	for k := range labels {
+		versions = append(versions, &ServiceVersion{
+			Service: s.Name,
+			Label:   k,
+		})
+	}
+
+	return ServiceVersionList(versions), nil
 }
 
 func (api *serviceAPI) GetECSService(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (*ecs.Service, error) {
@@ -286,7 +358,6 @@ func (api *serviceAPI) ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ec
 }
 
 func (api *serviceAPI) ServiceRollback(project *ecso.Project, env *ecso.Environment, service *ecso.Service, version string) (*ServiceDescription, error) {
-
 	reg, err := api.registryFactory.ForRegion(env.Region)
 	if err != nil {
 		return nil, err
@@ -297,12 +368,22 @@ func (api *serviceAPI) ServiceRollback(project *ecso.Project, env *ecso.Environm
 		return nil, err
 	}
 
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
+	pkg := helpers.NewPackage(bucket, service.GetDeploymentBucketPrefixForVersion(env, version), env.Region)
+
+	exists, err := cfn.PackageIsUploadedToS3(pkg)
+	if err != nil {
+		return nil, err
+	}
+
+	if !exists {
+		return nil, fmt.Errorf("Version %s of service %s not found", version, service.Name)
+	}
+
 	envAPI := NewEnvironmentAPI(api.log, api.registryFactory)
 	if err := envAPI.SendNotification(env, fmt.Sprintf("Commenced rollback of %s version %s to %s", service.Name, version, env.Name)); err != nil {
 		api.log.Printf("WARNING Failed to send rollback commencing notification to sns. %s", err.Error())
 	}
-
-	pkg := helpers.NewPackage(bucket, service.GetDeploymentBucketPrefix(env, version), env.Region)
 
 	// deploy the service cfn stack
 	if err := api.deployServiceStack(reg, pkg, env, service); err != nil {
@@ -401,7 +482,7 @@ func (api *serviceAPI) deployServiceStack(reg awsregistry.Registry, pkg *helpers
 
 func (api *serviceAPI) packageAndDeployServiceStack(reg awsregistry.Registry, bucket string, project *ecso.Project, env *ecso.Environment, service *ecso.Service, taskDefinition *ecs.TaskDefinition, version string) error {
 	var (
-		prefix   = service.GetDeploymentBucketPrefix(env, version)
+		prefix   = service.GetDeploymentBucketPrefixForVersion(env, version)
 		template = service.GetCloudFormationTemplateFile()
 		cfn      = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
 	)
