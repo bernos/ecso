@@ -38,13 +38,7 @@ type factory func(*cli.Context, *config.Config) (ecso.Command, error)
 
 func CommandFactory(ctx *cli.Context, fn factory) ecso.CommandFactory {
 	return func(cfg *config.Config) (ecso.Command, error) {
-		command, err := fn(ctx, cfg)
-
-		if err != nil {
-			return nil, cli.NewExitError(err.Error(), 1)
-		}
-
-		return command, nil
+		return fn(ctx, cfg)
 	}
 }
 
@@ -53,6 +47,10 @@ func CommandFactory(ctx *cli.Context, fn factory) ecso.CommandFactory {
 func Dispatcher(dispatcher ecso.Dispatcher) ecso.Dispatcher {
 	return ecso.DispatcherFunc(func(factory ecso.CommandFactory, cOptions ecso.CommandOptions, options ...func(*ecso.DispatchOptions)) error {
 		if err := dispatcher.Dispatch(factory, cOptions, options...); err != nil {
+			if ecso.IsArgumentRequiredError(err) || ecso.IsOptionRequiredError(err) {
+				cli.ShowSubcommandHelp(cOptions.(*cli.Context))
+			}
+
 			return cli.NewExitError(err.Error(), 1)
 		}
 		return nil
@@ -63,12 +61,6 @@ func Dispatcher(dispatcher ecso.Dispatcher) ecso.Dispatcher {
 // with the urfave/cli command line interface semantics and types
 func MakeAction(dispatcher ecso.Dispatcher, fn factory, options ...func(*ecso.DispatchOptions)) func(*cli.Context) error {
 	return func(ctx *cli.Context) error {
-		err := dispatcher.Dispatch(CommandFactory(ctx, fn), ctx, options...)
-
-		if ecso.IsArgumentRequiredError(err) || ecso.IsOptionRequiredError(err) {
-			cli.ShowSubcommandHelp(ctx)
-		}
-
-		return err
+		return dispatcher.Dispatch(CommandFactory(ctx, fn), ctx, options...)
 	}
 }
