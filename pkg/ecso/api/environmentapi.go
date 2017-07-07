@@ -264,7 +264,7 @@ func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment,
 		return err
 	}
 
-	bucket, err := util.GetEcsoBucket(reg.STSAPI(), env.Region)
+	bucket, err := api.GetEcsoBucket(env)
 	if err != nil {
 		return err
 	}

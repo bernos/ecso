@@ -98,12 +98,14 @@ func (api *serviceAPI) GetECSContainers(p *ecso.Project, env *ecso.Environment, 
 }
 
 func (api *serviceAPI) GetAvailableVersions(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (ServiceVersionList, error) {
+	envAPI := NewEnvironmentAPI(api.log, api.registryFactory)
+
 	reg, err := api.registryFactory.ForRegion(env.Region)
 	if err != nil {
 		return nil, err
 	}
 
-	bucket, err := util.GetEcsoBucket(reg.STSAPI(), env.Region)
+	bucket, err := envAPI.GetEcsoBucket(env)
 	if err != nil {
 		return nil, err
 	}
@@ -358,12 +360,14 @@ func (api *serviceAPI) ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ec
 }
 
 func (api *serviceAPI) ServiceRollback(project *ecso.Project, env *ecso.Environment, service *ecso.Service, version string) (*ServiceDescription, error) {
+	envAPI := NewEnvironmentAPI(api.log, api.registryFactory)
+
 	reg, err := api.registryFactory.ForRegion(env.Region)
 	if err != nil {
 		return nil, err
 	}
 
-	bucket, err := util.GetEcsoBucket(reg.STSAPI(), env.Region)
+	bucket, err := envAPI.GetEcsoBucket(env)
 	if err != nil {
 		return nil, err
 	}
@@ -380,7 +384,6 @@ func (api *serviceAPI) ServiceRollback(project *ecso.Project, env *ecso.Environm
 		return nil, fmt.Errorf("Version %s of service %s not found", version, service.Name)
 	}
 
-	envAPI := NewEnvironmentAPI(api.log, api.registryFactory)
 	if err := envAPI.SendNotification(env, fmt.Sprintf("Commenced rollback of %s version %s to %s", service.Name, version, env.Name)); err != nil {
 		api.log.Printf("WARNING Failed to send rollback commencing notification to sns. %s", err.Error())
 	}
@@ -409,7 +412,7 @@ func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, s
 		return nil, err
 	}
 
-	bucket, err := util.GetEcsoBucket(reg.STSAPI(), env.Region)
+	bucket, err := envAPI.GetEcsoBucket(env)
 	if err != nil {
 		return nil, err
 	}
