@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/awsregistry"
 	"github.com/bernos/ecso/pkg/ecso/helpers"
@@ -21,6 +22,7 @@ type EnvironmentAPI interface {
 	EnvironmentDown(p *ecso.Project, env *ecso.Environment) error
 	IsEnvironmentUp(env *ecso.Environment) (bool, error)
 	SendNotification(env *ecso.Environment, msg string) error
+	GetEcsoBucket(env *ecso.Environment) (string, error)
 	GetECSServices(env *ecso.Environment) ([]*ecs.Service, error)
 	GetECSTasks(env *ecso.Environment) ([]*ecs.Task, error)
 	GetECSContainers(env *ecso.Environment) (ContainerList, error)
@@ -46,6 +48,20 @@ type EnvironmentDescription struct {
 	ECSConsoleURL            string
 	ECSClusterBaseURL        string
 	CloudFormationOutputs    map[string]string
+}
+
+func (api *environmentAPI) GetEcsoBucket(env *ecso.Environment) (string, error) {
+	reg, err := api.registryFactory.ForRegion(env.Region)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := reg.STSAPI().GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("ecso-%s-%s", env.Region, *resp.Account), nil
 }
 
 func (api *environmentAPI) DescribeEnvironment(env *ecso.Environment) (*EnvironmentDescription, error) {
