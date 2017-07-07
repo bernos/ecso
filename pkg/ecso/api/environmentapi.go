@@ -22,6 +22,7 @@ type EnvironmentAPI interface {
 	EnvironmentDown(p *ecso.Project, env *ecso.Environment) error
 	IsEnvironmentUp(env *ecso.Environment) (bool, error)
 	SendNotification(env *ecso.Environment, msg string) error
+	GetCurrentAWSAccount(region string) (string, error)
 	GetEcsoBucket(env *ecso.Environment) (string, error)
 	GetECSServices(env *ecso.Environment) ([]*ecs.Service, error)
 	GetECSTasks(env *ecso.Environment) ([]*ecs.Task, error)
@@ -48,6 +49,20 @@ type EnvironmentDescription struct {
 	ECSConsoleURL            string
 	ECSClusterBaseURL        string
 	CloudFormationOutputs    map[string]string
+}
+
+func (api *environmentAPI) GetCurrentAWSAccount(region string) (string, error) {
+	reg, err := api.registryFactory.ForRegion(region)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := reg.STSAPI().GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	if err != nil {
+		return "", err
+	}
+
+	return *resp.Account, nil
 }
 
 func (api *environmentAPI) GetEcsoBucket(env *ecso.Environment) (string, error) {
