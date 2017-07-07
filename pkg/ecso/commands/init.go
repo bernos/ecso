@@ -8,7 +8,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
-	"gopkg.in/urfave/cli.v1"
 )
 
 func NewInitCommand(projectName string, log log.Logger) ecso.Command {
@@ -21,10 +20,6 @@ func NewInitCommand(projectName string, log log.Logger) ecso.Command {
 type initCommand struct {
 	projectName string
 	log         log.Logger
-}
-
-func (cmd *initCommand) UnmarshalCliContext(ctx *cli.Context) error {
-	return nil
 }
 
 func (cmd *initCommand) Execute(ctx *ecso.CommandContext) error {

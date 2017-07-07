@@ -8,7 +8,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/resources"
 	"github.com/bernos/ecso/pkg/ecso/ui"
-	"gopkg.in/urfave/cli.v1"
 )
 
 const (
@@ -31,14 +30,6 @@ type serviceAddCommand struct {
 	route        string
 	port         int
 	log          log.Logger
-}
-
-func (cmd *serviceAddCommand) UnmarshalCliContext(ctx *cli.Context) error {
-	cmd.desiredCount = ctx.Int(ServiceAddDesiredCountOption)
-	cmd.route = ctx.String(ServiceAddRouteOption)
-	cmd.port = ctx.Int(ServiceAddPortOption)
-
-	return nil
 }
 
 func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext) error {
@@ -90,6 +81,10 @@ func (cmd *serviceAddCommand) Validate(ctx *ecso.CommandContext) error {
 }
 
 func (cmd *serviceAddCommand) Prompt(ctx *ecso.CommandContext) error {
+	cmd.desiredCount = ctx.Options.Int(ServiceAddDesiredCountOption)
+	cmd.route = ctx.Options.String(ServiceAddRouteOption)
+	cmd.port = ctx.Options.Int(ServiceAddPortOption)
+
 	var prompts = struct {
 		Name         string
 		DesiredCount string

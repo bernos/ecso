@@ -3,15 +3,10 @@ package commands
 import (
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/awsregistry"
 	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
-
-	"gopkg.in/urfave/cli.v1"
 )
 
 const (
@@ -25,10 +20,7 @@ const (
 )
 
 type environmentAddCommand struct {
-	// name            string
 	*EnvironmentCommand
-
-	registryFactory awsregistry.RegistryFactory
 
 	vpcID           string
 	albSubnets      string
@@ -42,30 +34,14 @@ type environmentAddCommand struct {
 	datadogAPIKey   string
 }
 
-func NewEnvironmentAddCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger, registryFactory awsregistry.RegistryFactory) ecso.Command {
+func NewEnvironmentAddCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger) ecso.Command {
 	return &environmentAddCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
 			environmentAPI:  environmentAPI,
 			log:             log,
 		},
-		registryFactory: registryFactory,
 	}
-}
-
-func (c *environmentAddCommand) UnmarshalCliContext(ctx *cli.Context) error {
-	if err := c.EnvironmentCommand.UnmarshalCliContext(ctx); err != nil {
-		return err
-	}
-
-	c.albSubnets = ctx.String(EnvironmentAddALBSubnetsOption)
-	c.instanceSubnets = ctx.String(EnvironmentAddInstanceSubnetsOption)
-	c.instanceType = ctx.String(EnvironmentAddInstanceTypeOption)
-	c.region = ctx.String(EnvironmentAddRegionOption)
-	c.size = ctx.Int(EnvironmentAddSizeOption)
-	c.vpcID = ctx.String(EnvironmentAddVPCOption)
-
-	return nil
 }
 
 func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
@@ -109,6 +85,12 @@ func (c *environmentAddCommand) Validate(ctx *ecso.CommandContext) error {
 }
 
 func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
+	c.albSubnets = ctx.Options.String(EnvironmentAddALBSubnetsOption)
+	c.instanceSubnets = ctx.Options.String(EnvironmentAddInstanceSubnetsOption)
+	c.instanceType = ctx.Options.String(EnvironmentAddInstanceTypeOption)
+	c.region = ctx.Options.String(EnvironmentAddRegionOption)
+	c.size = ctx.Options.Int(EnvironmentAddSizeOption)
+	c.vpcID = ctx.Options.String(EnvironmentAddVPCOption)
 
 	var (
 		project         = ctx.Project
@@ -116,14 +98,6 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 		accountDefaults = ecso.AccountDefaults{}
 		region          = "ap-southeast-2"
 	)
-
-	reg, err := c.registryFactory.ForRegion(region)
-
-	if err != nil {
-		return err
-	}
-
-	stsAPI := reg.STSAPI()
 
 	var prompts = struct {
 		Name            string
@@ -177,7 +151,7 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 	// If yes, then ask for the cfn stack id and collect outputs
 	ui.BannerBlue(c.log, "Adding a new environment to the %s project", project.Name)
 
-	if account := getCurrentAWSAccount(stsAPI); c.account == "" {
+	if account, _ := c.environmentAPI.GetCurrentAWSAccount(region); c.account == "" {
 		c.account = account
 	}
 
@@ -241,9 +215,9 @@ func environmentNameValidator(p *ecso.Project) func(string) error {
 	}
 }
 
-func getCurrentAWSAccount(svc stsiface.STSAPI) string {
-	if resp, err := svc.GetCallerIdentity(&sts.GetCallerIdentityInput{}); err == nil {
-		return *resp.Account
-	}
-	return ""
-}
+// func getCurrentAWSAccount(svc stsiface.STSAPI) string {
+// 	if resp, err := svc.GetCallerIdentity(&sts.GetCallerIdentityInput{}); err == nil {
+// 		return *resp.Account
+// 	}
+// 	return ""
+// }

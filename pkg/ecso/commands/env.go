@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/bernos/ecso/pkg/ecso"
-	"gopkg.in/urfave/cli.v1"
 )
 
 const (
@@ -22,21 +21,12 @@ func NewEnvCommand(environmentName string) ecso.Command {
 
 type envCommand struct {
 	*EnvironmentCommand
-	unset bool
-}
-
-func (cmd *envCommand) UnmarshalCliContext(ctx *cli.Context) error {
-	if err := cmd.EnvironmentCommand.UnmarshalCliContext(ctx); err != nil {
-		return err
-	}
-
-	cmd.unset = ctx.Bool(EnvUnsetOption)
-
-	return nil
 }
 
 func (cmd *envCommand) Execute(ctx *ecso.CommandContext) error {
-	if cmd.unset {
+	unset := ctx.Options.Bool(EnvUnsetOption)
+
+	if unset {
 		oldPS1 := os.Getenv("ECSO_OLD_PS1")
 
 		fmt.Printf("unset ECSO_ENVIRONMENT; ")

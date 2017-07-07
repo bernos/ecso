@@ -1,17 +1,18 @@
-package ecso
+package dispatcher
 
 import (
 	"fmt"
 
+	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/config"
 )
 
-type CommandFactory func(*config.Config) (Command, error)
+type CommandFactory func(*config.Config) (ecso.Command, error)
 
 // NewDispatcher creates a default Dispatcher for a Project, with the provided Config and
 // UserPreferences
-func NewDispatcher(project *Project, cfg *config.Config, prefs *UserPreferences) Dispatcher {
-	return DispatcherFunc(func(factory CommandFactory, options ...func(*DispatchOptions)) error {
+func NewDispatcher(project *ecso.Project, cfg *config.Config, prefs *ecso.UserPreferences) Dispatcher {
+	return DispatcherFunc(func(factory CommandFactory, cOptions ecso.CommandOptions, options ...func(*DispatchOptions)) error {
 		opt := &DispatchOptions{
 			EnsureProjectExists: true,
 		}
@@ -24,7 +25,7 @@ func NewDispatcher(project *Project, cfg *config.Config, prefs *UserPreferences)
 			return fmt.Errorf("No ecso project file was found")
 		}
 
-		ctx := NewCommandContext(project, prefs, cfg.Version)
+		ctx := ecso.NewCommandContext(project, prefs, cfg.Version, cOptions)
 
 		cmd, err := factory(cfg)
 
@@ -46,16 +47,16 @@ func NewDispatcher(project *Project, cfg *config.Config, prefs *UserPreferences)
 
 // Dispatcher executes an ecso Command
 type Dispatcher interface {
-	Dispatch(CommandFactory, ...func(*DispatchOptions)) error
+	Dispatch(CommandFactory, ecso.CommandOptions, ...func(*DispatchOptions)) error
 }
 
 // DispatcherFunc is an adaptor to allow the use of ordinary functions as
 // an ecso Dispatcher
-type DispatcherFunc func(CommandFactory, ...func(*DispatchOptions)) error
+type DispatcherFunc func(CommandFactory, ecso.CommandOptions, ...func(*DispatchOptions)) error
 
 // Dispatch calls fn(cmd, options...)
-func (fn DispatcherFunc) Dispatch(factory CommandFactory, options ...func(*DispatchOptions)) error {
-	return fn(factory, options...)
+func (fn DispatcherFunc) Dispatch(factory CommandFactory, cOptions ecso.CommandOptions, dOptions ...func(*DispatchOptions)) error {
+	return fn(factory, cOptions, dOptions...)
 }
 
 // DispatchOptions alter how a Dispatcher dispatches Commands

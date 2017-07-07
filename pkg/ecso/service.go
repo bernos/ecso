@@ -12,6 +12,13 @@ import (
 	logrus "github.com/Sirupsen/logrus"
 )
 
+func init() {
+	// HACK The aws ecs-cli lib we use to conver the compose file to an ecs task
+	// definition uses logrus directly and warns about a bunch of unsupported
+	// and irrelevant compose fields. Setting logrus level here to keep it quiet
+	logrus.SetLevel(logrus.ErrorLevel)
+}
+
 type Service struct {
 	project *Project
 
@@ -46,8 +53,12 @@ func (s *Service) GetCloudFormationStackName(env *Environment) string {
 	return fmt.Sprintf("%s-%s-%s", s.project.Name, env.Name, s.Name)
 }
 
-func (s *Service) GetDeploymentBucketPrefix(env *Environment, version string) string {
-	return path.Join(env.GetBaseBucketPrefix(), "services", s.Name, version)
+func (s *Service) GetDeploymentBucketPrefixForVersion(env *Environment, version string) string {
+	return path.Join(s.GetDeploymentBucketPrefix(env), version)
+}
+
+func (s *Service) GetDeploymentBucketPrefix(env *Environment) string {
+	return path.Join(env.GetBaseBucketPrefix(), "services", s.Name)
 }
 
 func (s *Service) GetCloudWatchLogGroup(env *Environment) string {
@@ -90,11 +101,6 @@ func (s *Service) GetECSTaskDefinition(env *Environment) (*ecs.TaskDefinition, e
 	if err := p.Parse(); err != nil {
 		return nil, err
 	}
-
-	// The aws ecs-cli lib we use to conver the compose file to an ecs task
-	// definition uses logrus directly and warns about a bunch of unsupported
-	// and irrelevant compose fields. Setting logrus level here to keep it quiet
-	logrus.SetLevel(logrus.ErrorLevel)
 
 	return utils.ConvertToTaskDefinition(name, context, p.ServiceConfigs)
 }

@@ -3,11 +3,12 @@ package cli
 import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/config"
+	"github.com/bernos/ecso/pkg/ecso/dispatcher"
 	"gopkg.in/urfave/cli.v1"
 )
 
 // NewApp creates a new `cli.App` interface for the ecso command line utility
-func NewApp(cfg *config.Config, dispatcher ecso.Dispatcher) *cli.App {
+func NewApp(cfg *config.Config, dispatcher dispatcher.Dispatcher) *cli.App {
 	app := cli.NewApp()
 	app.Name = "ecso"
 	app.Usage = "Manage Amazon ECS projects"
@@ -33,46 +34,36 @@ func NewApp(cfg *config.Config, dispatcher ecso.Dispatcher) *cli.App {
 	return app
 }
 
-// factory is a function that creates an `ecso.Command` from a `cli.Context`
-type factory func(*cli.Context, *config.Config) (ecso.Command, error)
+// Dispatcher wraps a standard ecso dispatcher. It handles showing usage in the case of an arg or option error
+// and also wraps any errors in the cli ExitError type, to ensure correct exit codes are returned from the cli
+// process
+func Dispatcher(d dispatcher.Dispatcher) dispatcher.Dispatcher {
+	return dispatcher.DispatcherFunc(func(factory dispatcher.CommandFactory, cOptions ecso.CommandOptions, options ...func(*dispatcher.DispatchOptions)) error {
+		if err := d.Dispatch(factory, cOptions, options...); err != nil {
+			if ecso.IsArgumentRequiredError(err) || ecso.IsOptionRequiredError(err) {
+				cli.ShowSubcommandHelp(cOptions.(*cli.Context))
+			}
 
-func CommandFactory(ctx *cli.Context, fn factory) ecso.CommandFactory {
-	return func(cfg *config.Config) (ecso.Command, error) {
-		command, err := fn(ctx, cfg)
-
-		if err != nil {
-			return nil, cli.NewExitError(err.Error(), 1)
-		}
-
-		if err := command.UnmarshalCliContext(ctx); err != nil {
-			return nil, cli.NewExitError(err.Error(), 1)
-		}
-
-		return command, nil
-	}
-}
-
-// Dispatcher wraps a dispatcher and returns a `cli.ExitError` if the underlying
-// dipatcher fails
-func Dispatcher(dispatcher ecso.Dispatcher) ecso.Dispatcher {
-	return ecso.DispatcherFunc(func(factory ecso.CommandFactory, options ...func(*ecso.DispatchOptions)) error {
-		if err := dispatcher.Dispatch(factory, options...); err != nil {
 			return cli.NewExitError(err.Error(), 1)
 		}
 		return nil
 	})
 }
 
+// CommandFactory is a function that creates an `ecso.Command` from a `cli.Context` and `config.Config`
+type CommandFactory func(*cli.Context, *config.Config) (ecso.Command, error)
+
+// MakeEcsoCommandFactory creates and ecso.CommandFactory from our local CommandFactory type
+func MakeEcsoCommandFactory(ctx *cli.Context, fn CommandFactory) dispatcher.CommandFactory {
+	return func(cfg *config.Config) (ecso.Command, error) {
+		return fn(ctx, cfg)
+	}
+}
+
 // MakeAction is a factory func for generating wrapped ecso.Commands compatible
 // with the urfave/cli command line interface semantics and types
-func MakeAction(dispatcher ecso.Dispatcher, fn factory, options ...func(*ecso.DispatchOptions)) func(*cli.Context) error {
+func MakeAction(dispatcher dispatcher.Dispatcher, factory CommandFactory, options ...func(*dispatcher.DispatchOptions)) func(*cli.Context) error {
 	return func(ctx *cli.Context) error {
-		err := dispatcher.Dispatch(CommandFactory(ctx, fn), options...)
-
-		if ecso.IsArgumentRequiredError(err) || ecso.IsOptionRequiredError(err) {
-			cli.ShowSubcommandHelp(ctx)
-		}
-
-		return err
+		return dispatcher.Dispatch(MakeEcsoCommandFactory(ctx, factory), ctx, options...)
 	}
 }

@@ -1,9 +1,6 @@
 package commands
 
-import (
-	"github.com/bernos/ecso/pkg/ecso"
-	"gopkg.in/urfave/cli.v1"
-)
+import "github.com/bernos/ecso/pkg/ecso"
 
 func NewSkeletonCommand(environmentName string) ecso.Command {
 	return &skeletonCommand{
@@ -13,10 +10,6 @@ func NewSkeletonCommand(environmentName string) ecso.Command {
 
 type skeletonCommand struct {
 	environmentName string
-}
-
-func (cmd *skeletonCommand) UnmarshalCliContext(ctx *cli.Context) error {
-	return nil
 }
 
 func (cmd *skeletonCommand) Execute(ctx *ecso.CommandContext) error {

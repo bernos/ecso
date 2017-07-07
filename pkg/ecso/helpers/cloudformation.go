@@ -12,8 +12,10 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/cloudformation/cloudformationiface"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
@@ -81,9 +83,9 @@ type CloudFormationHelper interface {
 	GetChangeSet(changeset string) (*cloudformation.DescribeChangeSetOutput, error)
 	GetStackOutputs(stackName string) (map[string]string, error)
 	Package(templateFile, bucket, prefix string, tags, params map[string]string) (*Package, error)
-	PackageAndDeploy(stackName, templateFile, bucket, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error)
 	StackExists(stackName string) (bool, error)
 	WaitForChangeset(changeset string, status ...string) (*cloudformation.DescribeChangeSetOutput, error)
+	PackageIsUploadedToS3(pkg *Package) (bool, error)
 }
 
 // NewCloudFormationHelper creates a CloudFormationHelper
@@ -129,16 +131,6 @@ func (h *cfnHelper) GetStackOutputs(stackName string) (map[string]string, error)
 	return outputs, nil
 }
 
-func (h *cfnHelper) PackageAndDeploy(stackName, templateFile, bucket, prefix string, tags, params map[string]string, dryRun bool) (*DeploymentResult, error) {
-	pkg, err := h.Package(templateFile, bucket, prefix, tags, params)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return h.Deploy(pkg, stackName, dryRun)
-}
-
 // Package creates a Package from local cloudformation template file. Any child templates in the
 // template file will be uploaded to S3, as well as the template file itself. Before the template
 // is uploaded, and relative references to child templates will be updated with the fully qualified
@@ -154,6 +146,7 @@ func (h *cfnHelper) Package(templateFile, bucket, prefix string, tags, params ma
 
 	templatePrefix := pkg.GetTemplateBucketPrefix()
 	basedir := filepath.Dir(templateFile)
+
 	templateBody, err := ioutil.ReadFile(templateFile)
 	if err != nil {
 		return pkg, err
@@ -173,8 +166,6 @@ func (h *cfnHelper) Package(templateFile, bucket, prefix string, tags, params ma
 		return pkg, err
 	}
 
-	// TODO: upload tags and params. Return prefix to package in S3, and change deploy/create funcs so that
-	// they accept the base prefix, rather than the full template url
 	s3Helper := NewS3Helper(h.s3Client, h.region, h.logger)
 
 	h.logger.Printf("Uploading cloud formation tags to %s\n", pkg.GetTagsBucketKey())
@@ -190,10 +181,37 @@ func (h *cfnHelper) Package(templateFile, bucket, prefix string, tags, params ma
 	return pkg, nil
 }
 
+func (h *cfnHelper) PackageIsUploadedToS3(pkg *Package) (bool, error) {
+	if _, err := h.s3Client.HeadObject(&s3.HeadObjectInput{
+		Bucket: aws.String(pkg.bucket),
+		Key:    aws.String(pkg.GetTemplateBucketKey()),
+	}); err != nil {
+		if awsErr, ok := err.(awserr.Error); ok {
+			// process SDK error
+			if awsErr.Code() == "NotFound" {
+				return false, nil
+			}
+		}
+
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (h *cfnHelper) Deploy(pkg *Package, stackName string, dryRun bool) (*DeploymentResult, error) {
 	h.logger.Printf("Deploying package from %s\n", pkg.GetURL())
 
 	s3Helper := NewS3Helper(h.s3Client, h.region, h.logger)
+
+	versionExists, err := h.PackageIsUploadedToS3(pkg)
+	if err != nil {
+		return nil, err
+	}
+
+	if !versionExists {
+		return nil, fmt.Errorf("Deployment package not found at %s", pkg.GetBucketPrefix())
+	}
 
 	// Download params and tags
 	params := make(map[string]string)

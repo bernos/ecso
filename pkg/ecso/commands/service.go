@@ -6,7 +6,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/log"
-	"gopkg.in/urfave/cli.v1"
 )
 
 const (
@@ -14,23 +13,23 @@ const (
 )
 
 type ServiceCommand struct {
-	name        string
-	environment string
-	serviceAPI  api.ServiceAPI
-	log         log.Logger
+	name       string
+	serviceAPI api.ServiceAPI
+	log        log.Logger
 }
 
 func (cmd *ServiceCommand) Environment(ctx *ecso.CommandContext) *ecso.Environment {
-	return ctx.Project.Environments[cmd.environment]
+	environmentName := ctx.Options.String(ServiceEnvironmentOption)
+
+	if environmentName == "" {
+		return nil
+	}
+
+	return ctx.Project.Environments[environmentName]
 }
 
 func (cmd *ServiceCommand) Service(ctx *ecso.CommandContext) *ecso.Service {
 	return ctx.Project.Services[cmd.name]
-}
-
-func (cmd *ServiceCommand) UnmarshalCliContext(ctx *cli.Context) error {
-	cmd.environment = ctx.String(ServiceEnvironmentOption)
-	return nil
 }
 
 func (cmd *ServiceCommand) Validate(ctx *ecso.CommandContext) error {
@@ -38,16 +37,16 @@ func (cmd *ServiceCommand) Validate(ctx *ecso.CommandContext) error {
 		return fmt.Errorf("Name is required")
 	}
 
-	if cmd.environment == "" {
+	if ctx.Options.String(ServiceEnvironmentOption) == "" {
 		return fmt.Errorf("Environment is required")
 	}
 
-	if !ctx.Project.HasService(cmd.name) {
-		return fmt.Errorf("No service named '%s' was found", cmd.name)
+	if cmd.Environment(ctx) == nil {
+		return fmt.Errorf("No environment named '%s' was found", cmd.Environment(ctx).Name)
 	}
 
-	if !ctx.Project.HasEnvironment(cmd.environment) {
-		return fmt.Errorf("No environment named '%s' was found", cmd.environment)
+	if cmd.Service(ctx) == nil {
+		return fmt.Errorf("No service named '%s' was found", cmd.name)
 	}
 
 	return nil
