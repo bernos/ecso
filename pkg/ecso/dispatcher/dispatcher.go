@@ -33,7 +33,7 @@ func NewDispatcher(project *ecso.Project, cfg *config.Config, prefs *ecso.UserPr
 			return err
 		}
 
-		if err := cmd.Prompt(ctx); err != nil {
+		if err := cmd.Prompt(ctx, cfg.Logger()); err != nil {
 			return err
 		}
 
@@ -41,7 +41,7 @@ func NewDispatcher(project *ecso.Project, cfg *config.Config, prefs *ecso.UserPr
 			return err
 		}
 
-		return cmd.Execute(ctx)
+		return cmd.Execute(ctx, cfg.Logger())
 	})
 }
 

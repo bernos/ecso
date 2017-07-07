@@ -7,12 +7,11 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-func NewServiceVersionsCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
+func NewServiceVersionsCommand(name string, serviceAPI api.ServiceAPI) ecso.Command {
 	return &serviceVersionsCommand{
 		ServiceCommand: &ServiceCommand{
 			name:       name,
 			serviceAPI: serviceAPI,
-			log:        log,
 		},
 	}
 }
@@ -21,7 +20,7 @@ type serviceVersionsCommand struct {
 	*ServiceCommand
 }
 
-func (cmd *serviceVersionsCommand) Execute(ctx *ecso.CommandContext) error {
+func (cmd *serviceVersionsCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	var (
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)
@@ -32,7 +31,7 @@ func (cmd *serviceVersionsCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.PrintTable(cmd.log, versions)
+	ui.PrintTable(l, versions)
 
 	return nil
 }

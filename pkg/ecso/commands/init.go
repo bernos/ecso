@@ -10,19 +10,17 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-func NewInitCommand(projectName string, log log.Logger) ecso.Command {
+func NewInitCommand(projectName string) ecso.Command {
 	return &initCommand{
 		projectName: projectName,
-		log:         log,
 	}
 }
 
 type initCommand struct {
 	projectName string
-	log         log.Logger
 }
 
-func (cmd *initCommand) Execute(ctx *ecso.CommandContext) error {
+func (cmd *initCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	wd, err := ecso.GetCurrentProjectDir()
 
 	if err != nil {
@@ -39,18 +37,18 @@ func (cmd *initCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	cmd.log.Infof("Created project file at %s", project.ProjectFile())
-	ui.BannerGreen(cmd.log, "Successfully created project '%s'.", project.Name)
+	l.Infof("Created project file at %s", project.ProjectFile())
+	ui.BannerGreen(l, "Successfully created project '%s'.", project.Name)
 
 	return nil
 }
 
-func (cmd *initCommand) Prompt(ctx *ecso.CommandContext) error {
+func (cmd *initCommand) Prompt(ctx *ecso.CommandContext, l log.Logger) error {
 	if ctx.Project != nil {
 		return fmt.Errorf("Found an existing project at %s.", ctx.Project.ProjectFile())
 	}
 
-	ui.BannerBlue(cmd.log, "Creating a new ecso project")
+	ui.BannerBlue(l, "Creating a new ecso project")
 
 	wd, err := ecso.GetCurrentProjectDir()
 

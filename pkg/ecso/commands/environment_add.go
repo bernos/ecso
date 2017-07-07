@@ -34,17 +34,16 @@ type environmentAddCommand struct {
 	datadogAPIKey   string
 }
 
-func NewEnvironmentAddCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger) ecso.Command {
+func NewEnvironmentAddCommand(environmentName string, environmentAPI api.EnvironmentAPI) ecso.Command {
 	return &environmentAddCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
 			environmentAPI:  environmentAPI,
-			log:             log,
 		},
 	}
 }
 
-func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
+func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	project := ctx.Project
 
 	if project.HasEnvironment(c.environmentName) {
@@ -74,8 +73,8 @@ func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.BannerGreen(c.log, "Successfully added environment '%s' to the project", c.environmentName)
-	c.log.Printf("Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.environmentName)
+	ui.BannerGreen(l, "Successfully added environment '%s' to the project", c.environmentName)
+	l.Printf("Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.environmentName)
 
 	return nil
 }
@@ -84,7 +83,7 @@ func (c *environmentAddCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
+func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext, l log.Logger) error {
 	c.albSubnets = ctx.Options.String(EnvironmentAddALBSubnetsOption)
 	c.instanceSubnets = ctx.Options.String(EnvironmentAddInstanceSubnetsOption)
 	c.instanceType = ctx.Options.String(EnvironmentAddInstanceTypeOption)
@@ -149,7 +148,7 @@ func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext) error {
 
 	// TODO Ask if there is an existing environment?
 	// If yes, then ask for the cfn stack id and collect outputs
-	ui.BannerBlue(c.log, "Adding a new environment to the %s project", project.Name)
+	ui.BannerBlue(l, "Adding a new environment to the %s project", project.Name)
 
 	if account, _ := c.environmentAPI.GetCurrentAWSAccount(region); c.account == "" {
 		c.account = account

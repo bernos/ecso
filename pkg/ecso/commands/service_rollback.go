@@ -13,12 +13,11 @@ const (
 	ServiceRollbackVersionOption = "version"
 )
 
-func NewServiceRollbackCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
+func NewServiceRollbackCommand(name string, serviceAPI api.ServiceAPI) ecso.Command {
 	return &serviceRollbackCommand{
 		ServiceCommand: &ServiceCommand{
 			name:       name,
 			serviceAPI: serviceAPI,
-			log:        log,
 		},
 	}
 }
@@ -39,7 +38,7 @@ func (cmd *serviceRollbackCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *serviceRollbackCommand) Execute(ctx *ecso.CommandContext) error {
+func (cmd *serviceRollbackCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	var (
 		project = ctx.Project
 		env     = cmd.Environment(ctx)
@@ -48,7 +47,7 @@ func (cmd *serviceRollbackCommand) Execute(ctx *ecso.CommandContext) error {
 	)
 
 	ui.BannerBlue(
-		cmd.log,
+		l,
 		"Rolling back service '%s' to version '%s' in the '%s' environment",
 		service.Name,
 		version,
@@ -59,10 +58,10 @@ func (cmd *serviceRollbackCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.PrintServiceDescription(cmd.log, description)
+	ui.PrintServiceDescription(l, description)
 
 	ui.BannerGreen(
-		cmd.log,
+		l,
 		"Rolled back service '%s' to version '%s' in the '%s' environment",
 		service.Name,
 		version,

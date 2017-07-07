@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/bernos/ecso/pkg/ecso"
+	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
 const (
@@ -23,7 +24,7 @@ type envCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *envCommand) Execute(ctx *ecso.CommandContext) error {
+func (cmd *envCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	unset := ctx.Options.Bool(EnvUnsetOption)
 
 	if unset {
@@ -51,7 +52,7 @@ func (cmd *envCommand) Execute(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *envCommand) Prompt(ctx *ecso.CommandContext) error {
+func (cmd *envCommand) Prompt(ctx *ecso.CommandContext, l log.Logger) error {
 	return nil
 }
 

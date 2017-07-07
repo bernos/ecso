@@ -15,7 +15,6 @@ const (
 type ServiceCommand struct {
 	name       string
 	serviceAPI api.ServiceAPI
-	log        log.Logger
 }
 
 func (cmd *ServiceCommand) Environment(ctx *ecso.CommandContext) *ecso.Environment {
@@ -52,6 +51,6 @@ func (cmd *ServiceCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *ServiceCommand) Prompt(ctx *ecso.CommandContext) error {
+func (cmd *ServiceCommand) Prompt(ctx *ecso.CommandContext, l log.Logger) error {
 	return nil
 }

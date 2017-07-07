@@ -1,22 +1,26 @@
 package ecso
 
+import (
+	"github.com/bernos/ecso/pkg/ecso/log"
+)
+
 // Command represents a single ecso command
 type Command interface {
-	Prompt(ctx *CommandContext) error
+	Execute(ctx *CommandContext, l log.Logger) error
+	Prompt(ctx *CommandContext, l log.Logger) error
 	Validate(ctx *CommandContext) error
-	Execute(ctx *CommandContext) error
 }
 
 // CommandFunc lifts a regular function to the Command interface
-type CommandFunc func(*CommandContext) error
+type CommandFunc func(*CommandContext, log.Logger) error
 
 // Execute executes the func
-func (fn CommandFunc) Execute(ctx *CommandContext) error {
-	return fn(ctx)
+func (fn CommandFunc) Execute(ctx *CommandContext, l log.Logger) error {
+	return fn(ctx, l)
 }
 
 // Prompt asks for user input
-func (fn CommandFunc) Prompt(ctx *CommandContext) error {
+func (fn CommandFunc) Prompt(ctx *CommandContext, l log.Logger) error {
 	return nil
 }
 
@@ -30,7 +34,7 @@ func (fn CommandFunc) Validate(ctx *CommandContext) error {
 // interface. Use this to simplify returning errors from functions
 // that create commands
 func CommandError(err error) Command {
-	return CommandFunc(func(ctx *CommandContext) error {
+	return CommandFunc(func(ctx *CommandContext, l log.Logger) error {
 		return err
 	})
 }

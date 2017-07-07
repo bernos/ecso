@@ -9,12 +9,11 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
-func NewServiceLogsCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
+func NewServiceLogsCommand(name string, serviceAPI api.ServiceAPI) ecso.Command {
 	return &serviceLogsCommand{
 		ServiceCommand: &ServiceCommand{
 			name:       name,
 			serviceAPI: serviceAPI,
-			log:        log,
 		},
 	}
 }
@@ -23,7 +22,7 @@ type serviceLogsCommand struct {
 	*ServiceCommand
 }
 
-func (cmd *serviceLogsCommand) Execute(ctx *ecso.CommandContext) error {
+func (cmd *serviceLogsCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	events, err := cmd.serviceAPI.ServiceLogs(ctx.Project, cmd.Environment(ctx), cmd.Service(ctx))
 
 	if err != nil {
@@ -31,7 +30,7 @@ func (cmd *serviceLogsCommand) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	for _, event := range events {
-		cmd.log.Printf("%-42s %s\n", cmd.EventTime(event), *event.Message)
+		l.Printf("%-42s %s\n", cmd.EventTime(event), *event.Message)
 	}
 
 	return nil

@@ -7,12 +7,11 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-func NewEnvironmentDescribeCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger) ecso.Command {
+func NewEnvironmentDescribeCommand(environmentName string, environmentAPI api.EnvironmentAPI) ecso.Command {
 	return &environmentDescribeCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
 			environmentAPI:  environmentAPI,
-			log:             log,
 		},
 	}
 }
@@ -21,14 +20,14 @@ type environmentDescribeCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *environmentDescribeCommand) Execute(ctx *ecso.CommandContext) error {
+func (cmd *environmentDescribeCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	description, err := cmd.environmentAPI.DescribeEnvironment(cmd.Environment(ctx))
 
 	if err != nil {
 		return err
 	}
 
-	ui.PrintEnvironmentDescription(cmd.log, description)
+	ui.PrintEnvironmentDescription(l, description)
 
 	return nil
 }

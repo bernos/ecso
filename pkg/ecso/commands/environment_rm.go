@@ -11,12 +11,11 @@ const (
 	EnvironmentRmForceOption = "force"
 )
 
-func NewEnvironmentRmCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger) ecso.Command {
+func NewEnvironmentRmCommand(environmentName string, environmentAPI api.EnvironmentAPI) ecso.Command {
 	return &environmentRmCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
 			environmentAPI:  environmentAPI,
-			log:             log,
 		},
 	}
 }
@@ -25,13 +24,13 @@ type environmentRmCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext) error {
+func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	var (
 		project = ctx.Project
 		env     = cmd.Environment(ctx)
 	)
 
-	ui.BannerBlue(cmd.log, "Removing '%s' environment", env.Name)
+	ui.BannerBlue(l, "Removing '%s' environment", env.Name)
 
 	if err := cmd.environmentAPI.EnvironmentDown(project, env); err != nil {
 		return err
@@ -43,7 +42,7 @@ func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.BannerGreen(cmd.log, "Successfully removed '%s' environment", env.Name)
+	ui.BannerGreen(l, "Successfully removed '%s' environment", env.Name)
 
 	return nil
 }
