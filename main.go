@@ -6,6 +6,7 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/cli"
 	"github.com/bernos/ecso/pkg/ecso/config"
+	"github.com/bernos/ecso/pkg/ecso/dispatcher"
 	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
@@ -18,7 +19,7 @@ func main() {
 	project := MustLoadProject(ecso.LoadCurrentProject())
 	cfg := MustLoadConfig(config.NewConfig(version))
 	prefs := MustLoadUserPreferences(ecso.LoadCurrentUserPreferences())
-	dispatcher := ecso.NewDispatcher(project, cfg, prefs)
+	dispatcher := dispatcher.NewDispatcher(project, cfg, prefs)
 	app := cli.NewApp(cfg, dispatcher)
 
 	err := app.Run(os.Args)

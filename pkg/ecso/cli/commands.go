@@ -4,13 +4,13 @@ import (
 	"os"
 
 	"github.com/bernos/ecso/pkg/ecso"
-	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/commands"
 	"github.com/bernos/ecso/pkg/ecso/config"
+	"github.com/bernos/ecso/pkg/ecso/dispatcher"
 	"gopkg.in/urfave/cli.v1"
 )
 
-func NewEnvCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewEnvCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return commands.NewEnvCommand(ctx.Args().First()), nil
 	}
@@ -29,7 +29,7 @@ func NewEnvCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewEnvironmentCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewEnvironmentCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	return cli.Command{
 		Name:  "environment",
 		Usage: "Manage ecso environments",
@@ -44,12 +44,13 @@ func NewEnvironmentCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewEnvironmentAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewEnvironmentAddCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		l := cfg.Logger()
 		r := cfg.AWSRegistryFactory()
+		a := cfg.EnvironmentAPI()
 
-		return commands.NewEnvironmentAddCommand(ctx.Args().First(), api.NewEnvironmentAPI(l, r), l, r), nil
+		return commands.NewEnvironmentAddCommand(ctx.Args().First(), a, l, r), nil
 	}
 
 	return cli.Command{
@@ -90,13 +91,13 @@ func NewEnvironmentAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewEnvironmentDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewEnvironmentDescribeCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
 			l := cfg.Logger()
-			r := cfg.AWSRegistryFactory()
+			a := cfg.EnvironmentAPI()
 
-			return commands.NewEnvironmentDescribeCommand(name, api.NewEnvironmentAPI(l, r), l)
+			return commands.NewEnvironmentDescribeCommand(name, a, l)
 		})
 	}
 
@@ -108,13 +109,13 @@ func NewEnvironmentDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewEnvironmentDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewEnvironmentDownCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
 			l := cfg.Logger()
-			r := cfg.AWSRegistryFactory()
+			a := cfg.EnvironmentAPI()
 
-			return commands.NewEnvironmentDownCommand(name, api.NewEnvironmentAPI(l, r), l)
+			return commands.NewEnvironmentDownCommand(name, a, l)
 		})
 	}
 
@@ -133,13 +134,13 @@ func NewEnvironmentDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewEnvironmentPsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewEnvironmentPsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
 			l := cfg.Logger()
-			r := cfg.AWSRegistryFactory()
+			a := cfg.EnvironmentAPI()
 
-			return commands.NewEnvironmentPsCommand(name, api.NewEnvironmentAPI(l, r), l)
+			return commands.NewEnvironmentPsCommand(name, a, l)
 		})
 	}
 
@@ -152,13 +153,13 @@ func NewEnvironmentPsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewEnvironmentRmCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewEnvironmentRmCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
 			l := cfg.Logger()
-			r := cfg.AWSRegistryFactory()
+			a := cfg.EnvironmentAPI()
 
-			return commands.NewEnvironmentRmCommand(name, api.NewEnvironmentAPI(l, r), l)
+			return commands.NewEnvironmentRmCommand(name, a, l)
 		})
 	}
 
@@ -177,13 +178,13 @@ func NewEnvironmentRmCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewEnvironmentUpCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewEnvironmentUpCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
 			l := cfg.Logger()
-			r := cfg.AWSRegistryFactory()
+			a := cfg.EnvironmentAPI()
 
-			return commands.NewEnvironmentUpCommand(name, api.NewEnvironmentAPI(l, r), l)
+			return commands.NewEnvironmentUpCommand(name, a, l)
 		})
 	}
 
@@ -206,7 +207,7 @@ func NewEnvironmentUpCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewInitCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewInitCliCommand(d dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return commands.NewInitCommand(ctx.Args().First(), cfg.Logger()), nil
 	}
@@ -216,11 +217,11 @@ func NewInitCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 		Usage:       "Initialise a new ecso project",
 		Description: "Creates a new ecso project configuration file at .ecso/project.json. The initial project contains no environments or services. The project configuration file can be safely endited by hand, but it is usually easier to user the ecso cli tool to add new services and environments to the project.",
 		ArgsUsage:   "[PROJECT]",
-		Action:      MakeAction(dispatcher, fn, ecso.SkipEnsureProjectExists()),
+		Action:      MakeAction(d, fn, dispatcher.SkipEnsureProjectExists()),
 	}
 }
 
-func NewServiceCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewServiceCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	return cli.Command{
 		Name:  "service",
 		Usage: "Manage ecso services",
@@ -239,7 +240,7 @@ func NewServiceCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewServiceAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewServiceAddCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return commands.NewServiceAddCommand(ctx.Args().First(), cfg.Logger()), nil
 	}
@@ -267,13 +268,13 @@ func NewServiceAddCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewServiceDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewServiceDescribeCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, func(name string) ecso.Command {
 			l := cfg.Logger()
-			r := cfg.AWSRegistryFactory()
+			a := cfg.ServiceAPI()
 
-			return commands.NewServiceDescribeCommand(name, api.NewServiceAPI(l, r), l)
+			return commands.NewServiceDescribeCommand(name, a, l)
 		})
 	}
 
@@ -293,13 +294,13 @@ func NewServiceDescribeCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewServiceDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewServiceDownCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, func(name string) ecso.Command {
 			l := cfg.Logger()
-			r := cfg.AWSRegistryFactory()
+			a := cfg.ServiceAPI()
 
-			return commands.NewServiceDownCommand(name, api.NewServiceAPI(l, r), l)
+			return commands.NewServiceDownCommand(name, a, l)
 		})
 	}
 
@@ -323,13 +324,13 @@ func NewServiceDownCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewServiceEventsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewServiceEventsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, func(name string) ecso.Command {
 			l := cfg.Logger()
-			r := cfg.AWSRegistryFactory()
+			a := cfg.ServiceAPI()
 
-			return commands.NewServiceEventsCommand(name, api.NewServiceAPI(l, r), l)
+			return commands.NewServiceEventsCommand(name, a, l)
 		})
 	}
 
@@ -348,13 +349,13 @@ func NewServiceEventsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewServiceLogsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewServiceLogsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, func(name string) ecso.Command {
 			l := cfg.Logger()
-			r := cfg.AWSRegistryFactory()
+			a := cfg.ServiceAPI()
 
-			return commands.NewServiceLogsCommand(name, api.NewServiceAPI(l, r), l)
+			return commands.NewServiceLogsCommand(name, a, l)
 		})
 	}
 
@@ -373,19 +374,17 @@ func NewServiceLogsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewServiceLsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewServiceLsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-
 		l := cfg.Logger()
-		r := cfg.AWSRegistryFactory()
-
+		a := cfg.EnvironmentAPI()
 		e := ctx.String(commands.ServiceLsEnvironmentOption)
 
 		if e == "" {
 			return nil, ecso.NewArgumentRequiredError("environment")
 		}
 
-		return commands.NewServiceLsCommand(e, api.NewEnvironmentAPI(l, r), l), nil
+		return commands.NewServiceLsCommand(e, a, l), nil
 	}
 
 	return cli.Command{
@@ -402,13 +401,13 @@ func NewServiceLsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewServicePsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewServicePsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, func(name string) ecso.Command {
 			l := cfg.Logger()
-			r := cfg.AWSRegistryFactory()
+			a := cfg.ServiceAPI()
 
-			return commands.NewServicePsCommand(name, api.NewServiceAPI(l, r), l)
+			return commands.NewServicePsCommand(name, a, l)
 		})
 	}
 
@@ -427,13 +426,13 @@ func NewServicePsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewServiceRollbackCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewServiceRollbackCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, func(name string) ecso.Command {
 			l := cfg.Logger()
-			r := cfg.AWSRegistryFactory()
+			a := cfg.ServiceAPI()
 
-			return commands.NewServiceRollbackCommand(name, api.NewServiceAPI(l, r), l)
+			return commands.NewServiceRollbackCommand(name, a, l)
 		})
 	}
 
@@ -457,13 +456,13 @@ func NewServiceRollbackCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewServiceUpCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewServiceUpCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, func(name string) ecso.Command {
 			l := cfg.Logger()
-			r := cfg.AWSRegistryFactory()
+			a := cfg.ServiceAPI()
 
-			return commands.NewServiceUpCommand(name, api.NewServiceAPI(l, r), l)
+			return commands.NewServiceUpCommand(name, a, l)
 		})
 	}
 
@@ -483,13 +482,13 @@ func NewServiceUpCliCommand(dispatcher ecso.Dispatcher) cli.Command {
 	}
 }
 
-func NewServiceVersionsCliCommand(dispatcher ecso.Dispatcher) cli.Command {
+func NewServiceVersionsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, func(name string) ecso.Command {
 			l := cfg.Logger()
-			r := cfg.AWSRegistryFactory()
+			a := cfg.ServiceAPI()
 
-			return commands.NewServiceVersionsCommand(name, api.NewServiceAPI(l, r), l)
+			return commands.NewServiceVersionsCommand(name, a, l)
 		})
 	}
 
