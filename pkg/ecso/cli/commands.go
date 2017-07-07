@@ -47,10 +47,9 @@ func NewEnvironmentCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 func NewEnvironmentAddCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		l := cfg.Logger()
-		r := cfg.AWSRegistryFactory()
 		a := cfg.EnvironmentAPI()
 
-		return commands.NewEnvironmentAddCommand(ctx.Args().First(), a, l, r), nil
+		return commands.NewEnvironmentAddCommand(ctx.Args().First(), a, l), nil
 	}
 
 	return cli.Command{

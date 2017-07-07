@@ -27,7 +27,7 @@ func (c *Config) Logger() log.Logger {
 	return c.l
 }
 
-func (c *Config) AWSRegistryFactory() awsregistry.RegistryFactory {
+func (c *Config) awsRegistryFactory() awsregistry.RegistryFactory {
 	if c.r == nil {
 		c.r = awsregistry.DefaultRegistryFactory
 	}
@@ -36,14 +36,14 @@ func (c *Config) AWSRegistryFactory() awsregistry.RegistryFactory {
 
 func (c *Config) ServiceAPI() api.ServiceAPI {
 	if c.serviceAPI == nil {
-		c.serviceAPI = api.NewServiceAPI(c.Logger(), c.AWSRegistryFactory())
+		c.serviceAPI = api.NewServiceAPI(c.Logger(), c.awsRegistryFactory())
 	}
 	return c.serviceAPI
 }
 
 func (c *Config) EnvironmentAPI() api.EnvironmentAPI {
 	if c.environmentAPI == nil {
-		c.environmentAPI = api.NewEnvironmentAPI(c.Logger(), c.AWSRegistryFactory())
+		c.environmentAPI = api.NewEnvironmentAPI(c.Logger(), c.awsRegistryFactory())
 	}
 	return c.environmentAPI
 }
