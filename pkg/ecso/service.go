@@ -12,6 +12,13 @@ import (
 	logrus "github.com/Sirupsen/logrus"
 )
 
+func init() {
+	// HACK The aws ecs-cli lib we use to conver the compose file to an ecs task
+	// definition uses logrus directly and warns about a bunch of unsupported
+	// and irrelevant compose fields. Setting logrus level here to keep it quiet
+	logrus.SetLevel(logrus.ErrorLevel)
+}
+
 type Service struct {
 	project *Project
 
@@ -94,11 +101,6 @@ func (s *Service) GetECSTaskDefinition(env *Environment) (*ecs.TaskDefinition, e
 	if err := p.Parse(); err != nil {
 		return nil, err
 	}
-
-	// The aws ecs-cli lib we use to conver the compose file to an ecs task
-	// definition uses logrus directly and warns about a bunch of unsupported
-	// and irrelevant compose fields. Setting logrus level here to keep it quiet
-	logrus.SetLevel(logrus.ErrorLevel)
 
 	return utils.ConvertToTaskDefinition(name, context, p.ServiceConfigs)
 }
