@@ -1,7 +1,5 @@
 package ecso
 
-import "gopkg.in/urfave/cli.v1"
-
 // Command represents a single ecso command
 type Command interface {
 	Prompt(ctx *CommandContext) error
@@ -25,13 +23,6 @@ func (fn CommandFunc) Prompt(ctx *CommandContext) error {
 // Validate ensures the command is valid. A CommandFunc is always
 // valid, as it has no internal state
 func (fn CommandFunc) Validate(ctx *CommandContext) error {
-	return nil
-}
-
-// UnmarshalCliContext unmarshals a cli.Context struct into a
-// Command. For a CommandFunc this does nothing, as there is no
-// internal state
-func (fn CommandFunc) UnmarshalCliContext(c *cli.Context) error {
 	return nil
 }
 
