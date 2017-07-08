@@ -21,6 +21,10 @@ type initCommand struct {
 }
 
 func (cmd *initCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+	if err := cmd.prompt(ctx, l); err != nil {
+		return err
+	}
+
 	wd, err := ecso.GetCurrentProjectDir()
 
 	if err != nil {
@@ -43,7 +47,11 @@ func (cmd *initCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	return nil
 }
 
-func (cmd *initCommand) Prompt(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *initCommand) Validate(ctx *ecso.CommandContext) error {
+	return nil
+}
+
+func (cmd *initCommand) prompt(ctx *ecso.CommandContext, l log.Logger) error {
 	if ctx.Project != nil {
 		return fmt.Errorf("Found an existing project at %s.", ctx.Project.ProjectFile())
 	}
@@ -61,8 +69,4 @@ func (cmd *initCommand) Prompt(ctx *ecso.CommandContext, l log.Logger) error {
 		"What is the name of your project?",
 		filepath.Base(wd),
 		ui.ValidateNotEmpty("Project name is required"))
-}
-
-func (cmd *initCommand) Validate(ctx *ecso.CommandContext) error {
-	return nil
 }

@@ -28,12 +28,7 @@ func NewDispatcher(project *ecso.Project, cfg *config.Config, prefs *ecso.UserPr
 		ctx := ecso.NewCommandContext(project, prefs, cfg.Version, cOptions)
 
 		cmd, err := factory(cfg)
-
 		if err != nil {
-			return err
-		}
-
-		if err := cmd.Prompt(ctx, cfg.Logger()); err != nil {
 			return err
 		}
 

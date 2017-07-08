@@ -52,10 +52,6 @@ func (cmd *envCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	return nil
 }
 
-func (cmd *envCommand) Prompt(ctx *ecso.CommandContext, l log.Logger) error {
-	return nil
-}
-
 func (cmd *envCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }

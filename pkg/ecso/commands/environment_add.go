@@ -46,6 +46,10 @@ func NewEnvironmentAddCommand(environmentName string, environmentAPI api.Environ
 func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	project := ctx.Project
 
+	if err := c.prompt(ctx, l); err != nil {
+		return err
+	}
+
 	if project.HasEnvironment(c.environmentName) {
 		return fmt.Errorf("An environment named '%s' already exists for this project.", c.environmentName)
 	}
@@ -83,7 +87,7 @@ func (c *environmentAddCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (c *environmentAddCommand) Prompt(ctx *ecso.CommandContext, l log.Logger) error {
+func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, l log.Logger) error {
 	c.albSubnets = ctx.Options.String(EnvironmentAddALBSubnetsOption)
 	c.instanceSubnets = ctx.Options.String(EnvironmentAddInstanceSubnetsOption)
 	c.instanceType = ctx.Options.String(EnvironmentAddInstanceTypeOption)

@@ -5,7 +5,6 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
 const (
@@ -48,9 +47,5 @@ func (cmd *ServiceCommand) Validate(ctx *ecso.CommandContext) error {
 		return fmt.Errorf("No service named '%s' was found", cmd.name)
 	}
 
-	return nil
-}
-
-func (cmd *ServiceCommand) Prompt(ctx *ecso.CommandContext, l log.Logger) error {
 	return nil
 }

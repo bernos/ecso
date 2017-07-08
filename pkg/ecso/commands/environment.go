@@ -5,7 +5,6 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
 type EnvironmentCommand struct {
@@ -22,10 +21,6 @@ func (cmd *EnvironmentCommand) Validate(ctx *ecso.CommandContext) error {
 		return fmt.Errorf("No environment named '%s' was found", cmd.environmentName)
 	}
 
-	return nil
-}
-
-func (cmd *EnvironmentCommand) Prompt(ctx *ecso.CommandContext, l log.Logger) error {
 	return nil
 }
 

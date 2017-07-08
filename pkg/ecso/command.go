@@ -7,7 +7,6 @@ import (
 // Command represents a single ecso command
 type Command interface {
 	Execute(ctx *CommandContext, l log.Logger) error
-	Prompt(ctx *CommandContext, l log.Logger) error
 	Validate(ctx *CommandContext) error
 }
 
@@ -17,11 +16,6 @@ type CommandFunc func(*CommandContext, log.Logger) error
 // Execute executes the func
 func (fn CommandFunc) Execute(ctx *CommandContext, l log.Logger) error {
 	return fn(ctx, l)
-}
-
-// Prompt asks for user input
-func (fn CommandFunc) Prompt(ctx *CommandContext, l log.Logger) error {
-	return nil
 }
 
 // Validate ensures the command is valid. A CommandFunc is always

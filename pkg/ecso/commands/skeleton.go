@@ -22,7 +22,3 @@ func (cmd *skeletonCommand) Execute(ctx *ecso.CommandContext, l log.Logger) erro
 func (cmd *skeletonCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
-
-func (cmd *skeletonCommand) Prompt(ctx *ecso.CommandContext, l log.Logger) error {
-	return nil
-}

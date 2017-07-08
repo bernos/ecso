@@ -33,6 +33,10 @@ type serviceAddCommand struct {
 func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	project := ctx.Project
 
+	if err := cmd.prompt(ctx, l); err != nil {
+		return err
+	}
+
 	service := &ecso.Service{
 		Name:         cmd.name,
 		ComposeFile:  filepath.Join("services", cmd.name, "docker-compose.yaml"),
@@ -78,7 +82,7 @@ func (cmd *serviceAddCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *serviceAddCommand) Prompt(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *serviceAddCommand) prompt(ctx *ecso.CommandContext, l log.Logger) error {
 	cmd.desiredCount = ctx.Options.Int(ServiceAddDesiredCountOption)
 	cmd.route = ctx.Options.String(ServiceAddRouteOption)
 	cmd.port = ctx.Options.Int(ServiceAddPortOption)
