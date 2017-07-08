@@ -348,6 +348,10 @@ func NewServiceLsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 		e := ctx.String(commands.ServiceLsEnvironmentOption)
 
 		if e == "" {
+			e = os.Getenv("ECSO_ENVIRONMENT")
+		}
+
+		if e == "" {
 			return nil, ecso.NewArgumentRequiredError("environment")
 		}
 
@@ -355,8 +359,9 @@ func NewServiceLsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	}
 
 	return cli.Command{
-		Name:  "ls",
-		Usage: "List services",
+		Name:      "ls",
+		Usage:     "List services",
+		ArgsUsage: "",
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:   commands.ServiceLsEnvironmentOption,
@@ -467,7 +472,6 @@ func makeEnvironmentCommand(c *cli.Context, fn func(string) ecso.Command) (ecso.
 
 	if name == "" {
 		name = os.Getenv("ECSO_ENVIRONMENT")
-
 	}
 
 	if name == "" {
