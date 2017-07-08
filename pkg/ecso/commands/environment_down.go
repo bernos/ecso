@@ -11,12 +11,11 @@ const (
 	EnvironmentDownForceOption = "force"
 )
 
-func NewEnvironmentDownCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger) ecso.Command {
+func NewEnvironmentDownCommand(environmentName string, environmentAPI api.EnvironmentAPI) ecso.Command {
 	return &environmentDownCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
 			environmentAPI:  environmentAPI,
-			log:             log,
 		},
 	}
 }
@@ -25,19 +24,19 @@ type environmentDownCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *environmentDownCommand) Execute(ctx *ecso.CommandContext) error {
+func (cmd *environmentDownCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	var (
 		project = ctx.Project
 		env     = cmd.Environment(ctx)
 	)
 
-	ui.BannerBlue(cmd.log, "Stopping '%s' environment", env.Name)
+	ui.BannerBlue(l, "Stopping '%s' environment", env.Name)
 
 	if err := cmd.environmentAPI.EnvironmentDown(project, env); err != nil {
 		return err
 	}
 
-	ui.BannerGreen(cmd.log, "Successfully stopped '%s' environment", env.Name)
+	ui.BannerGreen(l, "Successfully stopped '%s' environment", env.Name)
 
 	return nil
 }

@@ -7,12 +7,11 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-func NewServiceUpCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
+func NewServiceUpCommand(name string, serviceAPI api.ServiceAPI) ecso.Command {
 	return &serviceUpCommand{
 		ServiceCommand: &ServiceCommand{
 			name:       name,
 			serviceAPI: serviceAPI,
-			log:        log,
 		},
 	}
 }
@@ -21,7 +20,7 @@ type serviceUpCommand struct {
 	*ServiceCommand
 }
 
-func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext) error {
+func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	var (
 		project = ctx.Project
 		env     = cmd.Environment(ctx)
@@ -29,7 +28,7 @@ func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext) error {
 	)
 
 	ui.BannerBlue(
-		cmd.log,
+		l,
 		"Deploying service '%s' to the '%s' environment",
 		service.Name,
 		env.Name)
@@ -40,10 +39,10 @@ func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.PrintServiceDescription(cmd.log, description)
+	ui.PrintServiceDescription(l, description)
 
 	ui.BannerGreen(
-		cmd.log,
+		l,
 		"Deployed service '%s' to the '%s' environment",
 		service.Name,
 		env.Name)

@@ -16,11 +16,10 @@ const (
 	ServiceAddPortOption         = "port"
 )
 
-func NewServiceAddCommand(name string, log log.Logger) ecso.Command {
+func NewServiceAddCommand(name string) ecso.Command {
 	return &serviceAddCommand{
 		name:         name,
 		desiredCount: 1,
-		log:          log,
 	}
 }
 
@@ -29,10 +28,9 @@ type serviceAddCommand struct {
 	desiredCount int
 	route        string
 	port         int
-	log          log.Logger
 }
 
-func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext) error {
+func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	project := ctx.Project
 
 	service := &ecso.Service{
@@ -69,9 +67,9 @@ func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.BannerGreen(cmd.log, "Service '%s' added successfully.", cmd.name)
+	ui.BannerGreen(l, "Service '%s' added successfully.", cmd.name)
 
-	cmd.log.Printf("Run `ecso service up %s --environment <ENVIRONMENT>` to deploy.\n\n", cmd.name)
+	l.Printf("Run `ecso service up %s --environment <ENVIRONMENT>` to deploy.\n\n", cmd.name)
 
 	return nil
 }
@@ -80,7 +78,7 @@ func (cmd *serviceAddCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *serviceAddCommand) Prompt(ctx *ecso.CommandContext) error {
+func (cmd *serviceAddCommand) Prompt(ctx *ecso.CommandContext, l log.Logger) error {
 	cmd.desiredCount = ctx.Options.Int(ServiceAddDesiredCountOption)
 	cmd.route = ctx.Options.String(ServiceAddRouteOption)
 	cmd.port = ctx.Options.Int(ServiceAddPortOption)
@@ -97,7 +95,7 @@ func (cmd *serviceAddCommand) Prompt(ctx *ecso.CommandContext) error {
 		Port:         "Which container port would you like to expose?",
 	}
 
-	ui.BannerBlue(cmd.log, "Adding a new service to the %s project", ctx.Project.Name)
+	ui.BannerBlue(l, "Adding a new service to the %s project", ctx.Project.Name)
 
 	if err := ui.AskStringIfEmptyVar(&cmd.name, prompts.Name, "", serviceNameValidator(ctx.Project)); err != nil {
 		return err

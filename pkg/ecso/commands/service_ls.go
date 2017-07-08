@@ -16,12 +16,11 @@ const (
 	ServiceLsEnvironmentOption = "environment"
 )
 
-func NewServiceLsCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger) ecso.Command {
+func NewServiceLsCommand(environmentName string, environmentAPI api.EnvironmentAPI) ecso.Command {
 	return &serviceLsCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
 			environmentAPI:  environmentAPI,
-			log:             log,
 		},
 	}
 }
@@ -30,7 +29,7 @@ type serviceLsCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext) error {
+func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	env := cmd.Environment(ctx)
 
 	services, err := cmd.environmentAPI.GetECSServices(env)
@@ -39,7 +38,7 @@ func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.PrintTable(cmd.log, servicesToRows(ctx.Project, env, services))
+	ui.PrintTable(l, servicesToRows(ctx.Project, env, services))
 
 	return nil
 }

@@ -16,12 +16,11 @@ const (
 	EnvironmentUpForceOption  = "force"
 )
 
-func NewEnvironmentUpCommand(environmentName string, environmentAPI api.EnvironmentAPI, log log.Logger) ecso.Command {
+func NewEnvironmentUpCommand(environmentName string, environmentAPI api.EnvironmentAPI) ecso.Command {
 	return &envUpCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
 			environmentAPI:  environmentAPI,
-			log:             log,
 		},
 	}
 }
@@ -33,7 +32,7 @@ type envUpCommand struct {
 	force  bool
 }
 
-func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
+func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	cmd.dryRun = ctx.Options.Bool(EnvironmentUpDryRunOption)
 	cmd.force = ctx.Options.Bool(EnvironmentUpForceOption)
 
@@ -42,10 +41,10 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		env     = cmd.Environment(ctx)
 	)
 
-	ui.BannerBlue(cmd.log, "Bringing up environment '%s'", env.Name)
+	ui.BannerBlue(l, "Bringing up environment '%s'", env.Name)
 
 	if cmd.dryRun {
-		cmd.log.Infof("THIS IS A DRY RUN - no changes to the environment will be made.")
+		l.Infof("THIS IS A DRY RUN - no changes to the environment will be made.")
 	}
 
 	if err := cmd.ensureTemplates(ctx, project, env); err != nil {
@@ -61,12 +60,12 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	if cmd.dryRun {
-		ui.BannerGreen(cmd.log, "Review the above changes and re-run the command without the --dry-run option to apply them")
+		ui.BannerGreen(l, "Review the above changes and re-run the command without the --dry-run option to apply them")
 
 		return nil
 	}
 
-	ui.BannerGreen(cmd.log, "Environment '%s' is up and running", env.Name)
+	ui.BannerGreen(l, "Environment '%s' is up and running", env.Name)
 
 	description, err := cmd.environmentAPI.DescribeEnvironment(env)
 
@@ -74,7 +73,7 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.PrintEnvironmentDescription(cmd.log, description)
+	ui.PrintEnvironmentDescription(l, description)
 
 	return nil
 }

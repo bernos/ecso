@@ -11,12 +11,11 @@ const (
 	ServiceDownForceOption = "force"
 )
 
-func NewServiceDownCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
+func NewServiceDownCommand(name string, serviceAPI api.ServiceAPI) ecso.Command {
 	return &serviceDownCommand{
 		ServiceCommand: &ServiceCommand{
 			name:       name,
 			serviceAPI: serviceAPI,
-			log:        log,
 		},
 	}
 }
@@ -25,14 +24,14 @@ type serviceDownCommand struct {
 	*ServiceCommand
 }
 
-func (cmd *serviceDownCommand) Execute(ctx *ecso.CommandContext) error {
+func (cmd *serviceDownCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	var (
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)
 	)
 
 	ui.BannerBlue(
-		cmd.log,
+		l,
 		"Terminating the '%s' service in the '%s' environment",
 		service.Name,
 		env.Name)
@@ -42,7 +41,7 @@ func (cmd *serviceDownCommand) Execute(ctx *ecso.CommandContext) error {
 	}
 
 	ui.BannerGreen(
-		cmd.log,
+		l,
 		"Successfully terminated the '%s' service in the '%s' environment",
 		service.Name,
 		env.Name)

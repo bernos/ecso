@@ -11,7 +11,6 @@ import (
 type EnvironmentCommand struct {
 	environmentName string
 	environmentAPI  api.EnvironmentAPI
-	log             log.Logger
 }
 
 func (cmd *EnvironmentCommand) Validate(ctx *ecso.CommandContext) error {
@@ -26,7 +25,7 @@ func (cmd *EnvironmentCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *EnvironmentCommand) Prompt(ctx *ecso.CommandContext) error {
+func (cmd *EnvironmentCommand) Prompt(ctx *ecso.CommandContext, l log.Logger) error {
 	return nil
 }
 

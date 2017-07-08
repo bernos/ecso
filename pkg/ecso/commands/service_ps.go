@@ -7,12 +7,11 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-func NewServicePsCommand(name string, serviceAPI api.ServiceAPI, log log.Logger) ecso.Command {
+func NewServicePsCommand(name string, serviceAPI api.ServiceAPI) ecso.Command {
 	return &servicePsCommand{
 		ServiceCommand: &ServiceCommand{
 			name:       name,
 			serviceAPI: serviceAPI,
-			log:        log,
 		},
 	}
 }
@@ -21,7 +20,7 @@ type servicePsCommand struct {
 	*ServiceCommand
 }
 
-func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
+func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	var (
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)
@@ -33,7 +32,7 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext) error {
 		return err
 	}
 
-	ui.PrintTable(cmd.log, containers)
+	ui.PrintTable(l, containers)
 
 	return nil
 }
