@@ -1,12 +1,13 @@
 package commands
 
 import (
+	"fmt"
+	"io"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
 func NewServiceLogsCommand(name string, serviceAPI api.ServiceAPI) ecso.Command {
@@ -22,7 +23,7 @@ type serviceLogsCommand struct {
 	*ServiceCommand
 }
 
-func (cmd *serviceLogsCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *serviceLogsCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	events, err := cmd.serviceAPI.ServiceLogs(ctx.Project, cmd.Environment(ctx), cmd.Service(ctx))
 
 	if err != nil {
@@ -30,7 +31,7 @@ func (cmd *serviceLogsCommand) Execute(ctx *ecso.CommandContext, l log.Logger) e
 	}
 
 	for _, event := range events {
-		l.Printf("%-42s %s\n", cmd.EventTime(event), *event.Message)
+		fmt.Fprintf(w, "%-42s %s\n", cmd.EventTime(event), *event.Message)
 	}
 
 	return nil

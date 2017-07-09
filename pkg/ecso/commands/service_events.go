@@ -1,12 +1,14 @@
 package commands
 
 import (
+	"fmt"
+	"io"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/log"
+	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
 func NewServiceEventsCommand(name string, serviceAPI api.ServiceAPI) ecso.Command {
@@ -22,7 +24,7 @@ type serviceEventsCommand struct {
 	*ServiceCommand
 }
 
-func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	var (
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)
@@ -31,9 +33,9 @@ func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext, l log.Logger)
 
 	cancel, err := cmd.serviceAPI.ServiceEvents(ctx.Project, env, service, func(e *ecs.ServiceEvent, err error) {
 		if err != nil {
-			l.Errorf("%s\n", err.Error())
+			fmt.Fprintf(w, "%s\n", ui.Error(err.Error()))
 		} else {
-			l.Printf("%s %s\n", *e.CreatedAt, *e.Message)
+			fmt.Fprintf(w, "%s %s\n", *e.CreatedAt, *e.Message)
 		}
 	})
 

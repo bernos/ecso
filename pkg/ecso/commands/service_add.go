@@ -2,10 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"io"
 	"path/filepath"
 
 	"github.com/bernos/ecso/pkg/ecso"
-	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/resources"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
@@ -30,10 +30,10 @@ type serviceAddCommand struct {
 	port         int
 }
 
-func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	project := ctx.Project
 
-	if err := cmd.prompt(ctx, l); err != nil {
+	if err := cmd.prompt(ctx, w); err != nil {
 		return err
 	}
 
@@ -71,9 +71,8 @@ func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext, l log.Logger) er
 		return err
 	}
 
-	ui.BannerGreen(l, "Service '%s' added successfully.", cmd.name)
-
-	l.Printf("Run `ecso service up %s --environment <ENVIRONMENT>` to deploy.\n\n", cmd.name)
+	fmt.Fprint(w, ui.GreenBannerf("Service '%s' added successfully.", cmd.name))
+	fmt.Fprintf(w, "Run `ecso service up %s --environment <ENVIRONMENT>` to deploy.\n\n", cmd.name)
 
 	return nil
 }
@@ -82,7 +81,7 @@ func (cmd *serviceAddCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *serviceAddCommand) prompt(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *serviceAddCommand) prompt(ctx *ecso.CommandContext, w io.Writer) error {
 	cmd.desiredCount = ctx.Options.Int(ServiceAddDesiredCountOption)
 	cmd.route = ctx.Options.String(ServiceAddRouteOption)
 	cmd.port = ctx.Options.Int(ServiceAddPortOption)
@@ -99,7 +98,7 @@ func (cmd *serviceAddCommand) prompt(ctx *ecso.CommandContext, l log.Logger) err
 		Port:         "Which container port would you like to expose?",
 	}
 
-	ui.BannerBlue(l, "Adding a new service to the %s project", ctx.Project.Name)
+	fmt.Fprint(w, ui.BlueBannerf("Adding a new service to the %s project", ctx.Project.Name))
 
 	if err := ui.AskStringIfEmptyVar(&cmd.name, prompts.Name, "", serviceNameValidator(ctx.Project)); err != nil {
 		return err

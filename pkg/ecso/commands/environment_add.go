@@ -2,10 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
@@ -43,10 +43,10 @@ func NewEnvironmentAddCommand(environmentName string, environmentAPI api.Environ
 	}
 }
 
-func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	project := ctx.Project
 
-	if err := c.prompt(ctx, l); err != nil {
+	if err := c.prompt(ctx, w); err != nil {
 		return err
 	}
 
@@ -77,8 +77,8 @@ func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext, l log.Logger) 
 		return err
 	}
 
-	ui.BannerGreen(l, "Successfully added environment '%s' to the project", c.environmentName)
-	l.Printf("Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.environmentName)
+	fmt.Fprint(w, ui.GreenBannerf("Successfully added environment '%s' to the project", c.environmentName))
+	fmt.Fprintf(w, "Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.environmentName)
 
 	return nil
 }
@@ -87,7 +87,7 @@ func (c *environmentAddCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, l log.Logger) error {
+func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, w io.Writer) error {
 	c.albSubnets = ctx.Options.String(EnvironmentAddALBSubnetsOption)
 	c.instanceSubnets = ctx.Options.String(EnvironmentAddInstanceSubnetsOption)
 	c.instanceType = ctx.Options.String(EnvironmentAddInstanceTypeOption)
@@ -152,7 +152,7 @@ func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, l log.Logger) e
 
 	// TODO Ask if there is an existing environment?
 	// If yes, then ask for the cfn stack id and collect outputs
-	ui.BannerBlue(l, "Adding a new environment to the %s project", project.Name)
+	fmt.Fprint(w, ui.BlueBannerf("Adding a new environment to the %s project", project.Name))
 
 	if account, _ := c.environmentAPI.GetCurrentAWSAccount(region); c.account == "" {
 		c.account = account

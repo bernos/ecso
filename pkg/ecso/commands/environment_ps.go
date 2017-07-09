@@ -1,9 +1,10 @@
 package commands
 
 import (
+	"io"
+
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
@@ -20,14 +21,14 @@ type envPsCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *envPsCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *envPsCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	containers, err := cmd.environmentAPI.GetECSContainers(cmd.Environment(ctx))
 
 	if err != nil {
 		return err
 	}
 
-	ui.PrintTable(l, containers)
+	ui.PrintTable(w, containers)
 
 	return nil
 }

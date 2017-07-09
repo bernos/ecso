@@ -2,11 +2,11 @@ package commands
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/bernos/ecso/pkg/ecso"
-	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
@@ -20,8 +20,8 @@ type initCommand struct {
 	projectName string
 }
 
-func (cmd *initCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
-	if err := cmd.prompt(ctx, l); err != nil {
+func (cmd *initCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
+	if err := cmd.prompt(ctx, w); err != nil {
 		return err
 	}
 
@@ -41,8 +41,8 @@ func (cmd *initCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 		return err
 	}
 
-	l.Infof("Created project file at %s", project.ProjectFile())
-	ui.BannerGreen(l, "Successfully created project '%s'.", project.Name)
+	fmt.Fprint(w, ui.Infof("Created project file at %s", project.ProjectFile()))
+	fmt.Fprint(w, ui.GreenBannerf("Successfully created project '%s'.", project.Name))
 
 	return nil
 }
@@ -51,12 +51,12 @@ func (cmd *initCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *initCommand) prompt(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *initCommand) prompt(ctx *ecso.CommandContext, w io.Writer) error {
 	if ctx.Project != nil {
 		return fmt.Errorf("Found an existing project at %s.", ctx.Project.ProjectFile())
 	}
 
-	ui.BannerBlue(l, "Creating a new ecso project")
+	fmt.Fprint(w, ui.BlueBanner("Creating a new ecso project"))
 
 	wd, err := ecso.GetCurrentProjectDir()
 

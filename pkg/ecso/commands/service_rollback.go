@@ -2,10 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
@@ -38,7 +38,7 @@ func (cmd *serviceRollbackCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *serviceRollbackCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *serviceRollbackCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	var (
 		project = ctx.Project
 		env     = cmd.Environment(ctx)
@@ -46,12 +46,7 @@ func (cmd *serviceRollbackCommand) Execute(ctx *ecso.CommandContext, l log.Logge
 		version = ctx.Options.String(ServiceRollbackVersionOption)
 	)
 
-	ui.BannerBlue(
-		l,
-		"Rolling back service '%s' to version '%s' in the '%s' environment",
-		service.Name,
-		version,
-		env.Name)
+	fmt.Fprint(w, ui.BlueBannerf("Rolling back service '%s' to version '%s' in the '%s' environment", service.Name, version, env.Name))
 
 	_, err := cmd.serviceAPI.ServiceRollback(project, env, service, version)
 	if err != nil {
@@ -60,12 +55,7 @@ func (cmd *serviceRollbackCommand) Execute(ctx *ecso.CommandContext, l log.Logge
 
 	// ui.PrintServiceDescription(l, description)
 
-	ui.BannerGreen(
-		l,
-		"Rolled back service '%s' to version '%s' in the '%s' environment",
-		service.Name,
-		version,
-		env.Name)
+	fmt.Fprint(w, ui.GreenBannerf("Rolled back service '%s' to version '%s' in the '%s' environment", service.Name, version, env.Name))
 
 	return nil
 }

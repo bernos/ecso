@@ -2,12 +2,12 @@ package commands
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
@@ -29,7 +29,7 @@ type serviceLsCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	env := cmd.Environment(ctx)
 
 	services, err := cmd.environmentAPI.GetECSServices(env)
@@ -38,7 +38,7 @@ func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext, l log.Logger) err
 		return err
 	}
 
-	ui.PrintTable(l, servicesToRows(ctx.Project, env, services))
+	ui.PrintTable(w, servicesToRows(ctx.Project, env, services))
 
 	return nil
 }

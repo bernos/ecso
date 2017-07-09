@@ -169,7 +169,7 @@ type TableDataProvider interface {
 	TableRows() []map[string]string
 }
 
-func PrintTable(logger log.Logger, data TableDataProvider) {
+func PrintTable(w io.Writer, data TableDataProvider) {
 	headers := data.TableHeader()
 	rows := data.TableRows()
 	format := ""
@@ -194,7 +194,7 @@ func PrintTable(logger log.Logger, data TableDataProvider) {
 		headerRow[i] = h
 	}
 
-	logger.Printf(format, headerRow...)
+	fmt.Fprintf(w, format, headerRow...)
 
 	for _, row := range rows {
 		r := make([]interface{}, len(headers))
@@ -203,7 +203,7 @@ func PrintTable(logger log.Logger, data TableDataProvider) {
 			r[i] = row[h]
 		}
 
-		logger.Printf(format, r...)
+		fmt.Fprintf(w, format, r...)
 	}
 }
 
@@ -270,6 +270,20 @@ type BlueBanner string
 
 func (b BlueBanner) Format(f fmt.State, c rune) {
 	f.Write([]byte(blueBold("\n%s\n\n", string(b))))
+}
+
+func BlueBannerf(format string, a ...interface{}) BlueBanner {
+	return BlueBanner(fmt.Sprintf(format, a...))
+}
+
+type GreenBanner string
+
+func (b GreenBanner) Format(f fmt.State, c rune) {
+	f.Write([]byte(greenBold("\n%s\n\n", string(b))))
+}
+
+func GreenBannerf(format string, a ...interface{}) GreenBanner {
+	return GreenBanner(fmt.Sprintf(format, a...))
 }
 
 type Info string

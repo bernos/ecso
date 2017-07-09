@@ -1,9 +1,11 @@
 package commands
 
 import (
+	"fmt"
+	"io"
+
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
@@ -24,13 +26,13 @@ type environmentRmCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	var (
 		project = ctx.Project
 		env     = cmd.Environment(ctx)
 	)
 
-	ui.BannerBlue(l, "Removing '%s' environment", env.Name)
+	fmt.Fprint(w, ui.BlueBannerf("Removing '%s' environment", env.Name))
 
 	if err := cmd.environmentAPI.EnvironmentDown(project, env); err != nil {
 		return err
@@ -42,7 +44,7 @@ func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext, l log.Logger)
 		return err
 	}
 
-	ui.BannerGreen(l, "Successfully removed '%s' environment", env.Name)
+	fmt.Fprint(w, ui.GreenBannerf("Successfully removed '%s' environment", env.Name))
 
 	return nil
 }

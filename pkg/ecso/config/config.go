@@ -6,26 +6,17 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/awsregistry"
-	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
 type Config struct {
 	Version string
 
-	l log.Logger
 	w io.Writer
 	r awsregistry.RegistryFactory
 
 	serviceAPI     api.ServiceAPI
 	environmentAPI api.EnvironmentAPI
-}
-
-func (c *Config) Logger() log.Logger {
-	if c.l == nil {
-		c.l = log.NewLogger(c.w, "")
-	}
-	return c.l
 }
 
 func (c *Config) awsRegistryFactory() awsregistry.RegistryFactory {
@@ -68,12 +59,6 @@ func NewConfig(version string, options ...func(*Config)) (*Config, error) {
 	}
 
 	return cfg, nil
-}
-
-func WithLogger(l log.Logger) func(*Config) {
-	return func(cfg *Config) {
-		cfg.l = l
-	}
 }
 
 func WithAWSRegistryFactory(r awsregistry.RegistryFactory) func(*Config) {

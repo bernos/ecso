@@ -1,8 +1,9 @@
 package commands
 
 import (
+	"io"
+
 	"github.com/bernos/ecso/pkg/ecso"
-	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
 func NewSkeletonCommand(environmentName string) ecso.Command {
@@ -15,7 +16,7 @@ type skeletonCommand struct {
 	environmentName string
 }
 
-func (cmd *skeletonCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *skeletonCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	return nil
 }
 

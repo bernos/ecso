@@ -2,10 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/resources"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
@@ -32,7 +32,7 @@ type envUpCommand struct {
 	force  bool
 }
 
-func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	cmd.dryRun = ctx.Options.Bool(EnvironmentUpDryRunOption)
 	cmd.force = ctx.Options.Bool(EnvironmentUpForceOption)
 
@@ -41,10 +41,10 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 		env     = cmd.Environment(ctx)
 	)
 
-	ui.BannerBlue(l, "Bringing up environment '%s'", env.Name)
+	fmt.Fprint(w, ui.BlueBannerf("Bringing up environment '%s'", env.Name))
 
 	if cmd.dryRun {
-		l.Infof("THIS IS A DRY RUN - no changes to the environment will be made.")
+		fmt.Fprint(w, ui.Infof("THIS IS A DRY RUN - no changes to the environment will be made."))
 	}
 
 	if err := cmd.ensureTemplates(ctx, project, env); err != nil {
@@ -60,12 +60,12 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 	}
 
 	if cmd.dryRun {
-		ui.BannerGreen(l, "Review the above changes and re-run the command without the --dry-run option to apply them")
+		fmt.Fprint(w, ui.GreenBanner("Review the above changes and re-run the command without the --dry-run option to apply them"))
 
 		return nil
 	}
 
-	ui.BannerGreen(l, "Environment '%s' is up and running", env.Name)
+	fmt.Fprint(w, ui.GreenBannerf("Environment '%s' is up and running", env.Name))
 
 	_, err := cmd.environmentAPI.DescribeEnvironment(env)
 

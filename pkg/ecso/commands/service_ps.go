@@ -1,9 +1,10 @@
 package commands
 
 import (
+	"io"
+
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
@@ -20,7 +21,7 @@ type servicePsCommand struct {
 	*ServiceCommand
 }
 
-func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	var (
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)
@@ -32,7 +33,7 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext, l log.Logger) err
 		return err
 	}
 
-	ui.PrintTable(l, containers)
+	ui.PrintTable(w, containers)
 
 	return nil
 }

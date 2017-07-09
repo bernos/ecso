@@ -1,9 +1,10 @@
 package commands
 
 import (
+	"io"
+
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
 func NewServiceDescribeCommand(name string, serviceAPI api.ServiceAPI) ecso.Command {
@@ -19,7 +20,7 @@ type serviceDecribeCommand struct {
 	*ServiceCommand
 }
 
-func (cmd *serviceDecribeCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *serviceDecribeCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	var (
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)
