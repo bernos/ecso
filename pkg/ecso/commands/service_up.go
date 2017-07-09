@@ -33,13 +33,13 @@ func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext, l log.Logger) err
 		service.Name,
 		env.Name)
 
-	description, err := cmd.serviceAPI.ServiceUp(project, env, service)
+	_, err := cmd.serviceAPI.ServiceUp(project, env, service)
 
 	if err != nil {
 		return err
 	}
 
-	ui.PrintServiceDescription(l, description)
+	// ui.PrintServiceDescription(l, description)
 
 	ui.BannerGreen(
 		l,

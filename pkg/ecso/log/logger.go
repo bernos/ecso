@@ -27,8 +27,8 @@ type Logger interface {
 	Errorf(format string, a ...interface{})
 	Printf(format string, a ...interface{})
 	Infof(format string, a ...interface{})
-	ErrWriter() io.Writer
-	Writer() io.Writer
+	// ErrWriter() io.Writer
+	// Writer() io.Writer
 }
 
 // NewLogger creates a new logger that will write to the provided writer. all

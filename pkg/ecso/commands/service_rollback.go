@@ -53,12 +53,12 @@ func (cmd *serviceRollbackCommand) Execute(ctx *ecso.CommandContext, l log.Logge
 		version,
 		env.Name)
 
-	description, err := cmd.serviceAPI.ServiceRollback(project, env, service, version)
+	_, err := cmd.serviceAPI.ServiceRollback(project, env, service, version)
 	if err != nil {
 		return err
 	}
 
-	ui.PrintServiceDescription(l, description)
+	// ui.PrintServiceDescription(l, description)
 
 	ui.BannerGreen(
 		l,

@@ -7,6 +7,7 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/awsregistry"
 	"github.com/bernos/ecso/pkg/ecso/log"
+	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
 type Config struct {
@@ -36,16 +37,24 @@ func (c *Config) awsRegistryFactory() awsregistry.RegistryFactory {
 
 func (c *Config) ServiceAPI() api.ServiceAPI {
 	if c.serviceAPI == nil {
-		c.serviceAPI = api.NewServiceAPI(c.Logger(), c.awsRegistryFactory())
+		c.serviceAPI = api.NewServiceAPI(c.w, c.awsRegistryFactory())
 	}
 	return c.serviceAPI
 }
 
 func (c *Config) EnvironmentAPI() api.EnvironmentAPI {
 	if c.environmentAPI == nil {
-		c.environmentAPI = api.NewEnvironmentAPI(c.Logger(), c.awsRegistryFactory())
+		c.environmentAPI = api.NewEnvironmentAPI(c.w, c.awsRegistryFactory())
 	}
 	return c.environmentAPI
+}
+
+func (c *Config) Writer() io.Writer {
+	return c.w
+}
+
+func (c *Config) ErrWriter() io.Writer {
+	return ui.ErrWriter(c.w)
 }
 
 func NewConfig(version string, options ...func(*Config)) (*Config, error) {

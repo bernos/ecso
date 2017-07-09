@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -14,7 +15,7 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/awsregistry"
 	"github.com/bernos/ecso/pkg/ecso/helpers"
-	"github.com/bernos/ecso/pkg/ecso/log"
+	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
@@ -69,15 +70,15 @@ type ServiceDescription struct {
 }
 
 // New creates a new API
-func NewServiceAPI(log log.Logger, registryFactory awsregistry.RegistryFactory) ServiceAPI {
+func NewServiceAPI(w io.Writer, registryFactory awsregistry.RegistryFactory) ServiceAPI {
 	return &serviceAPI{
-		log:             log,
+		w:               w,
 		registryFactory: registryFactory,
 	}
 }
 
 type serviceAPI struct {
-	log             log.Logger
+	w               io.Writer
 	registryFactory awsregistry.RegistryFactory
 }
 
@@ -98,7 +99,7 @@ func (api *serviceAPI) GetECSContainers(p *ecso.Project, env *ecso.Environment, 
 }
 
 func (api *serviceAPI) GetAvailableVersions(p *ecso.Project, env *ecso.Environment, s *ecso.Service) (ServiceVersionList, error) {
-	envAPI := NewEnvironmentAPI(api.log, api.registryFactory)
+	envAPI := NewEnvironmentAPI(api.w, api.registryFactory)
 
 	reg, err := api.registryFactory.ForRegion(env.Region)
 	if err != nil {
@@ -149,7 +150,7 @@ func (api *serviceAPI) GetECSService(p *ecso.Project, env *ecso.Environment, s *
 	}
 
 	var (
-		cfn    = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
+		cfn    = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewWriter(api.w, "  "))
 		ecsAPI = reg.ECSAPI()
 	)
 
@@ -251,7 +252,7 @@ func (api *serviceAPI) DescribeService(env *ecso.Environment, service *ecso.Serv
 		return nil, err
 	}
 
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewWriter(api.w, "  "))
 
 	envOutputs, err := cfn.GetStackOutputs(env.GetCloudFormationStackName())
 	if err != nil {
@@ -293,7 +294,7 @@ func (api *serviceAPI) ServiceDown(project *ecso.Project, env *ecso.Environment,
 		return err
 	}
 
-	api.log.Printf("\n")
+	fmt.Fprint(api.w, "\n")
 
 	if err := api.clearServiceDNSRecords(reg, env, service); err != nil {
 		return err
@@ -318,7 +319,7 @@ func (api *serviceAPI) ServiceEvents(p *ecso.Project, env *ecso.Environment, s *
 		return nil, fmt.Errorf("No service named %s is running", s.Name)
 	}
 
-	h := helpers.NewECSHelper(reg.ECSAPI(), api.log.Child())
+	h := helpers.NewECSHelper(reg.ECSAPI(), ui.NewWriter(api.w, "  "))
 
 	return h.LogServiceEvents(*runningService.ServiceArn, env.GetClusterName(), f), nil
 }
@@ -360,7 +361,7 @@ func (api *serviceAPI) ServiceLogs(p *ecso.Project, env *ecso.Environment, s *ec
 }
 
 func (api *serviceAPI) ServiceRollback(project *ecso.Project, env *ecso.Environment, service *ecso.Service, version string) (*ServiceDescription, error) {
-	envAPI := NewEnvironmentAPI(api.log, api.registryFactory)
+	envAPI := NewEnvironmentAPI(api.w, api.registryFactory)
 
 	reg, err := api.registryFactory.ForRegion(env.Region)
 	if err != nil {
@@ -372,7 +373,7 @@ func (api *serviceAPI) ServiceRollback(project *ecso.Project, env *ecso.Environm
 		return nil, err
 	}
 
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewWriter(api.w, "  "))
 	pkg := helpers.NewPackage(bucket, service.GetDeploymentBucketPrefixForVersion(env, version), env.Region)
 
 	exists, err := cfn.PackageIsUploadedToS3(pkg)
@@ -385,19 +386,19 @@ func (api *serviceAPI) ServiceRollback(project *ecso.Project, env *ecso.Environm
 	}
 
 	if err := envAPI.SendNotification(env, fmt.Sprintf("Commenced rollback of %s version %s to %s", service.Name, version, env.Name)); err != nil {
-		api.log.Printf("WARNING Failed to send rollback commencing notification to sns. %s", err.Error())
+		fmt.Fprintf(api.w, "WARNING Failed to send rollback commencing notification to sns. %s", err.Error())
 	}
 
 	// deploy the service cfn stack
 	if err := api.deployServiceStack(reg, pkg, env, service); err != nil {
 		if err := envAPI.SendNotification(env, fmt.Sprintf("Failed to deploy %s to %s", service.Name, env.Name)); err != nil {
-			api.log.Printf("WARNING Failed to send deployment failure notification to sns. %s", err.Error())
+			fmt.Fprintf(api.w, "WARNING Failed to send deployment failure notification to sns. %s", err.Error())
 		}
 		return nil, err
 	}
 
 	if err := envAPI.SendNotification(env, fmt.Sprintf("Completed rollback of %s version %s to %s", service.Name, version, env.Name)); err != nil {
-		api.log.Printf("WARNING Failed to send deployment completed notification to sns. %s", err.Error())
+		fmt.Fprintf(api.w, "WARNING Failed to send deployment completed notification to sns. %s", err.Error())
 	}
 
 	return api.DescribeService(env, service)
@@ -405,7 +406,7 @@ func (api *serviceAPI) ServiceRollback(project *ecso.Project, env *ecso.Environm
 
 func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, service *ecso.Service) (*ServiceDescription, error) {
 	version := util.VersionFromTime(time.Now())
-	envAPI := NewEnvironmentAPI(api.log, api.registryFactory)
+	envAPI := NewEnvironmentAPI(api.w, api.registryFactory)
 
 	reg, err := api.registryFactory.ForRegion(env.Region)
 	if err != nil {
@@ -418,14 +419,14 @@ func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, s
 	}
 
 	if err := envAPI.SendNotification(env, fmt.Sprintf("Commenced deployment of %s to %s", service.Name, env.Name)); err != nil {
-		api.log.Printf("WARNING Failed to send deployment commencing notification to sns. %s", err.Error())
+		fmt.Fprintf(api.w, "WARNING Failed to send deployment commencing notification to sns. %s", err.Error())
 	}
 
 	// register task
 	taskDefinition, err := api.registerECSTaskDefinition(reg, project, env, service)
 	if err != nil {
 		if err := envAPI.SendNotification(env, fmt.Sprintf("Failed to deploy %s to %s", service.Name, env.Name)); err != nil {
-			api.log.Printf("WARNING Failed to send deployment failure notification to sns. %s", err.Error())
+			fmt.Fprintf(api.w, "WARNING Failed to send deployment failure notification to sns. %s", err.Error())
 		}
 		return nil, err
 	}
@@ -433,13 +434,13 @@ func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, s
 	// deploy the service cfn stack
 	if err := api.packageAndDeployServiceStack(reg, bucket, project, env, service, taskDefinition, version); err != nil {
 		if err := envAPI.SendNotification(env, fmt.Sprintf("Failed to deploy %s to %s", service.Name, env.Name)); err != nil {
-			api.log.Printf("WARNING Failed to send deployment failure notification to sns. %s", err.Error())
+			fmt.Fprintf(api.w, "WARNING Failed to send deployment failure notification to sns. %s", err.Error())
 		}
 		return nil, err
 	}
 
 	if err := envAPI.SendNotification(env, fmt.Sprintf("Completed deployment of %s to %s", service.Name, env.Name)); err != nil {
-		api.log.Printf("WARNING Failed to send deployment completed notification to sns. %s", err.Error())
+		fmt.Fprintf(api.w, "WARNING Failed to send deployment completed notification to sns. %s", err.Error())
 	}
 
 	return api.DescribeService(env, service)
@@ -466,10 +467,10 @@ func (api *serviceAPI) setEnv(project *ecso.Project, env *ecso.Environment, serv
 func (api *serviceAPI) deployServiceStack(reg awsregistry.Registry, pkg *helpers.Package, env *ecso.Environment, service *ecso.Service) error {
 	var (
 		stackName = service.GetCloudFormationStackName(env)
-		cfn       = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
+		cfn       = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewWriter(api.w, "  "))
 	)
 
-	api.log.Infof("Deploying service cloudformation stack '%s'...", stackName)
+	fmt.Fprint(api.w, ui.Infof("Deploying service cloudformation stack '%s'...", stackName))
 
 	result, err := cfn.Deploy(pkg, stackName, false)
 	if err != nil {
@@ -477,7 +478,7 @@ func (api *serviceAPI) deployServiceStack(reg awsregistry.Registry, pkg *helpers
 	}
 
 	if !result.DidRequireUpdating {
-		api.log.Printf("  No updates were required to Cloud Formation stack '%s'\n", result.StackID)
+		fmt.Fprintf(api.w, "  No updates were required to Cloud Formation stack '%s'\n", result.StackID)
 	}
 
 	return nil
@@ -487,7 +488,7 @@ func (api *serviceAPI) packageAndDeployServiceStack(reg awsregistry.Registry, bu
 	var (
 		prefix   = service.GetDeploymentBucketPrefixForVersion(env, version)
 		template = service.GetCloudFormationTemplateFile()
-		cfn      = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
+		cfn      = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewWriter(api.w, "  "))
 	)
 
 	params, err := getServiceStackParameters(cfn, project, env, service, taskDefinition, version)
@@ -560,7 +561,7 @@ func (api *serviceAPI) registerECSTaskDefinition(reg awsregistry.Registry, proje
 
 	// TODO: fully qualify the path to the service compose file
 	// taskDefinition, err := ConvertToTaskDefinition(taskName, service.ComposeFile)
-	api.log.Infof("Converting '%s' to task definition...", service.ComposeFile)
+	fmt.Fprint(api.w, ui.Infof("Converting '%s' to task definition...", service.ComposeFile))
 
 	// set env vars so that they are available when converting the docker
 	// compose file to a task definition
@@ -570,8 +571,7 @@ func (api *serviceAPI) registerECSTaskDefinition(reg awsregistry.Registry, proje
 
 	taskDefinition, err := service.GetECSTaskDefinition(env)
 
-	api.log.Printf("\n")
-	api.log.Infof("Registering ECS task definition '%s'...", taskName)
+	fmt.Fprintf(api.w, "\n%s", ui.Infof("Registering ECS task definition '%s'...", taskName))
 
 	if err != nil {
 		return nil, err
@@ -612,7 +612,8 @@ func (api *serviceAPI) registerECSTaskDefinition(reg awsregistry.Registry, proje
 		return nil, err
 	}
 
-	api.log.Printf(
+	fmt.Fprintf(
+		api.w,
 		"  Registered ECS task definition %s:%d\n\n",
 		*resp.TaskDefinition.Family,
 		*resp.TaskDefinition.Revision)
@@ -622,11 +623,11 @@ func (api *serviceAPI) registerECSTaskDefinition(reg awsregistry.Registry, proje
 
 func (api *serviceAPI) clearServiceDNSRecords(reg awsregistry.Registry, env *ecso.Environment, service *ecso.Service) error {
 	var (
-		r53Helper = helpers.NewRoute53Helper(reg.Route53API(), api.log.Child())
+		r53Helper = helpers.NewRoute53Helper(reg.Route53API(), ui.NewWriter(api.w, "  "))
 		dnsName   = fmt.Sprintf("%s.%s.", service.Name, env.CloudFormationParameters["DNSZone"])
 	)
 
-	api.log.Infof("Deleting any service SRV DNS records for %s...", dnsName)
+	fmt.Fprint(api.w, ui.Infof("Deleting any service SRV DNS records for %s...", dnsName))
 
 	if err := r53Helper.DeleteResourceRecordSetsByName(dnsName, env.CloudFormationParameters["DNSZone"], "Deleted by ecso service down"); err != nil {
 		return err
@@ -638,10 +639,10 @@ func (api *serviceAPI) clearServiceDNSRecords(reg awsregistry.Registry, env *ecs
 func (api *serviceAPI) deleteServiceStack(reg awsregistry.Registry, env *ecso.Environment, service *ecso.Service) error {
 	var (
 		stack = service.GetCloudFormationStackName(env)
-		cfn   = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), api.log.Child())
+		cfn   = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewWriter(api.w, "  "))
 	)
 
-	api.log.Infof("Deleting cloud formation stack '%s'", stack)
+	fmt.Fprint(api.w, ui.Infof("Deleting cloud formation stack '%s'", stack))
 
 	exists, err := cfn.StackExists(stack)
 
@@ -650,7 +651,7 @@ func (api *serviceAPI) deleteServiceStack(reg awsregistry.Registry, env *ecso.En
 	}
 
 	if !exists {
-		api.log.Printf("  Stack '%s' does not exist\n", stack)
+		fmt.Fprintf(api.w, "  Stack '%s' does not exist\n", stack)
 		return nil
 	}
 

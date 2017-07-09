@@ -67,13 +67,13 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
 
 	ui.BannerGreen(l, "Environment '%s' is up and running", env.Name)
 
-	description, err := cmd.environmentAPI.DescribeEnvironment(env)
+	_, err := cmd.environmentAPI.DescribeEnvironment(env)
 
 	if err != nil {
 		return err
 	}
 
-	ui.PrintEnvironmentDescription(l, description)
+	// ui.PrintEnvironmentDescription(l, description)
 
 	return nil
 }

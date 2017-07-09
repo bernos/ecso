@@ -3,10 +3,10 @@ package ui
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 
-	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/fatih/color"
 )
@@ -227,43 +227,69 @@ func PrintMap(logger log.Logger, maps ...map[string]string) {
 	}
 }
 
-func PrintEnvironmentDescription(logger log.Logger, env *api.EnvironmentDescription) {
-	childLogger := logger.Child()
+// func PrintEnvironmentDescription(logger log.Logger, env *api.EnvironmentDescription) {
+// 	childLogger := logger.Child()
 
-	BannerBlue(logger, "Details of the '%s' environment:", env.Name)
+// 	BannerBlue(logger, "Details of the '%s' environment:", env.Name)
 
-	Dl(childLogger, map[string]string{
-		"CloudFormation console": env.CloudFormationConsoleURL,
-		"CloudWatch logs":        env.CloudWatchLogsConsoleURL,
-		"ECS console":            env.ECSConsoleURL,
-		"ECS base URL":           env.ECSClusterBaseURL,
-	})
+// 	Dl(childLogger, map[string]string{
+// 		"CloudFormation console": env.CloudFormationConsoleURL,
+// 		"CloudWatch logs":        env.CloudWatchLogsConsoleURL,
+// 		"ECS console":            env.ECSConsoleURL,
+// 		"ECS base URL":           env.ECSClusterBaseURL,
+// 	})
 
-	BannerBlue(logger, "CloudFormation Outputs:")
-	Dl(childLogger, env.CloudFormationOutputs)
-	logger.Printf("\n")
+// 	BannerBlue(logger, "CloudFormation Outputs:")
+// 	Dl(childLogger, env.CloudFormationOutputs)
+// 	logger.Printf("\n")
+// }
+
+// func PrintServiceDescription(logger log.Logger, service *api.ServiceDescription) {
+// 	childLogger := logger.Child()
+
+// 	BannerBlue(logger, "Details of the '%s' service:", service.Name)
+
+// 	Dl(childLogger, map[string]string{
+// 		"CloudFormation console": service.CloudFormationConsoleURL,
+// 		"CloudWatch logs":        service.CloudWatchLogsConsoleURL,
+// 		"ECS console":            service.ECSConsoleURL,
+// 	})
+
+// 	if service.URL != "" {
+// 		Dl(childLogger, map[string]string{
+// 			"Service URL": service.URL,
+// 		})
+// 	}
+
+// 	BannerBlue(logger, "CloudFormation Outputs:")
+// 	Dl(childLogger, service.CloudFormationOutputs)
+// 	logger.Printf("\n")
+// }
+
+type BlueBanner string
+
+func (b BlueBanner) Format(f fmt.State, c rune) {
+	f.Write([]byte(blueBold("\n%s\n\n", string(b))))
 }
 
-func PrintServiceDescription(logger log.Logger, service *api.ServiceDescription) {
-	childLogger := logger.Child()
+type Info string
 
-	BannerBlue(logger, "Details of the '%s' service:", service.Name)
+func (i Info) Format(f fmt.State, c rune) {
+	f.Write([]byte(fmt.Sprintf("%s %s\n", bold("Info:"), string(i))))
+}
 
-	Dl(childLogger, map[string]string{
-		"CloudFormation console": service.CloudFormationConsoleURL,
-		"CloudWatch logs":        service.CloudWatchLogsConsoleURL,
-		"ECS console":            service.ECSConsoleURL,
-	})
+func Infof(format string, a ...interface{}) Info {
+	return Info(fmt.Sprintf(format, a...))
+}
 
-	if service.URL != "" {
-		Dl(childLogger, map[string]string{
-			"Service URL": service.URL,
-		})
-	}
+type Error string
 
-	BannerBlue(logger, "CloudFormation Outputs:")
-	Dl(childLogger, service.CloudFormationOutputs)
-	logger.Printf("\n")
+func (e Error) Format(f fmt.State, c rune) {
+	f.Write([]byte(fmt.Sprintf("%s %s\n", redBold("Error:"), red("%s", string(e)))))
+}
+
+func Errorf(format string, a ...interface{}) Error {
+	return Error(fmt.Sprintf(format, a...))
 }
 
 func BannerBlue(logger log.Logger, format string, a ...interface{}) {
@@ -285,4 +311,16 @@ func Dl(logger log.Logger, items ...map[string]string) {
 			Dt(logger, k, v)
 		}
 	}
+}
+
+type writerFunc func([]byte) (int, error)
+
+func (fn writerFunc) Write(p []byte) (int, error) {
+	return fn(p)
+}
+
+func ErrWriter(w io.Writer) io.Writer {
+	return writerFunc(func(p []byte) (int, error) {
+		return fmt.Fprint(w, Error(string(p)))
+	})
 }

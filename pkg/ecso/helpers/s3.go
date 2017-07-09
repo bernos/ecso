@@ -3,6 +3,8 @@ package helpers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -12,7 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
 type S3Helper interface {
@@ -24,16 +25,16 @@ type S3Helper interface {
 }
 
 type s3Helper struct {
+	w        io.Writer
 	region   string
 	s3Client s3iface.S3API
-	logger   log.Logger
 }
 
-func NewS3Helper(s3Client s3iface.S3API, region string, logger log.Logger) S3Helper {
+func NewS3Helper(s3Client s3iface.S3API, region string, w io.Writer) S3Helper {
 	return &s3Helper{
+		w:        w,
 		s3Client: s3Client,
 		region:   region,
-		logger:   logger,
 	}
 }
 
@@ -63,7 +64,7 @@ func (h *s3Helper) CreateBucket(bucket string) error {
 		},
 	}
 
-	h.logger.Printf("Creating bucket '%s' in region '%s'\n", bucket, h.region)
+	fmt.Fprintf(h.w, "Creating bucket '%s' in region '%s'\n", bucket, h.region)
 
 	_, err := h.s3Client.CreateBucket(params)
 
@@ -142,7 +143,7 @@ func (h *s3Helper) UploadDir(dir, bucket, prefix string) error {
 			Body:   reader,
 		}
 
-		h.logger.Printf("Uploading resource '%s' to 's3://%s/%s'\n", file, bucket, prefix)
+		fmt.Fprintf(h.w, "Uploading resource '%s' to 's3://%s/%s'\n", file, bucket, prefix)
 
 		if _, err := uploader.Upload(params); err != nil {
 			return err

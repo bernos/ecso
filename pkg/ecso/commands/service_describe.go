@@ -4,7 +4,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
 	"github.com/bernos/ecso/pkg/ecso/log"
-	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
 func NewServiceDescribeCommand(name string, serviceAPI api.ServiceAPI) ecso.Command {
@@ -26,13 +25,13 @@ func (cmd *serviceDecribeCommand) Execute(ctx *ecso.CommandContext, l log.Logger
 		service = cmd.Service(ctx)
 	)
 
-	description, err := cmd.serviceAPI.DescribeService(env, service)
+	_, err := cmd.serviceAPI.DescribeService(env, service)
 
 	if err != nil {
 		return err
 	}
 
-	ui.PrintServiceDescription(l, description)
+	// ui.PrintServiceDescription(l, description)
 
 	return nil
 }
