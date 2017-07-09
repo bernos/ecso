@@ -166,7 +166,7 @@ func (h *cfnHelper) Package(templateFile, bucket, prefix string, tags, params ma
 		return pkg, err
 	}
 
-	s3Helper := NewS3Helper(h.s3Client, h.region, ui.NewWriter(h.w, "  "))
+	s3Helper := NewS3Helper(h.s3Client, h.region, ui.NewPrefixWriter(h.w, "  "))
 
 	fmt.Fprintf(h.w, "Uploading cloud formation tags to %s\n", pkg.GetTagsBucketKey())
 	if err := s3Helper.UploadObjectJSON(tags, bucket, pkg.GetTagsBucketKey()); err != nil {
@@ -202,7 +202,7 @@ func (h *cfnHelper) PackageIsUploadedToS3(pkg *Package) (bool, error) {
 func (h *cfnHelper) Deploy(pkg *Package, stackName string, dryRun bool) (*DeploymentResult, error) {
 	fmt.Fprintf(h.w, "Deploying package from %s\n", pkg.GetURL())
 
-	s3Helper := NewS3Helper(h.s3Client, h.region, ui.NewWriter(h.w, "  "))
+	s3Helper := NewS3Helper(h.s3Client, h.region, ui.NewPrefixWriter(h.w, "  "))
 
 	versionExists, err := h.PackageIsUploadedToS3(pkg)
 	if err != nil {
@@ -308,7 +308,7 @@ func (h *cfnHelper) Deploy(pkg *Package, stackName string, dryRun bool) (*Deploy
 		StackName: aws.String(stackName),
 	}
 
-	childWriter := ui.NewWriter(h.w, "  ")
+	childWriter := ui.NewPrefixWriter(h.w, "  ")
 
 	cancel := h.LogStackEvents(*changeset.StackId, func(ev *cloudformation.StackEvent, err error) {
 		if ev != nil {
@@ -344,7 +344,7 @@ func (h *cfnHelper) DeleteStack(stackName string) error {
 		return err
 	}
 
-	childWriter := ui.NewWriter(h.w, "  ")
+	childWriter := ui.NewPrefixWriter(h.w, "  ")
 
 	cancel := h.LogStackEvents(stackName, func(ev *cloudformation.StackEvent, err error) {
 		if ev != nil {
@@ -485,7 +485,7 @@ func (h *cfnHelper) uploadChildTemplates(basedir, templateBody, bucket, prefix s
 		}
 	}
 
-	s3Helper := NewS3Helper(h.s3Client, h.region, ui.NewWriter(h.w, "  "))
+	s3Helper := NewS3Helper(h.s3Client, h.region, ui.NewPrefixWriter(h.w, "  "))
 	err := s3Helper.EnsureBucket(bucket)
 	if err != nil {
 		return err

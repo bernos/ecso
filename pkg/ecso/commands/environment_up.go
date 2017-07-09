@@ -39,9 +39,11 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	var (
 		project = ctx.Project
 		env     = cmd.Environment(ctx)
+		blue    = ui.NewBannerWriter(w, ui.BlueBold)
+		green   = ui.NewBannerWriter(w, ui.GreenBold)
 	)
 
-	fmt.Fprint(w, ui.BlueBannerf("Bringing up environment '%s'", env.Name))
+	fmt.Fprintf(blue, "I am Bringing up environment '%s'", env.Name)
 
 	if cmd.dryRun {
 		fmt.Fprint(w, ui.Infof("THIS IS A DRY RUN - no changes to the environment will be made."))
@@ -60,20 +62,18 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	}
 
 	if cmd.dryRun {
-		fmt.Fprint(w, ui.GreenBanner("Review the above changes and re-run the command without the --dry-run option to apply them"))
+		fmt.Fprintf(green, "Review the above changes and re-run the command without the --dry-run option to apply them")
 
 		return nil
 	}
 
-	fmt.Fprint(w, ui.GreenBannerf("Environment '%s' is up and running", env.Name))
+	fmt.Fprintf(green, "Environment '%s' is up and running", env.Name)
 
 	_, err := cmd.environmentAPI.DescribeEnvironment(env)
 
 	if err != nil {
 		return err
 	}
-
-	// ui.PrintEnvironmentDescription(l, description)
 
 	return nil
 }

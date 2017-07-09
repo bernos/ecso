@@ -8,7 +8,7 @@ import (
 func TestWriter(t *testing.T) {
 	msg := "Hello world"
 	buf := &bytes.Buffer{}
-	w := NewWriter(buf, "")
+	w := NewPrefixWriter(buf, "")
 
 	w.Write([]byte(msg))
 
@@ -20,8 +20,8 @@ func TestWriter(t *testing.T) {
 func TestPrefixWriter(t *testing.T) {
 	msg := "Hello world"
 	buf := &bytes.Buffer{}
-	root := NewWriter(buf, "")
-	w := NewWriter(root, "  ")
+	root := NewPrefixWriter(buf, "")
+	w := NewPrefixWriter(root, "  ")
 	want := "  " + msg
 
 	w.Write([]byte(msg))

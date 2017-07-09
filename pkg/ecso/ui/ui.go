@@ -11,9 +11,22 @@ import (
 	"github.com/fatih/color"
 )
 
+type Color int
+
+const (
+	Blue = iota
+	BlueBold
+	Green
+	GreenBold
+	Red
+	RedBold
+	Bold
+	Warn
+)
+
 var (
 	bold     = color.New(color.Bold).SprintfFunc()
-	warn     = color.New(color.FgRed).SprintFunc()
+	warn     = color.New(color.FgRed).SprintfFunc()
 	blue     = color.New(color.FgBlue).SprintfFunc()
 	blueBold = color.New(color.FgBlue, color.Bold).SprintfFunc()
 
@@ -22,6 +35,16 @@ var (
 
 	red     = color.New(color.FgRed).SprintfFunc()
 	redBold = color.New(color.FgRed, color.Bold).SprintfFunc()
+
+	colors = map[Color]func(string, ...interface{}) string{
+		Blue:     blue,
+		BlueBold: blueBold,
+		Green:    greenBold,
+		Red:      red,
+		RedBold:  redBold,
+		Bold:     bold,
+		Warn:     warn,
+	}
 )
 
 func AskString(prompt, def string, validate func(string) error) (string, error) {
@@ -207,25 +230,25 @@ func PrintTable(w io.Writer, data TableDataProvider) {
 	}
 }
 
-func PrintMap(logger log.Logger, maps ...map[string]string) {
-	l := 0
-	items := make(map[string]string)
+// func PrintMap(logger log.Logger, maps ...map[string]string) {
+// 	l := 0
+// 	items := make(map[string]string)
 
-	for _, m := range maps {
-		for k, v := range m {
-			if len(k) > l {
-				l = len(k)
-			}
-			items[k] = v
-		}
-	}
+// 	for _, m := range maps {
+// 		for k, v := range m {
+// 			if len(k) > l {
+// 				l = len(k)
+// 			}
+// 			items[k] = v
+// 		}
+// 	}
 
-	labelFormat := fmt.Sprintf("  %%%ds:", l)
+// 	labelFormat := fmt.Sprintf("  %%%ds:", l)
 
-	for k, v := range items {
-		logger.Printf("%s %s\n", bold(labelFormat, k), v)
-	}
-}
+// 	for k, v := range items {
+// 		logger.Printf("%s %s\n", bold(labelFormat, k), v)
+// 	}
+// }
 
 // func PrintEnvironmentDescription(logger log.Logger, env *api.EnvironmentDescription) {
 // 	childLogger := logger.Child()
