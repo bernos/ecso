@@ -7,7 +7,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/fatih/color"
 )
 
@@ -228,38 +227,5 @@ func PrintTable(w io.Writer, data TableDataProvider) {
 		}
 
 		fmt.Fprintf(w, format, r...)
-	}
-}
-
-// func PrintMap(logger log.Logger, maps ...map[string]string) {
-// 	l := 0
-// 	items := make(map[string]string)
-
-// 	for _, m := range maps {
-// 		for k, v := range m {
-// 			if len(k) > l {
-// 				l = len(k)
-// 			}
-// 			items[k] = v
-// 		}
-// 	}
-
-// 	labelFormat := fmt.Sprintf("  %%%ds:", l)
-
-// 	for k, v := range items {
-// 		logger.Printf("%s %s\n", bold(labelFormat, k), v)
-// 	}
-// }
-
-func Dt(logger log.Logger, label, content string) {
-	logger.Printf("%s\n", bold("%s:", label))
-	logger.Printf("  %s\n", content)
-}
-
-func Dl(logger log.Logger, items ...map[string]string) {
-	for _, i := range items {
-		for k, v := range i {
-			Dt(logger, k, v)
-		}
 	}
 }
