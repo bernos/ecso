@@ -26,13 +26,13 @@ func (cmd *serviceDecribeCommand) Execute(ctx *ecso.CommandContext, w io.Writer)
 		service = cmd.Service(ctx)
 	)
 
-	_, err := cmd.serviceAPI.DescribeService(env, service)
+	description, err := cmd.serviceAPI.DescribeService(env, service)
 
 	if err != nil {
 		return err
 	}
 
-	// ui.PrintServiceDescription(l, description)
+	description.WriteTo(w)
 
 	return nil
 }

@@ -96,28 +96,6 @@ func (s *ServiceDescription) WriteTo(w io.Writer) (int64, error) {
 	return int64(n), err
 }
 
-// func PrintServiceDescription(logger log.Logger, service *api.ServiceDescription) {
-// 	childLogger := logger.Child()
-
-// 	BannerBlue(logger, "Details of the '%s' service:", service.Name)
-
-// 	Dl(childLogger, map[string]string{
-// 		"CloudFormation console": service.CloudFormationConsoleURL,
-// 		"CloudWatch logs":        service.CloudWatchLogsConsoleURL,
-// 		"ECS console":            service.ECSConsoleURL,
-// 	})
-
-// 	if service.URL != "" {
-// 		Dl(childLogger, map[string]string{
-// 			"Service URL": service.URL,
-// 		})
-// 	}
-
-// 	BannerBlue(logger, "CloudFormation Outputs:")
-// 	Dl(childLogger, service.CloudFormationOutputs)
-// 	logger.Printf("\n")
-// }
-
 // New creates a new API
 func NewServiceAPI(w io.Writer, registryFactory awsregistry.RegistryFactory) ServiceAPI {
 	return &serviceAPI{

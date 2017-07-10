@@ -21,13 +21,12 @@ type environmentDescribeCommand struct {
 }
 
 func (cmd *environmentDescribeCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
-	_, err := cmd.environmentAPI.DescribeEnvironment(cmd.Environment(ctx))
-
+	description, err := cmd.environmentAPI.DescribeEnvironment(cmd.Environment(ctx))
 	if err != nil {
 		return err
 	}
 
-	// ui.PrintEnvironmentDescription(l, description)
+	description.WriteTo(w)
 
 	return nil
 }

@@ -33,13 +33,13 @@ func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext, w io.Writer) erro
 
 	fmt.Fprintf(blue, "Deploying service '%s' to the '%s' environment", service.Name, env.Name)
 
-	_, err := cmd.serviceAPI.ServiceUp(project, env, service)
+	description, err := cmd.serviceAPI.ServiceUp(project, env, service)
 
 	if err != nil {
 		return err
 	}
 
-	// ui.PrintServiceDescription(l, description)
+	description.WriteTo(w)
 
 	fmt.Fprintf(green, "Deployed service '%s' to the '%s' environment", service.Name, env.Name)
 
