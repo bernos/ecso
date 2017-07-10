@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -68,6 +69,54 @@ type ServiceDescription struct {
 	ECSConsoleURL            string
 	CloudFormationOutputs    map[string]string
 }
+
+func (s *ServiceDescription) WriteTo(w io.Writer) (int64, error) {
+	buf := &bytes.Buffer{}
+	blue := ui.NewBannerWriter(buf, ui.BlueBold)
+	pw := ui.NewPrefixWriter(buf, "  ")
+	dt := ui.NewDefinitionWriter(pw, ":")
+
+	fmt.Fprintf(blue, "Details of the '%s' service:", s.Name)
+	fmt.Fprintf(dt, "CloudFormation console:%s", s.CloudFormationConsoleURL)
+	fmt.Fprintf(dt, "CloudWatch logs:%s", s.CloudWatchLogsConsoleURL)
+	fmt.Fprintf(dt, "ECS console:%s", s.ECSConsoleURL)
+
+	if s.URL != "" {
+		fmt.Fprintf(dt, "Service URL:%s", s.URL)
+	}
+
+	fmt.Fprintf(blue, "CloudFormation Outputs:")
+
+	for k, v := range s.CloudFormationOutputs {
+		fmt.Fprintf(dt, "%s:%s", k, v)
+	}
+
+	n, err := w.Write(buf.Bytes())
+
+	return int64(n), err
+}
+
+// func PrintServiceDescription(logger log.Logger, service *api.ServiceDescription) {
+// 	childLogger := logger.Child()
+
+// 	BannerBlue(logger, "Details of the '%s' service:", service.Name)
+
+// 	Dl(childLogger, map[string]string{
+// 		"CloudFormation console": service.CloudFormationConsoleURL,
+// 		"CloudWatch logs":        service.CloudWatchLogsConsoleURL,
+// 		"ECS console":            service.ECSConsoleURL,
+// 	})
+
+// 	if service.URL != "" {
+// 		Dl(childLogger, map[string]string{
+// 			"Service URL": service.URL,
+// 		})
+// 	}
+
+// 	BannerBlue(logger, "CloudFormation Outputs:")
+// 	Dl(childLogger, service.CloudFormationOutputs)
+// 	logger.Printf("\n")
+// }
 
 // New creates a new API
 func NewServiceAPI(w io.Writer, registryFactory awsregistry.RegistryFactory) ServiceAPI {
@@ -467,10 +516,11 @@ func (api *serviceAPI) setEnv(project *ecso.Project, env *ecso.Environment, serv
 func (api *serviceAPI) deployServiceStack(reg awsregistry.Registry, pkg *helpers.Package, env *ecso.Environment, service *ecso.Service) error {
 	var (
 		stackName = service.GetCloudFormationStackName(env)
+		info      = ui.NewInfoWriter(api.w)
 		cfn       = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewPrefixWriter(api.w, "  "))
 	)
 
-	fmt.Fprint(api.w, ui.Infof("Deploying service cloudformation stack '%s'...", stackName))
+	fmt.Fprintf(info, "Deploying service cloudformation stack '%s'...", stackName)
 
 	result, err := cfn.Deploy(pkg, stackName, false)
 	if err != nil {
@@ -557,11 +607,12 @@ func (api *serviceAPI) registerECSTaskDefinition(reg awsregistry.Registry, proje
 	var (
 		taskName  = service.GetECSTaskDefinitionName(env)
 		ecsClient = reg.ECSAPI()
+		info      = ui.NewInfoWriter(api.w)
 	)
 
 	// TODO: fully qualify the path to the service compose file
 	// taskDefinition, err := ConvertToTaskDefinition(taskName, service.ComposeFile)
-	fmt.Fprint(api.w, ui.Infof("Converting '%s' to task definition...", service.ComposeFile))
+	fmt.Fprintf(info, "Converting '%s' to task definition...", service.ComposeFile)
 
 	// set env vars so that they are available when converting the docker
 	// compose file to a task definition
@@ -571,7 +622,7 @@ func (api *serviceAPI) registerECSTaskDefinition(reg awsregistry.Registry, proje
 
 	taskDefinition, err := service.GetECSTaskDefinition(env)
 
-	fmt.Fprintf(api.w, "\n%s", ui.Infof("Registering ECS task definition '%s'...", taskName))
+	fmt.Fprintf(info, "\nRegistering ECS task definition '%s'...", taskName)
 
 	if err != nil {
 		return nil, err
@@ -625,9 +676,10 @@ func (api *serviceAPI) clearServiceDNSRecords(reg awsregistry.Registry, env *ecs
 	var (
 		r53Helper = helpers.NewRoute53Helper(reg.Route53API(), ui.NewPrefixWriter(api.w, "  "))
 		dnsName   = fmt.Sprintf("%s.%s.", service.Name, env.CloudFormationParameters["DNSZone"])
+		info      = ui.NewInfoWriter(api.w)
 	)
 
-	fmt.Fprint(api.w, ui.Infof("Deleting any service SRV DNS records for %s...", dnsName))
+	fmt.Fprintf(info, "Deleting any service SRV DNS records for %s...", dnsName)
 
 	if err := r53Helper.DeleteResourceRecordSetsByName(dnsName, env.CloudFormationParameters["DNSZone"], "Deleted by ecso service down"); err != nil {
 		return err
@@ -640,9 +692,10 @@ func (api *serviceAPI) deleteServiceStack(reg awsregistry.Registry, env *ecso.En
 	var (
 		stack = service.GetCloudFormationStackName(env)
 		cfn   = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewPrefixWriter(api.w, "  "))
+		info  = ui.NewInfoWriter(api.w)
 	)
 
-	fmt.Fprint(api.w, ui.Infof("Deleting cloud formation stack '%s'", stack))
+	fmt.Fprintf(info, "Deleting cloud formation stack '%s'", stack)
 
 	exists, err := cfn.StackExists(stack)
 

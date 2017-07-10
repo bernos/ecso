@@ -1,6 +1,16 @@
 package ui
 
-import "io"
+import (
+	"fmt"
+	"io"
+	"strings"
+)
+
+type writerFunc func([]byte) (int, error)
+
+func (fn writerFunc) Write(p []byte) (int, error) {
+	return fn(p)
+}
 
 type prefixWriter struct {
 	w io.Writer
@@ -33,5 +43,43 @@ func NewBannerWriter(w io.Writer, color Color) io.Writer {
 }
 
 func (bw *bannerWriter) Write(p []byte) (int, error) {
-	return bw.output.Write([]byte(bw.sprintf("\n%s\n\n", string(p))))
+	return bw.output.Write([]byte(bw.sprintf("\n%s\n\n", p)))
+}
+
+func NewInfoWriter(w io.Writer) io.Writer {
+	return writerFunc(func(p []byte) (int, error) {
+		return w.Write([]byte(fmt.Sprintf("%s %s\n", bold("Info:"), p)))
+	})
+}
+
+func NewErrWriter(w io.Writer) io.Writer {
+	return writerFunc(func(p []byte) (int, error) {
+		return w.Write([]byte(fmt.Sprintf("%s %s\n", redBold("Error:"), red("%s", p))))
+	})
+}
+
+type definitionWriter struct {
+	output    io.Writer
+	delimiter string
+}
+
+func NewDefinitionWriter(w io.Writer, delimiter string) io.Writer {
+	return &definitionWriter{
+		output:    w,
+		delimiter: delimiter,
+	}
+}
+
+func (w *definitionWriter) Write(p []byte) (int, error) {
+	tokens := strings.Split(string(p), w.delimiter)
+	label := tokens[0] + ":"
+	value := ""
+
+	if len(tokens) > 1 {
+		value = strings.Join(tokens[1:], w.delimiter)
+	}
+
+	str := fmt.Sprintf("%s\n  %s\n", bold(label), value)
+
+	return w.output.Write([]byte(str))
 }

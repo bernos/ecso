@@ -37,13 +37,14 @@ var (
 	redBold = color.New(color.FgRed, color.Bold).SprintfFunc()
 
 	colors = map[Color]func(string, ...interface{}) string{
-		Blue:     blue,
-		BlueBold: blueBold,
-		Green:    greenBold,
-		Red:      red,
-		RedBold:  redBold,
-		Bold:     bold,
-		Warn:     warn,
+		Blue:      blue,
+		BlueBold:  blueBold,
+		Green:     green,
+		GreenBold: greenBold,
+		Red:       red,
+		RedBold:   redBold,
+		Bold:      bold,
+		Warn:      warn,
 	}
 )
 
@@ -289,26 +290,6 @@ func PrintTable(w io.Writer, data TableDataProvider) {
 // 	logger.Printf("\n")
 // }
 
-type Info string
-
-func (i Info) Format(f fmt.State, c rune) {
-	f.Write([]byte(fmt.Sprintf("%s %s\n", bold("Info:"), string(i))))
-}
-
-func Infof(format string, a ...interface{}) Info {
-	return Info(fmt.Sprintf(format, a...))
-}
-
-type Error string
-
-func (e Error) Format(f fmt.State, c rune) {
-	f.Write([]byte(fmt.Sprintf("%s %s\n", redBold("Error:"), red("%s", string(e)))))
-}
-
-func Errorf(format string, a ...interface{}) Error {
-	return Error(fmt.Sprintf(format, a...))
-}
-
 func Dt(logger log.Logger, label, content string) {
 	logger.Printf("%s\n", bold("%s:", label))
 	logger.Printf("  %s\n", content)
@@ -320,16 +301,4 @@ func Dl(logger log.Logger, items ...map[string]string) {
 			Dt(logger, k, v)
 		}
 	}
-}
-
-type writerFunc func([]byte) (int, error)
-
-func (fn writerFunc) Write(p []byte) (int, error) {
-	return fn(p)
-}
-
-func ErrWriter(w io.Writer) io.Writer {
-	return writerFunc(func(p []byte) (int, error) {
-		return fmt.Fprint(w, Error(string(p)))
-	})
 }

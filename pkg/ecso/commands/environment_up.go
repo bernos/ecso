@@ -41,12 +41,13 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 		env     = cmd.Environment(ctx)
 		blue    = ui.NewBannerWriter(w, ui.BlueBold)
 		green   = ui.NewBannerWriter(w, ui.GreenBold)
+		info    = ui.NewInfoWriter(w)
 	)
 
-	fmt.Fprintf(blue, "I am Bringing up environment '%s'", env.Name)
+	fmt.Fprintf(blue, "Bringing up environment '%s'", env.Name)
 
 	if cmd.dryRun {
-		fmt.Fprint(w, ui.Infof("THIS IS A DRY RUN - no changes to the environment will be made."))
+		fmt.Fprintf(info, "THIS IS A DRY RUN - no changes to the environment will be made.")
 	}
 
 	if err := cmd.ensureTemplates(ctx, project, env); err != nil {
@@ -63,7 +64,6 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 
 	if cmd.dryRun {
 		fmt.Fprintf(green, "Review the above changes and re-run the command without the --dry-run option to apply them")
-
 		return nil
 	}
 

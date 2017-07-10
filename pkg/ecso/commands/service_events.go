@@ -29,11 +29,12 @@ func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext, w io.Writer) 
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)
 		count   = 0
+		ew      = ui.NewErrWriter(w)
 	)
 
 	cancel, err := cmd.serviceAPI.ServiceEvents(ctx.Project, env, service, func(e *ecs.ServiceEvent, err error) {
 		if err != nil {
-			fmt.Fprintf(w, "%s\n", ui.Error(err.Error()))
+			fmt.Fprintf(ew, "%s\n", err.Error())
 		} else {
 			fmt.Fprintf(w, "%s %s\n", *e.CreatedAt, *e.Message)
 		}

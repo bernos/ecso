@@ -45,7 +45,7 @@ func (c *Config) Writer() io.Writer {
 }
 
 func (c *Config) ErrWriter() io.Writer {
-	return ui.ErrWriter(c.w)
+	return ui.NewErrWriter(c.w)
 }
 
 func NewConfig(version string, options ...func(*Config)) (*Config, error) {

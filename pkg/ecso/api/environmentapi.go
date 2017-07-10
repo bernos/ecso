@@ -245,6 +245,7 @@ func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environmen
 		zone           = fmt.Sprintf("%s.", env.CloudFormationParameters["DNSZone"])
 		datadogDNSName = fmt.Sprintf("%s.%s.%s", "datadog", env.GetClusterName(), zone)
 		serviceAPI     = NewServiceAPI(api.w, api.registryFactory)
+		info           = ui.NewInfoWriter(api.w)
 	)
 
 	// TODO do these concurrently
@@ -256,13 +257,13 @@ func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environmen
 		fmt.Fprint(api.w, "\n")
 	}
 
-	fmt.Fprint(api.w, ui.Infof("Deleting environment Cloud Formation stack '%s'", env.GetCloudFormationStackName()))
+	fmt.Fprintf(info, "Deleting environment Cloud Formation stack '%s'", env.GetCloudFormationStackName())
 
 	if err := cfnHelper.DeleteStack(env.GetCloudFormationStackName()); err != nil {
 		return err
 	}
 
-	fmt.Fprintf(api.w, "\n%s", ui.Infof("Deleting %s SRV records", datadogDNSName))
+	fmt.Fprintf(info, "\nDeleting %s SRV records", datadogDNSName)
 
 	return r53Helper.DeleteResourceRecordSetsByName(
 		datadogDNSName,
@@ -271,9 +272,10 @@ func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environmen
 }
 
 func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun bool) error {
+	info := ui.NewInfoWriter(api.w)
 	version := util.VersionFromTime(time.Now())
 
-	fmt.Fprint(api.w, ui.Infof("Updating environment to version %s", version))
+	fmt.Fprintf(info, "Updating environment to version %s", version)
 
 	reg, err := api.registryFactory.ForRegion(env.Region)
 	if err != nil {
@@ -306,7 +308,8 @@ func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment,
 			return err
 		}
 
-		fmt.Fprintf(api.w, "\n%s\n%s\n", ui.Info("The following changes were detected:"), resp)
+		fmt.Fprintf(info, "\n%s", "The following changes were detected:")
+		fmt.Fprintf(api.w, "\n%s\n", resp)
 	}
 
 	return nil
@@ -354,9 +357,10 @@ func (api *environmentAPI) deployEnvironmentStack(reg awsregistry.Registry, buck
 		template  = env.GetCloudFormationTemplateFile()
 		tags      = env.CloudFormationTags
 		params    = env.CloudFormationParameters
+		info      = ui.NewInfoWriter(api.w)
 	)
 
-	fmt.Fprint(api.w, ui.Infof("Deploying Cloud Formation stack for the '%s' environment", env.Name))
+	fmt.Fprintf(info, "Deploying Cloud Formation stack for the '%s' environment", env.Name)
 
 	cfn := helpers.NewCloudFormationHelper(
 		env.Region,
@@ -385,7 +389,9 @@ func (api *environmentAPI) deployEnvironmentStack(reg awsregistry.Registry, buck
 }
 
 func (api *environmentAPI) uploadEnvironmentResources(reg awsregistry.Registry, bucket string, env *ecso.Environment, version string) error {
-	fmt.Fprint(api.w, ui.Infof("Uploading resources for the '%s' environment to S3", env.Name))
+	info := ui.NewInfoWriter(api.w)
+
+	fmt.Fprintf(info, "Uploading resources for the '%s' environment to S3", env.Name)
 
 	s3Helper := helpers.NewS3Helper(reg.S3API(), env.Region, ui.NewPrefixWriter(api.w, "  "))
 

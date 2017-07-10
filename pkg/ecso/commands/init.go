@@ -22,6 +22,7 @@ type initCommand struct {
 
 func (cmd *initCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	green := ui.NewBannerWriter(w, ui.GreenBold)
+	info := ui.NewInfoWriter(w)
 
 	if err := cmd.prompt(ctx, w); err != nil {
 		return err
@@ -43,7 +44,7 @@ func (cmd *initCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 		return err
 	}
 
-	fmt.Fprint(w, ui.Infof("Created project file at %s", project.ProjectFile()))
+	fmt.Fprintf(info, "Created project file at %s", project.ProjectFile())
 	fmt.Fprintf(green, "Successfully created project '%s'.", project.Name)
 
 	return nil
