@@ -32,6 +32,7 @@ type serviceAddCommand struct {
 
 func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	project := ctx.Project
+	green := ui.NewBannerWriter(w, ui.GreenBold)
 
 	if err := cmd.prompt(ctx, w); err != nil {
 		return err
@@ -71,7 +72,7 @@ func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext, w io.Writer) err
 		return err
 	}
 
-	fmt.Fprint(w, ui.GreenBannerf("Service '%s' added successfully.", cmd.name))
+	fmt.Fprintf(green, "Service '%s' added successfully.", cmd.name)
 	fmt.Fprintf(w, "Run `ecso service up %s --environment <ENVIRONMENT>` to deploy.\n\n", cmd.name)
 
 	return nil
@@ -82,6 +83,8 @@ func (cmd *serviceAddCommand) Validate(ctx *ecso.CommandContext) error {
 }
 
 func (cmd *serviceAddCommand) prompt(ctx *ecso.CommandContext, w io.Writer) error {
+	blue := ui.NewBannerWriter(w, ui.BlueBold)
+
 	cmd.desiredCount = ctx.Options.Int(ServiceAddDesiredCountOption)
 	cmd.route = ctx.Options.String(ServiceAddRouteOption)
 	cmd.port = ctx.Options.Int(ServiceAddPortOption)
@@ -98,7 +101,7 @@ func (cmd *serviceAddCommand) prompt(ctx *ecso.CommandContext, w io.Writer) erro
 		Port:         "Which container port would you like to expose?",
 	}
 
-	fmt.Fprint(w, ui.BlueBannerf("Adding a new service to the %s project", ctx.Project.Name))
+	fmt.Fprintf(blue, "Adding a new service to the %s project", ctx.Project.Name)
 
 	if err := ui.AskStringIfEmptyVar(&cmd.name, prompts.Name, "", serviceNameValidator(ctx.Project)); err != nil {
 		return err

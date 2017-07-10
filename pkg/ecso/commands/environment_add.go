@@ -45,6 +45,7 @@ func NewEnvironmentAddCommand(environmentName string, environmentAPI api.Environ
 
 func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	project := ctx.Project
+	green := ui.NewBannerWriter(w, ui.GreenBold)
 
 	if err := c.prompt(ctx, w); err != nil {
 		return err
@@ -77,7 +78,7 @@ func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext, w io.Writer) e
 		return err
 	}
 
-	fmt.Fprint(w, ui.GreenBannerf("Successfully added environment '%s' to the project", c.environmentName))
+	fmt.Fprintf(green, "Successfully added environment '%s' to the project", c.environmentName)
 	fmt.Fprintf(w, "Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.environmentName)
 
 	return nil
@@ -100,6 +101,7 @@ func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, w io.Writer) er
 		prefs           = ctx.UserPreferences
 		accountDefaults = ecso.AccountDefaults{}
 		region          = "ap-southeast-2"
+		blue            = ui.NewBannerWriter(w, ui.BlueBold)
 	)
 
 	var prompts = struct {
@@ -152,7 +154,7 @@ func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, w io.Writer) er
 
 	// TODO Ask if there is an existing environment?
 	// If yes, then ask for the cfn stack id and collect outputs
-	fmt.Fprint(w, ui.BlueBannerf("Adding a new environment to the %s project", project.Name))
+	fmt.Fprintf(blue, "Adding a new environment to the %s project", project.Name)
 
 	if account, _ := c.environmentAPI.GetCurrentAWSAccount(region); c.account == "" {
 		c.account = account

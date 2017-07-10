@@ -27,9 +27,11 @@ func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext, w io.Writer) erro
 		project = ctx.Project
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)
+		blue    = ui.NewBannerWriter(w, ui.BlueBold)
+		green   = ui.NewBannerWriter(w, ui.GreenBold)
 	)
 
-	fmt.Fprint(w, ui.BlueBannerf("Deploying service '%s' to the '%s' environment", service.Name, env.Name))
+	fmt.Fprintf(blue, "Deploying service '%s' to the '%s' environment", service.Name, env.Name)
 
 	_, err := cmd.serviceAPI.ServiceUp(project, env, service)
 
@@ -39,7 +41,7 @@ func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext, w io.Writer) erro
 
 	// ui.PrintServiceDescription(l, description)
 
-	fmt.Fprint(w, ui.GreenBannerf("Deployed service '%s' to the '%s' environment", service.Name, env.Name))
+	fmt.Fprintf(green, "Deployed service '%s' to the '%s' environment", service.Name, env.Name)
 
 	return nil
 }

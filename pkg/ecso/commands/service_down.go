@@ -30,15 +30,17 @@ func (cmd *serviceDownCommand) Execute(ctx *ecso.CommandContext, w io.Writer) er
 	var (
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)
+		blue    = ui.NewBannerWriter(w, ui.BlueBold)
+		green   = ui.NewBannerWriter(w, ui.GreenBold)
 	)
 
-	fmt.Fprint(w, ui.BlueBannerf("Terminating the '%s' service in the '%s' environment", service.Name, env.Name))
+	fmt.Fprintf(blue, "Terminating the '%s' service in the '%s' environment", service.Name, env.Name)
 
 	if err := cmd.serviceAPI.ServiceDown(ctx.Project, env, service); err != nil {
 		return err
 	}
 
-	fmt.Fprint(w, ui.GreenBannerf("Successfully terminated the '%s' service in the '%s' environment", service.Name, env.Name))
+	fmt.Fprintf(green, "Successfully terminated the '%s' service in the '%s' environment", service.Name, env.Name)
 
 	return nil
 }

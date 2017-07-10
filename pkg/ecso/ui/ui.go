@@ -289,26 +289,6 @@ func PrintTable(w io.Writer, data TableDataProvider) {
 // 	logger.Printf("\n")
 // }
 
-type BlueBanner string
-
-func (b BlueBanner) Format(f fmt.State, c rune) {
-	f.Write([]byte(blueBold("\n%s\n\n", string(b))))
-}
-
-func BlueBannerf(format string, a ...interface{}) BlueBanner {
-	return BlueBanner(fmt.Sprintf(format, a...))
-}
-
-type GreenBanner string
-
-func (b GreenBanner) Format(f fmt.State, c rune) {
-	f.Write([]byte(greenBold("\n%s\n\n", string(b))))
-}
-
-func GreenBannerf(format string, a ...interface{}) GreenBanner {
-	return GreenBanner(fmt.Sprintf(format, a...))
-}
-
 type Info string
 
 func (i Info) Format(f fmt.State, c rune) {
@@ -327,14 +307,6 @@ func (e Error) Format(f fmt.State, c rune) {
 
 func Errorf(format string, a ...interface{}) Error {
 	return Error(fmt.Sprintf(format, a...))
-}
-
-func BannerBlue(logger log.Logger, format string, a ...interface{}) {
-	logger.Printf("\n%s\n\n", blueBold(format, a...))
-}
-
-func BannerGreen(logger log.Logger, format string, a ...interface{}) {
-	logger.Printf("\n%s\n\n", greenBold(format, a...))
 }
 
 func Dt(logger log.Logger, label, content string) {

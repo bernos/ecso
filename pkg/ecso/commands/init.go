@@ -21,6 +21,8 @@ type initCommand struct {
 }
 
 func (cmd *initCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
+	green := ui.NewBannerWriter(w, ui.GreenBold)
+
 	if err := cmd.prompt(ctx, w); err != nil {
 		return err
 	}
@@ -42,7 +44,7 @@ func (cmd *initCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	}
 
 	fmt.Fprint(w, ui.Infof("Created project file at %s", project.ProjectFile()))
-	fmt.Fprint(w, ui.GreenBannerf("Successfully created project '%s'.", project.Name))
+	fmt.Fprintf(green, "Successfully created project '%s'.", project.Name)
 
 	return nil
 }
@@ -52,11 +54,13 @@ func (cmd *initCommand) Validate(ctx *ecso.CommandContext) error {
 }
 
 func (cmd *initCommand) prompt(ctx *ecso.CommandContext, w io.Writer) error {
+	blue := ui.NewBannerWriter(w, ui.BlueBold)
+
 	if ctx.Project != nil {
 		return fmt.Errorf("Found an existing project at %s.", ctx.Project.ProjectFile())
 	}
 
-	fmt.Fprint(w, ui.BlueBanner("Creating a new ecso project"))
+	fmt.Fprint(blue, "Creating a new ecso project")
 
 	wd, err := ecso.GetCurrentProjectDir()
 

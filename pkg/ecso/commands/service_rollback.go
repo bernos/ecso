@@ -44,9 +44,11 @@ func (cmd *serviceRollbackCommand) Execute(ctx *ecso.CommandContext, w io.Writer
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)
 		version = ctx.Options.String(ServiceRollbackVersionOption)
+		blue    = ui.NewBannerWriter(w, ui.BlueBold)
+		green   = ui.NewBannerWriter(w, ui.GreenBold)
 	)
 
-	fmt.Fprint(w, ui.BlueBannerf("Rolling back service '%s' to version '%s' in the '%s' environment", service.Name, version, env.Name))
+	fmt.Fprintf(blue, "Rolling back service '%s' to version '%s' in the '%s' environment", service.Name, version, env.Name)
 
 	_, err := cmd.serviceAPI.ServiceRollback(project, env, service, version)
 	if err != nil {
@@ -55,7 +57,7 @@ func (cmd *serviceRollbackCommand) Execute(ctx *ecso.CommandContext, w io.Writer
 
 	// ui.PrintServiceDescription(l, description)
 
-	fmt.Fprint(w, ui.GreenBannerf("Rolled back service '%s' to version '%s' in the '%s' environment", service.Name, version, env.Name))
+	fmt.Fprintf(green, "Rolled back service '%s' to version '%s' in the '%s' environment", service.Name, version, env.Name)
 
 	return nil
 }

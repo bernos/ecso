@@ -30,9 +30,11 @@ func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext, w io.Writer) 
 	var (
 		project = ctx.Project
 		env     = cmd.Environment(ctx)
+		blue    = ui.NewBannerWriter(w, ui.BlueBold)
+		green   = ui.NewBannerWriter(w, ui.GreenBold)
 	)
 
-	fmt.Fprint(w, ui.BlueBannerf("Removing '%s' environment", env.Name))
+	fmt.Fprintf(blue, "Removing '%s' environment", env.Name)
 
 	if err := cmd.environmentAPI.EnvironmentDown(project, env); err != nil {
 		return err
@@ -44,7 +46,7 @@ func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext, w io.Writer) 
 		return err
 	}
 
-	fmt.Fprint(w, ui.GreenBannerf("Successfully removed '%s' environment", env.Name))
+	fmt.Fprintf(green, "Successfully removed '%s' environment", env.Name)
 
 	return nil
 }
