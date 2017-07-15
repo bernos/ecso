@@ -83,3 +83,81 @@ func (w *definitionWriter) Write(p []byte) (int, error) {
 
 	return w.output.Write([]byte(str))
 }
+
+type TableWriter struct {
+	output    io.Writer
+	headers   []string
+	rows      [][]string
+	delimeter string
+}
+
+func NewTableWriter(w io.Writer, delimeter string) *TableWriter {
+	return &TableWriter{
+		output:    w,
+		headers:   make([]string, 0),
+		rows:      make([][]string, 0),
+		delimeter: delimeter,
+	}
+}
+
+func (t *TableWriter) WriteHeader(p []byte) (int, error) {
+	if len(t.headers) != 0 {
+		return 0, fmt.Errorf("Multiple calls to TableWriter.WriteHeader")
+	}
+
+	t.headers = strings.Split(string(p), t.delimeter)
+
+	return len(p), nil
+}
+
+func (t *TableWriter) Write(p []byte) (int, error) {
+	t.rows = append(t.rows, strings.Split(string(p), t.delimeter))
+	return len(p), nil
+}
+
+func (t *TableWriter) Flush() (int, error) {
+	format := ""
+	n := 0
+
+	for i, h := range t.headers {
+		l := len(h)
+
+		for _, r := range t.rows {
+			if len(r[i]) > l {
+				l = len(r[i])
+			}
+		}
+
+		format = format + fmt.Sprintf("%%-%ds  ", l)
+	}
+
+	format = format + "\n"
+
+	x, err := fmt.Fprintf(t.output, format, toInterfaceSlice(t.headers)...)
+	if err != nil {
+		return n + x, err
+	}
+
+	n = n + x
+
+	for i := range t.rows {
+		x, err := fmt.Fprintf(t.output, format, toInterfaceSlice(t.rows[i])...)
+		if err != nil {
+			return n + x, err
+		}
+
+		n = n + x
+	}
+
+	return n, nil
+}
+
+func toInterfaceSlice(xs []string) []interface{} {
+	ys := make([]interface{}, len(xs))
+
+	for i := range xs {
+		ys[i] = xs[i]
+	}
+
+	return ys
+}

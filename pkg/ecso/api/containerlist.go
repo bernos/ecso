@@ -2,10 +2,12 @@ package api
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
+	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
@@ -49,31 +51,15 @@ type Container struct {
 
 type ContainerList []*Container
 
-func (cs ContainerList) TableHeader() []string {
-	return []string{
-		"CONTAINER",
-		"IMAGE",
-		"GROUP",
-		"STATUS",
-		"TASK NAME",
-		"CONTAINER INSTANCE",
-		"PORT",
+func (cs ContainerList) WriteTo(w io.Writer) (int64, error) {
+	tw := ui.NewTableWriter(w, "|")
+
+	if n, err := tw.WriteHeader([]byte("CONTAINER|IMAGE|GROUP|STATUS|TASK NAME|CONATINER INSTANCE|PORT")); err != nil {
+		return int64(n), err
 	}
-}
 
-func (cs ContainerList) TableRows() []map[string]string {
-	trs := make([]map[string]string, len(cs))
-
-	for i, c := range cs {
-		trs[i] = map[string]string{
-			"CONTAINER":          *c.containerDefinition.Name,
-			"IMAGE":              *c.containerDefinition.Image,
-			"GROUP":              *c.task.Group,
-			"STATUS":             *c.container.LastStatus,
-			"TASK NAME":          util.GetIDFromArn(*c.task.TaskDefinitionArn),
-			"CONTAINER INSTANCE": util.GetIDFromArn(*c.task.ContainerInstanceArn),
-			"PORT":               "",
-		}
+	for _, c := range cs {
+		port := ""
 
 		if len(c.container.NetworkBindings) > 0 {
 			ports := make([]string, 0)
@@ -82,9 +68,25 @@ func (cs ContainerList) TableRows() []map[string]string {
 				ports = append(ports, fmt.Sprintf("%d:%d/%s", *b.ContainerPort, *b.HostPort, *b.Protocol))
 			}
 
-			trs[i]["PORT"] = strings.Join(ports, ",")
+			port = strings.Join(ports, ",")
+		}
+
+		row := fmt.Sprintf(
+			"%s|%s|%s|%s|%s|%s|%s",
+			*c.containerDefinition.Name,
+			*c.containerDefinition.Image,
+			*c.task.Group,
+			*c.container.LastStatus,
+			util.GetIDFromArn(*c.task.TaskDefinitionArn),
+			util.GetIDFromArn(*c.task.ContainerInstanceArn),
+			port)
+
+		if n, err := tw.Write([]byte(row)); err != nil {
+			return int64(n), err
 		}
 	}
 
-	return trs
+	n, err := tw.Flush()
+
+	return int64(n), err
 }

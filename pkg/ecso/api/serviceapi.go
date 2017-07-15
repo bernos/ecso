@@ -41,24 +41,18 @@ type ServiceVersion struct {
 
 type ServiceVersionList []*ServiceVersion
 
-func (cs ServiceVersionList) TableHeader() []string {
-	return []string{
-		"SERVICE",
-		"VERSION",
-	}
-}
+func (l ServiceVersionList) WriteTo(w io.Writer) (int64, error) {
+	tw := ui.NewTableWriter(w, "|")
+	tw.WriteHeader([]byte("SERVICE|VERSION"))
 
-func (cs ServiceVersionList) TableRows() []map[string]string {
-	trs := make([]map[string]string, len(cs))
-
-	for i, c := range cs {
-		trs[i] = map[string]string{
-			"SERVICE": c.Service,
-			"VERSION": c.Label,
-		}
+	for _, v := range l {
+		row := fmt.Sprintf("%s|%s", v.Service, v.Label)
+		tw.Write([]byte(row))
 	}
 
-	return trs
+	n, err := tw.Flush()
+
+	return int64(n), err
 }
 
 type ServiceDescription struct {

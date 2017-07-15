@@ -5,7 +5,6 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
 func NewServiceVersionsCommand(name string, serviceAPI api.ServiceAPI) ecso.Command {
@@ -32,7 +31,7 @@ func (cmd *serviceVersionsCommand) Execute(ctx *ecso.CommandContext, w io.Writer
 		return err
 	}
 
-	ui.PrintTable(w, versions)
+	_, err = versions.WriteTo(w)
 
-	return nil
+	return err
 }

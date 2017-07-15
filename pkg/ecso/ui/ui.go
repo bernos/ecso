@@ -3,7 +3,6 @@ package ui
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 
@@ -187,45 +186,45 @@ func ChoiceVar(dst *int, prompt string, choices []string) error {
 	}
 }
 
-type TableDataProvider interface {
-	TableHeader() []string
-	TableRows() []map[string]string
-}
+// type TableDataProvider interface {
+// 	TableHeader() []string
+// 	TableRows() []map[string]string
+// }
 
-func PrintTable(w io.Writer, data TableDataProvider) {
-	headers := data.TableHeader()
-	rows := data.TableRows()
-	format := ""
+// func PrintTable(w io.Writer, data TableDataProvider) {
+// 	headers := data.TableHeader()
+// 	rows := data.TableRows()
+// 	format := ""
 
-	for _, h := range headers {
-		l := len(h)
+// 	for _, h := range headers {
+// 		l := len(h)
 
-		for _, r := range rows {
-			if v, ok := r[h]; ok && len(v) > l {
-				l = len(v)
-			}
-		}
+// 		for _, r := range rows {
+// 			if v, ok := r[h]; ok && len(v) > l {
+// 				l = len(v)
+// 			}
+// 		}
 
-		format = format + fmt.Sprintf("%%-%ds  ", l)
-	}
+// 		format = format + fmt.Sprintf("%%-%ds  ", l)
+// 	}
 
-	format = format + "\n"
+// 	format = format + "\n"
 
-	headerRow := make([]interface{}, len(headers))
+// 	headerRow := make([]interface{}, len(headers))
 
-	for i, h := range headers {
-		headerRow[i] = h
-	}
+// 	for i, h := range headers {
+// 		headerRow[i] = h
+// 	}
 
-	fmt.Fprintf(w, format, headerRow...)
+// 	fmt.Fprintf(w, format, headerRow...)
 
-	for _, row := range rows {
-		r := make([]interface{}, len(headers))
+// 	for _, row := range rows {
+// 		r := make([]interface{}, len(headers))
 
-		for i, h := range headers {
-			r[i] = row[h]
-		}
+// 		for i, h := range headers {
+// 			r[i] = row[h]
+// 		}
 
-		fmt.Fprintf(w, format, r...)
-	}
-}
+// 		fmt.Fprintf(w, format, r...)
+// 	}
+// }

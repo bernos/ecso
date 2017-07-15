@@ -5,7 +5,6 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
 func NewServicePsCommand(name string, serviceAPI api.ServiceAPI) ecso.Command {
@@ -28,12 +27,11 @@ func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext, w io.Writer) erro
 	)
 
 	containers, err := cmd.serviceAPI.GetECSContainers(ctx.Project, env, service)
-
 	if err != nil {
 		return err
 	}
 
-	ui.PrintTable(w, containers)
+	_, err = containers.WriteTo(w)
 
-	return nil
+	return err
 }

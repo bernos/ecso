@@ -5,7 +5,6 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
 func NewEnvironmentPsCommand(environmentName string, environmentAPI api.EnvironmentAPI) ecso.Command {
@@ -23,12 +22,11 @@ type envPsCommand struct {
 
 func (cmd *envPsCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
 	containers, err := cmd.environmentAPI.GetECSContainers(cmd.Environment(ctx))
-
 	if err != nil {
 		return err
 	}
 
-	ui.PrintTable(w, containers)
+	_, err = containers.WriteTo(w)
 
-	return nil
+	return err
 }
