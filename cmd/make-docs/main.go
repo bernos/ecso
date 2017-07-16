@@ -11,11 +11,12 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 	ecsocli "github.com/bernos/ecso/pkg/ecso/cli"
 	"github.com/bernos/ecso/pkg/ecso/config"
+	"github.com/bernos/ecso/pkg/ecso/dispatcher"
 	"gopkg.in/urfave/cli.v1"
 )
 
 func main() {
-	dispatcher := ecso.DispatcherFunc(func(c ecso.CommandFactory, o ...func(*ecso.DispatchOptions)) error {
+	dispatcher := dispatcher.DispatcherFunc(func(c dispatcher.CommandFactory, co ecso.CommandOptions, o ...func(*dispatcher.DispatchOptions)) error {
 		return nil
 	})
 

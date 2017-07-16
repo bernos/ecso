@@ -1,9 +1,11 @@
 package commands
 
 import (
+	"fmt"
+	"io"
+
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
@@ -24,27 +26,21 @@ type serviceDownCommand struct {
 	*ServiceCommand
 }
 
-func (cmd *serviceDownCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *serviceDownCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	var (
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)
+		blue    = ui.NewBannerWriter(w, ui.BlueBold)
+		green   = ui.NewBannerWriter(w, ui.GreenBold)
 	)
 
-	ui.BannerBlue(
-		l,
-		"Terminating the '%s' service in the '%s' environment",
-		service.Name,
-		env.Name)
+	fmt.Fprintf(blue, "Terminating the '%s' service in the '%s' environment", service.Name, env.Name)
 
 	if err := cmd.serviceAPI.ServiceDown(ctx.Project, env, service); err != nil {
 		return err
 	}
 
-	ui.BannerGreen(
-		l,
-		"Successfully terminated the '%s' service in the '%s' environment",
-		service.Name,
-		env.Name)
+	fmt.Fprintf(green, "Successfully terminated the '%s' service in the '%s' environment", service.Name, env.Name)
 
 	return nil
 }

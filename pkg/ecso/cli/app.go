@@ -20,7 +20,8 @@ func NewApp(cfg *config.Config, dispatcher dispatcher.Dispatcher) *cli.App {
 		},
 	}
 
-	cli.ErrWriter = cfg.Logger().ErrWriter()
+	// cli.ErrWriter = cfg.Logger().ErrWriter()
+	cli.ErrWriter = cfg.ErrWriter()
 
 	cliDispatcher := Dispatcher(dispatcher)
 

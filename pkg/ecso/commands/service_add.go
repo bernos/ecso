@@ -2,10 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"io"
 	"path/filepath"
 
 	"github.com/bernos/ecso/pkg/ecso"
-	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/resources"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
@@ -30,10 +30,11 @@ type serviceAddCommand struct {
 	port         int
 }
 
-func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	project := ctx.Project
+	green := ui.NewBannerWriter(w, ui.GreenBold)
 
-	if err := cmd.prompt(ctx, l); err != nil {
+	if err := cmd.prompt(ctx, r, w); err != nil {
 		return err
 	}
 
@@ -71,9 +72,8 @@ func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext, l log.Logger) er
 		return err
 	}
 
-	ui.BannerGreen(l, "Service '%s' added successfully.", cmd.name)
-
-	l.Printf("Run `ecso service up %s --environment <ENVIRONMENT>` to deploy.\n\n", cmd.name)
+	fmt.Fprintf(green, "Service '%s' added successfully.", cmd.name)
+	fmt.Fprintf(w, "Run `ecso service up %s --environment <ENVIRONMENT>` to deploy.\n\n", cmd.name)
 
 	return nil
 }
@@ -82,7 +82,9 @@ func (cmd *serviceAddCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *serviceAddCommand) prompt(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *serviceAddCommand) prompt(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
+	blue := ui.NewBannerWriter(w, ui.BlueBold)
+
 	cmd.desiredCount = ctx.Options.Int(ServiceAddDesiredCountOption)
 	cmd.route = ctx.Options.String(ServiceAddRouteOption)
 	cmd.port = ctx.Options.Int(ServiceAddPortOption)
@@ -99,28 +101,28 @@ func (cmd *serviceAddCommand) prompt(ctx *ecso.CommandContext, l log.Logger) err
 		Port:         "Which container port would you like to expose?",
 	}
 
-	ui.BannerBlue(l, "Adding a new service to the %s project", ctx.Project.Name)
+	fmt.Fprintf(blue, "Adding a new service to the %s project", ctx.Project.Name)
 
-	if err := ui.AskStringIfEmptyVar(&cmd.name, prompts.Name, "", serviceNameValidator(ctx.Project)); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &cmd.name, prompts.Name, "", serviceNameValidator(ctx.Project)); err != nil {
 		return err
 	}
 
-	if err := ui.AskIntIfEmptyVar(&cmd.desiredCount, prompts.DesiredCount, 1, desiredCountValidator()); err != nil {
+	if err := ui.AskIntIfEmptyVar(r, w, &cmd.desiredCount, prompts.DesiredCount, 1, desiredCountValidator()); err != nil {
 		return err
 	}
 
-	webChoice, err := ui.Choice("Is this a web service?", []string{"Yes", "No"})
+	webChoice, err := ui.Choice(r, w, "Is this a web service?", []string{"Yes", "No"})
 
 	if err != nil {
 		return err
 	}
 
 	if webChoice == 0 {
-		if err := ui.AskStringIfEmptyVar(&cmd.route, prompts.Route, "/"+cmd.name, routeValidator()); err != nil {
+		if err := ui.AskStringIfEmptyVar(r, w, &cmd.route, prompts.Route, "/"+cmd.name, routeValidator()); err != nil {
 			return err
 		}
 
-		if err := ui.AskIntIfEmptyVar(&cmd.port, prompts.Port, 80, portValidator()); err != nil {
+		if err := ui.AskIntIfEmptyVar(r, w, &cmd.port, prompts.Port, 80, portValidator()); err != nil {
 			return err
 		}
 	}
@@ -128,8 +130,8 @@ func (cmd *serviceAddCommand) prompt(ctx *ecso.CommandContext, l log.Logger) err
 	return nil
 }
 
-func serviceNameValidator(p *ecso.Project) func(string) error {
-	return func(val string) error {
+func serviceNameValidator(p *ecso.Project) ui.StringValidator {
+	return ui.StringValidatorFunc(func(val string) error {
 		if val == "" {
 			return fmt.Errorf("Name is required")
 		}
@@ -139,17 +141,17 @@ func serviceNameValidator(p *ecso.Project) func(string) error {
 		}
 
 		return nil
-	}
+	})
 }
 
-func routeValidator() func(string) error {
+func routeValidator() ui.StringValidator {
 	return ui.ValidateAny()
 }
 
-func desiredCountValidator() func(int) error {
+func desiredCountValidator() ui.IntValidator {
 	return ui.ValidateIntBetween(1, 10)
 }
 
-func portValidator() func(int) error {
+func portValidator() ui.IntValidator {
 	return ui.ValidateIntBetween(1, 60000)
 }

@@ -2,10 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/bernos/ecso/pkg/ecso"
-	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
 const (
@@ -24,7 +24,7 @@ type envCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *envCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *envCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	unset := ctx.Options.Bool(EnvUnsetOption)
 
 	if unset {

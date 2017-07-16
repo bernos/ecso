@@ -1,10 +1,10 @@
 package commands
 
 import (
+	"io"
+
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/log"
-	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
 func NewEnvironmentDescribeCommand(environmentName string, environmentAPI api.EnvironmentAPI) ecso.Command {
@@ -20,14 +20,13 @@ type environmentDescribeCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *environmentDescribeCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *environmentDescribeCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	description, err := cmd.environmentAPI.DescribeEnvironment(cmd.Environment(ctx))
-
 	if err != nil {
 		return err
 	}
 
-	ui.PrintEnvironmentDescription(l, description)
+	description.WriteTo(w)
 
 	return nil
 }

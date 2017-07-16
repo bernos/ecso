@@ -1,26 +1,28 @@
 package helpers
 
 import (
+	"fmt"
+	"io"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/aws/aws-sdk-go/service/route53/route53iface"
-	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
 type Route53Helper interface {
 	DeleteResourceRecordSetsByName(name, zone, reason string) error
 }
 
-func NewRoute53Helper(route53API route53iface.Route53API, logger log.Logger) Route53Helper {
+func NewRoute53Helper(route53API route53iface.Route53API, w io.Writer) Route53Helper {
 	return &route53Helper{
+		w:          w,
 		route53API: route53API,
-		logger:     logger,
 	}
 }
 
 type route53Helper struct {
+	w          io.Writer
 	route53API route53iface.Route53API
-	logger     log.Logger
 }
 
 func (h *route53Helper) DeleteResourceRecordSetsByName(name, zone, reason string) error {
@@ -50,7 +52,7 @@ func (h *route53Helper) DeleteResourceRecordSetsByName(name, zone, reason string
 					ResourceRecordSet: record,
 				})
 
-				h.logger.Printf("Deleting recordset %s\n", *record.Name)
+				fmt.Fprintf(h.w, "Deleting recordset %s\n", *record.Name)
 			}
 		}
 
@@ -65,9 +67,10 @@ func (h *route53Helper) DeleteResourceRecordSetsByName(name, zone, reason string
 				return err
 			}
 
-			h.logger.Printf("Done\n")
+			fmt.Fprint(h.w, "Done\n")
 		} else {
-			h.logger.Printf("No recordsets matching '%s' found\n", name)
+
+			fmt.Fprintf(h.w, "No recordsets matching '%s' found\n", name)
 		}
 	}
 

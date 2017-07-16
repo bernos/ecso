@@ -3,286 +3,145 @@ package ui
 import (
 	"bufio"
 	"fmt"
-	"os"
+	"io"
 	"strconv"
-
-	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/log"
-	"github.com/fatih/color"
 )
 
-var (
-	bold     = color.New(color.Bold).SprintfFunc()
-	warn     = color.New(color.FgRed).SprintFunc()
-	blue     = color.New(color.FgBlue).SprintfFunc()
-	blueBold = color.New(color.FgBlue, color.Bold).SprintfFunc()
-
-	green     = color.New(color.FgGreen).SprintfFunc()
-	greenBold = color.New(color.FgGreen, color.Bold).SprintfFunc()
-
-	red     = color.New(color.FgRed).SprintfFunc()
-	redBold = color.New(color.FgRed, color.Bold).SprintfFunc()
-)
-
-func AskString(prompt, def string, validate func(string) error) (string, error) {
+func AskString(r io.Reader, w io.Writer, prompt, def string, v StringValidator) (string, error) {
 	str := ""
-	err := AskStringVar(&str, prompt, def, validate)
+	err := AskStringVar(r, w, &str, prompt, def, v)
 
 	return str, err
 }
 
-func AskStringIfEmptyVar(dst *string, prompt, def string, validate func(string) error) error {
+func AskStringIfEmptyVar(r io.Reader, w io.Writer, dst *string, prompt, def string, v StringValidator) error {
 	if len(*dst) == 0 {
-		return AskStringVar(dst, prompt, def, validate)
+		return AskStringVar(r, w, dst, prompt, def, v)
 	}
 	return nil
 }
 
-func AskStringVar(dst *string, prompt, def string, validate func(string) error) error {
-	reader := bufio.NewReader(os.Stdin)
+func AskStringVar(r io.Reader, w io.Writer, dst *string, prompt, def string, v StringValidator) error {
+	scanner := bufio.NewScanner(r)
 
 	if len(def) > 0 {
 		prompt = fmt.Sprintf("%s (%s)", prompt, def)
 	}
 
-	fmt.Printf("%s\n", bold("%s: ", prompt))
+	fmt.Fprintf(w, "%s\n", bold("%s: ", prompt))
 
 	for {
-		fmt.Print(" > ")
+		fmt.Fprint(w, " > ")
 
-		str, err := reader.ReadString('\n')
+		if scanner.Scan() {
+			str := scanner.Text()
 
-		if err != nil {
+			if len(str) == 0 {
+				str = def
+			}
+
+			if err := v.Validate(str); err != nil {
+				fmt.Fprintf(w, "   %s\n", warn(err.Error()))
+			} else {
+				*dst = str
+				return nil
+			}
+		}
+
+		if err := scanner.Err(); err != nil {
 			return err
-		}
-
-		str = str[:len(str)-1]
-
-		if len(str) == 0 {
-			str = def
-		}
-
-		if err := validate(str); err != nil {
-			fmt.Printf("   %s\n", warn(err.Error()))
-		} else {
-			*dst = str
-
-			return nil
 		}
 	}
 }
 
-func AskInt(prompt string, def int, validate func(int) error) (int, error) {
+func AskInt(r io.Reader, w io.Writer, prompt string, def int, v IntValidator) (int, error) {
 	i := 0
-	err := AskIntVar(&i, prompt, def, validate)
+	err := AskIntVar(r, w, &i, prompt, def, v)
 
 	return i, err
 }
 
-func AskIntIfEmptyVar(dst *int, prompt string, def int, validate func(int) error) error {
+func AskIntIfEmptyVar(r io.Reader, w io.Writer, dst *int, prompt string, def int, v IntValidator) error {
 	if *dst == 0 {
-		return AskIntVar(dst, prompt, def, validate)
+		return AskIntVar(r, w, dst, prompt, def, v)
 	}
 	return nil
 }
 
-func AskIntVar(dst *int, prompt string, def int, validate func(int) error) error {
-	reader := bufio.NewReader(os.Stdin)
+func AskIntVar(r io.Reader, w io.Writer, dst *int, prompt string, def int, v IntValidator) error {
+	scanner := bufio.NewScanner(r)
 
 	if def != 0 {
 		prompt = fmt.Sprintf("%s (%d)", prompt, def)
 	}
 
-	fmt.Printf("%s\n", bold("%s: ", prompt))
+	fmt.Fprintf(w, "%s\n", bold("%s: ", prompt))
 
 	for {
-		fmt.Print(" > ")
+		fmt.Fprint(w, " > ")
 
-		str, err := reader.ReadString('\n')
+		if scanner.Scan() {
+			str := scanner.Text()
 
-		if err != nil {
-			return err
-		}
-
-		str = str[:len(str)-1]
-
-		if len(str) == 0 {
-			str = strconv.Itoa(def)
-		}
-
-		i, err := strconv.Atoi(str)
-
-		if err != nil {
-			fmt.Printf("   %s\n", warn("Please enter a number"))
-		} else {
-			if err := validate(i); err != nil {
-				fmt.Printf(" %s\n", warn(err.Error()))
-			} else {
-				*dst = i
-
-				return nil
+			if len(str) == 0 {
+				str = strconv.Itoa(def)
 			}
+
+			i, err := strconv.Atoi(str)
+
+			if err != nil {
+				fmt.Fprintf(w, "   %s\n", warn("Please enter a number"))
+			} else {
+				if err := v.Validate(i); err != nil {
+					fmt.Fprintf(w, "   %s\n", warn(err.Error()))
+				} else {
+					*dst = i
+					return nil
+				}
+			}
+		}
+
+		if err := scanner.Err(); err != nil {
+			return err
 		}
 	}
 }
 
-func Choice(prompt string, choices []string) (int, error) {
+func Choice(r io.Reader, w io.Writer, prompt string, choices []string) (int, error) {
 	i := 0
-	err := ChoiceVar(&i, prompt, choices)
+	err := ChoiceVar(r, w, &i, prompt, choices)
 
 	return i, err
 }
 
-func ChoiceVar(dst *int, prompt string, choices []string) error {
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Printf("%s\n", bold("%s: ", prompt))
+func ChoiceVar(r io.Reader, w io.Writer, dst *int, prompt string, choices []string) error {
+	scanner := bufio.NewScanner(r)
+
+	fmt.Fprintf(w, "%s\n", bold("%s: ", prompt))
 
 	for i, choice := range choices {
-		fmt.Printf(" %d) %s\n", i+1, choice)
+		fmt.Fprintf(w, " %d) %s\n", i+1, choice)
 	}
 
 	for {
-		fmt.Print("  > ")
+		fmt.Fprint(w, "  > ")
 
-		str, err := reader.ReadString('\n')
+		if scanner.Scan() {
 
-		if err != nil {
+			str := scanner.Text()
+
+			i, err := strconv.Atoi(str)
+			if err != nil || i < 1 || i > len(choices) {
+				fmt.Fprintf(w, "   %s\n", warn("Please enter a number between %d and %d", 1, len(choices)))
+			} else {
+				*dst = i - 1
+				return nil
+			}
+		}
+
+		if err := scanner.Err(); err != nil {
 			return err
 		}
 
-		str = str[:len(str)-1]
-
-		i, err := strconv.Atoi(str)
-
-		if err != nil || i < 1 || i > len(choices) {
-			fmt.Printf("   %s\n", warn("Please enter a number between %d and %d", 1, len(choices)))
-		} else {
-			*dst = i - 1
-
-			return nil
-		}
-	}
-}
-
-type TableDataProvider interface {
-	TableHeader() []string
-	TableRows() []map[string]string
-}
-
-func PrintTable(logger log.Logger, data TableDataProvider) {
-	headers := data.TableHeader()
-	rows := data.TableRows()
-	format := ""
-
-	for _, h := range headers {
-		l := len(h)
-
-		for _, r := range rows {
-			if v, ok := r[h]; ok && len(v) > l {
-				l = len(v)
-			}
-		}
-
-		format = format + fmt.Sprintf("%%-%ds  ", l)
-	}
-
-	format = format + "\n"
-
-	headerRow := make([]interface{}, len(headers))
-
-	for i, h := range headers {
-		headerRow[i] = h
-	}
-
-	logger.Printf(format, headerRow...)
-
-	for _, row := range rows {
-		r := make([]interface{}, len(headers))
-
-		for i, h := range headers {
-			r[i] = row[h]
-		}
-
-		logger.Printf(format, r...)
-	}
-}
-
-func PrintMap(logger log.Logger, maps ...map[string]string) {
-	l := 0
-	items := make(map[string]string)
-
-	for _, m := range maps {
-		for k, v := range m {
-			if len(k) > l {
-				l = len(k)
-			}
-			items[k] = v
-		}
-	}
-
-	labelFormat := fmt.Sprintf("  %%%ds:", l)
-
-	for k, v := range items {
-		logger.Printf("%s %s\n", bold(labelFormat, k), v)
-	}
-}
-
-func PrintEnvironmentDescription(logger log.Logger, env *api.EnvironmentDescription) {
-	childLogger := logger.Child()
-
-	BannerBlue(logger, "Details of the '%s' environment:", env.Name)
-
-	Dl(childLogger, map[string]string{
-		"CloudFormation console": env.CloudFormationConsoleURL,
-		"CloudWatch logs":        env.CloudWatchLogsConsoleURL,
-		"ECS console":            env.ECSConsoleURL,
-		"ECS base URL":           env.ECSClusterBaseURL,
-	})
-
-	BannerBlue(logger, "CloudFormation Outputs:")
-	Dl(childLogger, env.CloudFormationOutputs)
-	logger.Printf("\n")
-}
-
-func PrintServiceDescription(logger log.Logger, service *api.ServiceDescription) {
-	childLogger := logger.Child()
-
-	BannerBlue(logger, "Details of the '%s' service:", service.Name)
-
-	Dl(childLogger, map[string]string{
-		"CloudFormation console": service.CloudFormationConsoleURL,
-		"CloudWatch logs":        service.CloudWatchLogsConsoleURL,
-		"ECS console":            service.ECSConsoleURL,
-	})
-
-	if service.URL != "" {
-		Dl(childLogger, map[string]string{
-			"Service URL": service.URL,
-		})
-	}
-
-	BannerBlue(logger, "CloudFormation Outputs:")
-	Dl(childLogger, service.CloudFormationOutputs)
-	logger.Printf("\n")
-}
-
-func BannerBlue(logger log.Logger, format string, a ...interface{}) {
-	logger.Printf("\n%s\n\n", blueBold(format, a...))
-}
-
-func BannerGreen(logger log.Logger, format string, a ...interface{}) {
-	logger.Printf("\n%s\n\n", greenBold(format, a...))
-}
-
-func Dt(logger log.Logger, label, content string) {
-	logger.Printf("%s\n", bold("%s:", label))
-	logger.Printf("  %s\n", content)
-}
-
-func Dl(logger log.Logger, items ...map[string]string) {
-	for _, i := range items {
-		for k, v := range i {
-			Dt(logger, k, v)
-		}
 	}
 }

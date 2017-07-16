@@ -2,12 +2,12 @@ package commands
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
@@ -29,39 +29,33 @@ type serviceLsCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	env := cmd.Environment(ctx)
 
 	services, err := cmd.environmentAPI.GetECSServices(env)
-
 	if err != nil {
 		return err
 	}
 
-	ui.PrintTable(l, servicesToRows(ctx.Project, env, services))
+	tw := ui.NewTableWriter(w, "|")
+	tw.WriteHeader([]byte("SERVICE|ECS SERVICE|TASK|DESIRED|RUNNING|STATUS"))
 
-	return nil
-}
+	for _, s := range services {
+		row := fmt.Sprintf(
+			"%s|%s|%s|%s|%s|%s",
+			localServiceName(s, env, ctx.Project),
+			*s.ServiceName,
+			util.GetIDFromArn(*s.TaskDefinition),
+			*s.DesiredCount,
+			*s.RunningCount,
+			*s.Status)
 
-func servicesToRows(project *ecso.Project, env *ecso.Environment, services []*ecs.Service) serviceLsRows {
-	a := make([]*serviceLsRow, len(services))
-
-	for i, s := range services {
-		a[i] = serviceToRow(project, env, s)
+		tw.Write([]byte(row))
 	}
 
-	return serviceLsRows(a)
-}
+	_, err = tw.Flush()
 
-func serviceToRow(project *ecso.Project, env *ecso.Environment, service *ecs.Service) *serviceLsRow {
-	return &serviceLsRow{
-		Name:           localServiceName(service, env, project),
-		ECSServiceName: *service.ServiceName,
-		ECSTask:        util.GetIDFromArn(*service.TaskDefinition),
-		Desired:        *service.DesiredCount,
-		Running:        *service.RunningCount,
-		Status:         *service.Status,
-	}
+	return err
 }
 
 func localServiceName(ecsService *ecs.Service, env *ecso.Environment, project *ecso.Project) string {
@@ -72,43 +66,4 @@ func localServiceName(ecsService *ecs.Service, env *ecso.Environment, project *e
 	}
 
 	return ""
-}
-
-type serviceLsRow struct {
-	Name           string
-	ECSServiceName string
-	ECSTask        string
-	Desired        int64
-	Running        int64
-	Status         string
-}
-
-type serviceLsRows []*serviceLsRow
-
-func (s serviceLsRows) TableHeader() []string {
-	return []string{
-		"SERVICE",
-		"ECS SERVICE",
-		"TASK",
-		"DESIRED",
-		"RUNNING",
-		"STATUS",
-	}
-}
-
-func (s serviceLsRows) TableRows() []map[string]string {
-	trs := make([]map[string]string, len(s))
-
-	for i, row := range s {
-		trs[i] = map[string]string{
-			"SERVICE":     row.Name,
-			"ECS SERVICE": row.ECSServiceName,
-			"TASK":        row.ECSTask,
-			"DESIRED":     fmt.Sprintf("%d", row.Desired),
-			"RUNNING":     fmt.Sprintf("%d", row.Running),
-			"STATUS":      row.Status,
-		}
-	}
-
-	return trs
 }

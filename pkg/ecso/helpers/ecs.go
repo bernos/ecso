@@ -2,28 +2,28 @@ package helpers
 
 import (
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
-	"github.com/bernos/ecso/pkg/ecso/log"
 )
 
 type ECSHelper interface {
 	LogServiceEvents(service, cluster string, logger func(*ecs.ServiceEvent, error)) (cancel func())
 }
 
-func NewECSHelper(ecsClient ecsiface.ECSAPI, logger log.Logger) ECSHelper {
+func NewECSHelper(ecsClient ecsiface.ECSAPI, w io.Writer) ECSHelper {
 	return &ecsHelper{
+		w:         w,
 		ecsClient: ecsClient,
-		logger:    logger,
 	}
 }
 
 type ecsHelper struct {
+	w         io.Writer
 	ecsClient ecsiface.ECSAPI
-	logger    log.Logger
 }
 
 func (h *ecsHelper) LogServiceEvents(service, cluster string, logger func(*ecs.ServiceEvent, error)) (cancel func()) {

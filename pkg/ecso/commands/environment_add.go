@@ -2,10 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/log"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
@@ -43,10 +43,11 @@ func NewEnvironmentAddCommand(environmentName string, environmentAPI api.Environ
 	}
 }
 
-func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext, l log.Logger) error {
+func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	project := ctx.Project
+	green := ui.NewBannerWriter(w, ui.GreenBold)
 
-	if err := c.prompt(ctx, l); err != nil {
+	if err := c.prompt(ctx, r, w); err != nil {
 		return err
 	}
 
@@ -77,8 +78,8 @@ func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext, l log.Logger) 
 		return err
 	}
 
-	ui.BannerGreen(l, "Successfully added environment '%s' to the project", c.environmentName)
-	l.Printf("Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.environmentName)
+	fmt.Fprintf(green, "Successfully added environment '%s' to the project", c.environmentName)
+	fmt.Fprintf(w, "Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.environmentName)
 
 	return nil
 }
@@ -87,7 +88,7 @@ func (c *environmentAddCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, l log.Logger) error {
+func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	c.albSubnets = ctx.Options.String(EnvironmentAddALBSubnetsOption)
 	c.instanceSubnets = ctx.Options.String(EnvironmentAddInstanceSubnetsOption)
 	c.instanceType = ctx.Options.String(EnvironmentAddInstanceTypeOption)
@@ -100,6 +101,7 @@ func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, l log.Logger) e
 		prefs           = ctx.UserPreferences
 		accountDefaults = ecso.AccountDefaults{}
 		region          = "ap-southeast-2"
+		blue            = ui.NewBannerWriter(w, ui.BlueBold)
 	)
 
 	var prompts = struct {
@@ -127,16 +129,16 @@ func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, l log.Logger) e
 	}
 
 	var validators = struct {
-		Name            func(string) error
-		Region          func(string) error
-		VPC             func(string) error
-		ALBSubnets      func(string) error
-		InstanceSubnets func(string) error
-		InstanceType    func(string) error
-		DNSZone         func(string) error
-		Size            func(int) error
-		KeyPair         func(string) error
-		DataDogAPIKey   func(string) error
+		Name            ui.StringValidator
+		Region          ui.StringValidator
+		VPC             ui.StringValidator
+		ALBSubnets      ui.StringValidator
+		InstanceSubnets ui.StringValidator
+		InstanceType    ui.StringValidator
+		DNSZone         ui.StringValidator
+		Size            ui.IntValidator
+		KeyPair         ui.StringValidator
+		DataDogAPIKey   ui.StringValidator
 	}{
 		Name:            environmentNameValidator(ctx.Project),
 		Region:          ui.ValidateRequired("Region is required"),
@@ -152,7 +154,7 @@ func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, l log.Logger) e
 
 	// TODO Ask if there is an existing environment?
 	// If yes, then ask for the cfn stack id and collect outputs
-	ui.BannerBlue(l, "Adding a new environment to the %s project", project.Name)
+	fmt.Fprintf(blue, "Adding a new environment to the %s project", project.Name)
 
 	if account, _ := c.environmentAPI.GetCurrentAWSAccount(region); c.account == "" {
 		c.account = account
@@ -162,51 +164,51 @@ func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, l log.Logger) e
 		accountDefaults = ac
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.environmentName, prompts.Name, "dev", validators.Name); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.environmentName, prompts.Name, "dev", validators.Name); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.region, prompts.Region, "ap-southeast-2", validators.Region); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.region, prompts.Region, "ap-southeast-2", validators.Region); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.vpcID, prompts.VPC, accountDefaults.VPCID, validators.VPC); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.vpcID, prompts.VPC, accountDefaults.VPCID, validators.VPC); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.albSubnets, prompts.ALBSubnets, accountDefaults.ALBSubnets, validators.ALBSubnets); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.albSubnets, prompts.ALBSubnets, accountDefaults.ALBSubnets, validators.ALBSubnets); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.instanceSubnets, prompts.InstanceSubnets, accountDefaults.InstanceSubnets, validators.InstanceSubnets); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.instanceSubnets, prompts.InstanceSubnets, accountDefaults.InstanceSubnets, validators.InstanceSubnets); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.instanceType, prompts.InstanceType, "t2.large", validators.InstanceType); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.instanceType, prompts.InstanceType, "t2.large", validators.InstanceType); err != nil {
 		return err
 	}
 
-	if err := ui.AskIntIfEmptyVar(&c.size, prompts.Size, 4, validators.Size); err != nil {
+	if err := ui.AskIntIfEmptyVar(r, w, &c.size, prompts.Size, 4, validators.Size); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.keyPair, prompts.KeyPair, accountDefaults.KeyPair, validators.KeyPair); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.keyPair, prompts.KeyPair, accountDefaults.KeyPair, validators.KeyPair); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.dnsZone, prompts.DNSZone, accountDefaults.DNSZone, validators.DNSZone); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.dnsZone, prompts.DNSZone, accountDefaults.DNSZone, validators.DNSZone); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.datadogAPIKey, prompts.DataDogAPIKey, accountDefaults.DataDogAPIKey, validators.DataDogAPIKey); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.datadogAPIKey, prompts.DataDogAPIKey, accountDefaults.DataDogAPIKey, validators.DataDogAPIKey); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func environmentNameValidator(p *ecso.Project) func(string) error {
-	return func(val string) error {
+func environmentNameValidator(p *ecso.Project) ui.StringValidator {
+	return ui.StringValidatorFunc(func(val string) error {
 		if val == "" {
 			return fmt.Errorf("Name is required")
 		}
@@ -215,12 +217,5 @@ func environmentNameValidator(p *ecso.Project) func(string) error {
 			return fmt.Errorf("This project already contains an environment named '%s', please choose another name", val)
 		}
 		return nil
-	}
+	})
 }
-
-// func getCurrentAWSAccount(svc stsiface.STSAPI) string {
-// 	if resp, err := svc.GetCallerIdentity(&sts.GetCallerIdentityInput{}); err == nil {
-// 		return *resp.Account
-// 	}
-// 	return ""
-// }
