@@ -20,7 +20,7 @@ type environmentDescribeCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *environmentDescribeCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
+func (cmd *environmentDescribeCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	description, err := cmd.environmentAPI.DescribeEnvironment(cmd.Environment(ctx))
 	if err != nil {
 		return err

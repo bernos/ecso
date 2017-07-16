@@ -24,7 +24,7 @@ type envCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *envCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
+func (cmd *envCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	unset := ctx.Options.Bool(EnvUnsetOption)
 
 	if unset {

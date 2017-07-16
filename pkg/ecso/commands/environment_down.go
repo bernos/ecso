@@ -26,7 +26,7 @@ type environmentDownCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *environmentDownCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
+func (cmd *environmentDownCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	var (
 		project = ctx.Project
 		env     = cmd.Environment(ctx)

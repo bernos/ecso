@@ -23,7 +23,7 @@ type serviceLogsCommand struct {
 	*ServiceCommand
 }
 
-func (cmd *serviceLogsCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
+func (cmd *serviceLogsCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	events, err := cmd.serviceAPI.ServiceLogs(ctx.Project, cmd.Environment(ctx), cmd.Service(ctx))
 
 	if err != nil {

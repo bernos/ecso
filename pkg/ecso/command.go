@@ -4,16 +4,16 @@ import "io"
 
 // Command represents a single ecso command
 type Command interface {
-	Execute(ctx *CommandContext, w io.Writer) error
+	Execute(ctx *CommandContext, r io.Reader, w io.Writer) error
 	Validate(ctx *CommandContext) error
 }
 
 // CommandFunc lifts a regular function to the Command interface
-type CommandFunc func(*CommandContext, io.Writer) error
+type CommandFunc func(*CommandContext, io.Reader, io.Writer) error
 
 // Execute executes the func
-func (fn CommandFunc) Execute(ctx *CommandContext, w io.Writer) error {
-	return fn(ctx, w)
+func (fn CommandFunc) Execute(ctx *CommandContext, r io.Reader, w io.Writer) error {
+	return fn(ctx, r, w)
 }
 
 // Validate ensures the command is valid. A CommandFunc is always
@@ -26,7 +26,7 @@ func (fn CommandFunc) Validate(ctx *CommandContext) error {
 // interface. Use this to simplify returning errors from functions
 // that create commands
 func CommandError(err error) Command {
-	return CommandFunc(func(ctx *CommandContext, w io.Writer) error {
+	return CommandFunc(func(ctx *CommandContext, r io.Reader, w io.Writer) error {
 		return err
 	})
 }

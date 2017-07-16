@@ -36,7 +36,7 @@ func NewDispatcher(project *ecso.Project, cfg *config.Config, prefs *ecso.UserPr
 			return err
 		}
 
-		return cmd.Execute(ctx, cfg.Writer())
+		return cmd.Execute(ctx, cfg.Reader(), cfg.Writer())
 	})
 }
 

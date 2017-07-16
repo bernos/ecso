@@ -29,7 +29,7 @@ type serviceLsCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
+func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	env := cmd.Environment(ctx)
 
 	services, err := cmd.environmentAPI.GetECSServices(env)

@@ -20,11 +20,11 @@ type initCommand struct {
 	projectName string
 }
 
-func (cmd *initCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
+func (cmd *initCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	green := ui.NewBannerWriter(w, ui.GreenBold)
 	info := ui.NewInfoWriter(w)
 
-	if err := cmd.prompt(ctx, w); err != nil {
+	if err := cmd.prompt(ctx, r, w); err != nil {
 		return err
 	}
 
@@ -54,7 +54,7 @@ func (cmd *initCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *initCommand) prompt(ctx *ecso.CommandContext, w io.Writer) error {
+func (cmd *initCommand) prompt(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	blue := ui.NewBannerWriter(w, ui.BlueBold)
 
 	if ctx.Project != nil {
@@ -70,6 +70,7 @@ func (cmd *initCommand) prompt(ctx *ecso.CommandContext, w io.Writer) error {
 	}
 
 	return ui.AskStringIfEmptyVar(
+		r, w,
 		&cmd.projectName,
 		"What is the name of your project?",
 		filepath.Base(wd),

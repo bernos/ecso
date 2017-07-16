@@ -32,7 +32,7 @@ type envUpCommand struct {
 	force  bool
 }
 
-func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
+func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	cmd.dryRun = ctx.Options.Bool(EnvironmentUpDryRunOption)
 	cmd.force = ctx.Options.Bool(EnvironmentUpForceOption)
 

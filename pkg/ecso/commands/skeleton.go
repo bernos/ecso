@@ -16,7 +16,7 @@ type skeletonCommand struct {
 	environmentName string
 }
 
-func (cmd *skeletonCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
+func (cmd *skeletonCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	return nil
 }
 

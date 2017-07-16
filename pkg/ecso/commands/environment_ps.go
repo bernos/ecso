@@ -20,7 +20,7 @@ type envPsCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *envPsCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
+func (cmd *envPsCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	containers, err := cmd.environmentAPI.GetECSContainers(cmd.Environment(ctx))
 	if err != nil {
 		return err

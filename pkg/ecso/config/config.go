@@ -12,8 +12,9 @@ import (
 type Config struct {
 	Version string
 
-	w io.Writer
-	r awsregistry.RegistryFactory
+	w      io.Writer
+	reader io.Reader
+	r      awsregistry.RegistryFactory
 
 	serviceAPI     api.ServiceAPI
 	environmentAPI api.EnvironmentAPI
@@ -44,6 +45,10 @@ func (c *Config) Writer() io.Writer {
 	return c.w
 }
 
+func (c *Config) Reader() io.Reader {
+	return c.reader
+}
+
 func (c *Config) ErrWriter() io.Writer {
 	return ui.NewErrWriter(c.w)
 }
@@ -52,6 +57,7 @@ func NewConfig(version string, options ...func(*Config)) (*Config, error) {
 	cfg := &Config{
 		Version: version,
 		w:       os.Stderr,
+		reader:  os.Stdin,
 	}
 
 	for _, o := range options {

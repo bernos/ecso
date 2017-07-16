@@ -16,7 +16,6 @@ var (
 )
 
 func main() {
-
 	// fmt.Print(ui.BlueBanner("Hello"))
 	// ExitWithError(fmt.Errorf("asd"), 0)
 	project := MustLoadProject(ecso.LoadCurrentProject())

@@ -22,7 +22,7 @@ type serviceUpCommand struct {
 	*ServiceCommand
 }
 
-func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
+func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	var (
 		project = ctx.Project
 		env     = cmd.Environment(ctx)

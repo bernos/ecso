@@ -43,11 +43,11 @@ func NewEnvironmentAddCommand(environmentName string, environmentAPI api.Environ
 	}
 }
 
-func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
+func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	project := ctx.Project
 	green := ui.NewBannerWriter(w, ui.GreenBold)
 
-	if err := c.prompt(ctx, w); err != nil {
+	if err := c.prompt(ctx, r, w); err != nil {
 		return err
 	}
 
@@ -88,7 +88,7 @@ func (c *environmentAddCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, w io.Writer) error {
+func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	c.albSubnets = ctx.Options.String(EnvironmentAddALBSubnetsOption)
 	c.instanceSubnets = ctx.Options.String(EnvironmentAddInstanceSubnetsOption)
 	c.instanceType = ctx.Options.String(EnvironmentAddInstanceTypeOption)
@@ -164,43 +164,43 @@ func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, w io.Writer) er
 		accountDefaults = ac
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.environmentName, prompts.Name, "dev", validators.Name); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.environmentName, prompts.Name, "dev", validators.Name); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.region, prompts.Region, "ap-southeast-2", validators.Region); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.region, prompts.Region, "ap-southeast-2", validators.Region); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.vpcID, prompts.VPC, accountDefaults.VPCID, validators.VPC); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.vpcID, prompts.VPC, accountDefaults.VPCID, validators.VPC); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.albSubnets, prompts.ALBSubnets, accountDefaults.ALBSubnets, validators.ALBSubnets); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.albSubnets, prompts.ALBSubnets, accountDefaults.ALBSubnets, validators.ALBSubnets); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.instanceSubnets, prompts.InstanceSubnets, accountDefaults.InstanceSubnets, validators.InstanceSubnets); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.instanceSubnets, prompts.InstanceSubnets, accountDefaults.InstanceSubnets, validators.InstanceSubnets); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.instanceType, prompts.InstanceType, "t2.large", validators.InstanceType); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.instanceType, prompts.InstanceType, "t2.large", validators.InstanceType); err != nil {
 		return err
 	}
 
-	if err := ui.AskIntIfEmptyVar(&c.size, prompts.Size, 4, validators.Size); err != nil {
+	if err := ui.AskIntIfEmptyVar(r, w, &c.size, prompts.Size, 4, validators.Size); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.keyPair, prompts.KeyPair, accountDefaults.KeyPair, validators.KeyPair); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.keyPair, prompts.KeyPair, accountDefaults.KeyPair, validators.KeyPair); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.dnsZone, prompts.DNSZone, accountDefaults.DNSZone, validators.DNSZone); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.dnsZone, prompts.DNSZone, accountDefaults.DNSZone, validators.DNSZone); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(&c.datadogAPIKey, prompts.DataDogAPIKey, accountDefaults.DataDogAPIKey, validators.DataDogAPIKey); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &c.datadogAPIKey, prompts.DataDogAPIKey, accountDefaults.DataDogAPIKey, validators.DataDogAPIKey); err != nil {
 		return err
 	}
 

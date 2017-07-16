@@ -20,7 +20,7 @@ type servicePsCommand struct {
 	*ServiceCommand
 }
 
-func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
+func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	var (
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)

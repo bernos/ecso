@@ -24,7 +24,7 @@ type serviceEventsCommand struct {
 	*ServiceCommand
 }
 
-func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
+func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	var (
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)

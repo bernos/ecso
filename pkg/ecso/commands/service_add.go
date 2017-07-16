@@ -30,11 +30,11 @@ type serviceAddCommand struct {
 	port         int
 }
 
-func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext, w io.Writer) error {
+func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	project := ctx.Project
 	green := ui.NewBannerWriter(w, ui.GreenBold)
 
-	if err := cmd.prompt(ctx, w); err != nil {
+	if err := cmd.prompt(ctx, r, w); err != nil {
 		return err
 	}
 
@@ -82,7 +82,7 @@ func (cmd *serviceAddCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *serviceAddCommand) prompt(ctx *ecso.CommandContext, w io.Writer) error {
+func (cmd *serviceAddCommand) prompt(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	blue := ui.NewBannerWriter(w, ui.BlueBold)
 
 	cmd.desiredCount = ctx.Options.Int(ServiceAddDesiredCountOption)
@@ -103,26 +103,26 @@ func (cmd *serviceAddCommand) prompt(ctx *ecso.CommandContext, w io.Writer) erro
 
 	fmt.Fprintf(blue, "Adding a new service to the %s project", ctx.Project.Name)
 
-	if err := ui.AskStringIfEmptyVar(&cmd.name, prompts.Name, "", serviceNameValidator(ctx.Project)); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &cmd.name, prompts.Name, "", serviceNameValidator(ctx.Project)); err != nil {
 		return err
 	}
 
-	if err := ui.AskIntIfEmptyVar(&cmd.desiredCount, prompts.DesiredCount, 1, desiredCountValidator()); err != nil {
+	if err := ui.AskIntIfEmptyVar(r, w, &cmd.desiredCount, prompts.DesiredCount, 1, desiredCountValidator()); err != nil {
 		return err
 	}
 
-	webChoice, err := ui.Choice("Is this a web service?", []string{"Yes", "No"})
+	webChoice, err := ui.Choice(r, w, "Is this a web service?", []string{"Yes", "No"})
 
 	if err != nil {
 		return err
 	}
 
 	if webChoice == 0 {
-		if err := ui.AskStringIfEmptyVar(&cmd.route, prompts.Route, "/"+cmd.name, routeValidator()); err != nil {
+		if err := ui.AskStringIfEmptyVar(r, w, &cmd.route, prompts.Route, "/"+cmd.name, routeValidator()); err != nil {
 			return err
 		}
 
-		if err := ui.AskIntIfEmptyVar(&cmd.port, prompts.Port, 80, portValidator()); err != nil {
+		if err := ui.AskIntIfEmptyVar(r, w, &cmd.port, prompts.Port, 80, portValidator()); err != nil {
 			return err
 		}
 	}
