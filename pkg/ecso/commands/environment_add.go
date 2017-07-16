@@ -129,16 +129,16 @@ func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, r io.Reader, w 
 	}
 
 	var validators = struct {
-		Name            func(string) error
-		Region          func(string) error
-		VPC             func(string) error
-		ALBSubnets      func(string) error
-		InstanceSubnets func(string) error
-		InstanceType    func(string) error
-		DNSZone         func(string) error
-		Size            func(int) error
-		KeyPair         func(string) error
-		DataDogAPIKey   func(string) error
+		Name            ui.StringValidator
+		Region          ui.StringValidator
+		VPC             ui.StringValidator
+		ALBSubnets      ui.StringValidator
+		InstanceSubnets ui.StringValidator
+		InstanceType    ui.StringValidator
+		DNSZone         ui.StringValidator
+		Size            ui.IntValidator
+		KeyPair         ui.StringValidator
+		DataDogAPIKey   ui.StringValidator
 	}{
 		Name:            environmentNameValidator(ctx.Project),
 		Region:          ui.ValidateRequired("Region is required"),
@@ -207,8 +207,8 @@ func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, r io.Reader, w 
 	return nil
 }
 
-func environmentNameValidator(p *ecso.Project) func(string) error {
-	return func(val string) error {
+func environmentNameValidator(p *ecso.Project) ui.StringValidator {
+	return ui.StringValidatorFunc(func(val string) error {
 		if val == "" {
 			return fmt.Errorf("Name is required")
 		}
@@ -217,12 +217,5 @@ func environmentNameValidator(p *ecso.Project) func(string) error {
 			return fmt.Errorf("This project already contains an environment named '%s', please choose another name", val)
 		}
 		return nil
-	}
+	})
 }
-
-// func getCurrentAWSAccount(svc stsiface.STSAPI) string {
-// 	if resp, err := svc.GetCallerIdentity(&sts.GetCallerIdentityInput{}); err == nil {
-// 		return *resp.Account
-// 	}
-// 	return ""
-// }

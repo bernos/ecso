@@ -7,21 +7,21 @@ import (
 	"strconv"
 )
 
-func AskString(r io.Reader, w io.Writer, prompt, def string, validate func(string) error) (string, error) {
+func AskString(r io.Reader, w io.Writer, prompt, def string, v StringValidator) (string, error) {
 	str := ""
-	err := AskStringVar(r, w, &str, prompt, def, validate)
+	err := AskStringVar(r, w, &str, prompt, def, v)
 
 	return str, err
 }
 
-func AskStringIfEmptyVar(r io.Reader, w io.Writer, dst *string, prompt, def string, validate func(string) error) error {
+func AskStringIfEmptyVar(r io.Reader, w io.Writer, dst *string, prompt, def string, v StringValidator) error {
 	if len(*dst) == 0 {
-		return AskStringVar(r, w, dst, prompt, def, validate)
+		return AskStringVar(r, w, dst, prompt, def, v)
 	}
 	return nil
 }
 
-func AskStringVar(r io.Reader, w io.Writer, dst *string, prompt, def string, validate func(string) error) error {
+func AskStringVar(r io.Reader, w io.Writer, dst *string, prompt, def string, v StringValidator) error {
 	scanner := bufio.NewScanner(r)
 
 	if len(def) > 0 {
@@ -40,7 +40,7 @@ func AskStringVar(r io.Reader, w io.Writer, dst *string, prompt, def string, val
 				str = def
 			}
 
-			if err := validate(str); err != nil {
+			if err := v.Validate(str); err != nil {
 				fmt.Fprintf(w, "   %s\n", warn(err.Error()))
 			} else {
 				*dst = str
@@ -54,21 +54,21 @@ func AskStringVar(r io.Reader, w io.Writer, dst *string, prompt, def string, val
 	}
 }
 
-func AskInt(r io.Reader, w io.Writer, prompt string, def int, validate func(int) error) (int, error) {
+func AskInt(r io.Reader, w io.Writer, prompt string, def int, v IntValidator) (int, error) {
 	i := 0
-	err := AskIntVar(r, w, &i, prompt, def, validate)
+	err := AskIntVar(r, w, &i, prompt, def, v)
 
 	return i, err
 }
 
-func AskIntIfEmptyVar(r io.Reader, w io.Writer, dst *int, prompt string, def int, validate func(int) error) error {
+func AskIntIfEmptyVar(r io.Reader, w io.Writer, dst *int, prompt string, def int, v IntValidator) error {
 	if *dst == 0 {
-		return AskIntVar(r, w, dst, prompt, def, validate)
+		return AskIntVar(r, w, dst, prompt, def, v)
 	}
 	return nil
 }
 
-func AskIntVar(r io.Reader, w io.Writer, dst *int, prompt string, def int, validate func(int) error) error {
+func AskIntVar(r io.Reader, w io.Writer, dst *int, prompt string, def int, v IntValidator) error {
 	scanner := bufio.NewScanner(r)
 
 	if def != 0 {
@@ -92,7 +92,7 @@ func AskIntVar(r io.Reader, w io.Writer, dst *int, prompt string, def int, valid
 			if err != nil {
 				fmt.Fprintf(w, "   %s\n", warn("Please enter a number"))
 			} else {
-				if err := validate(i); err != nil {
+				if err := v.Validate(i); err != nil {
 					fmt.Fprintf(w, "   %s\n", warn(err.Error()))
 				} else {
 					*dst = i

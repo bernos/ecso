@@ -130,8 +130,8 @@ func (cmd *serviceAddCommand) prompt(ctx *ecso.CommandContext, r io.Reader, w io
 	return nil
 }
 
-func serviceNameValidator(p *ecso.Project) func(string) error {
-	return func(val string) error {
+func serviceNameValidator(p *ecso.Project) ui.StringValidator {
+	return ui.StringValidatorFunc(func(val string) error {
 		if val == "" {
 			return fmt.Errorf("Name is required")
 		}
@@ -141,17 +141,17 @@ func serviceNameValidator(p *ecso.Project) func(string) error {
 		}
 
 		return nil
-	}
+	})
 }
 
-func routeValidator() func(string) error {
+func routeValidator() ui.StringValidator {
 	return ui.ValidateAny()
 }
 
-func desiredCountValidator() func(int) error {
+func desiredCountValidator() ui.IntValidator {
 	return ui.ValidateIntBetween(1, 10)
 }
 
-func portValidator() func(int) error {
+func portValidator() ui.IntValidator {
 	return ui.ValidateIntBetween(1, 60000)
 }
