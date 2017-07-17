@@ -12,22 +12,26 @@ const (
 	EnvUnsetOption = "unset"
 )
 
-func NewEnvCommand(environmentName string) ecso.Command {
-	return &envCommand{
+func NewEnvCommand(environmentName string) *EnvCommand {
+	return &EnvCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
 		},
 	}
 }
 
-type envCommand struct {
+type EnvCommand struct {
 	*EnvironmentCommand
+	unset bool
 }
 
-func (cmd *envCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
-	unset := ctx.Options.Bool(EnvUnsetOption)
+func (cmd *EnvCommand) WithUnset(unset bool) *EnvCommand {
+	cmd.unset = unset
+	return cmd
+}
 
-	if unset {
+func (cmd *EnvCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
+	if cmd.unset {
 		oldPS1 := os.Getenv("ECSO_OLD_PS1")
 
 		fmt.Printf("unset ECSO_ENVIRONMENT; ")
@@ -52,6 +56,6 @@ func (cmd *envCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Write
 	return nil
 }
 
-func (cmd *envCommand) Validate(ctx *ecso.CommandContext) error {
+func (cmd *EnvCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }

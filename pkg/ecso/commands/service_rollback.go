@@ -13,51 +13,57 @@ const (
 	ServiceRollbackVersionOption = "version"
 )
 
-func NewServiceRollbackCommand(name string, serviceAPI api.ServiceAPI) ecso.Command {
-	return &serviceRollbackCommand{
+func NewServiceRollbackCommand(name string, environmentName string, serviceAPI api.ServiceAPI) *ServiceRollbackCommand {
+	return &ServiceRollbackCommand{
 		ServiceCommand: &ServiceCommand{
-			name:       name,
-			serviceAPI: serviceAPI,
+			name:            name,
+			environmentName: environmentName,
+			serviceAPI:      serviceAPI,
 		},
 	}
 }
 
-type serviceRollbackCommand struct {
+type ServiceRollbackCommand struct {
 	*ServiceCommand
+	version string
 }
 
-func (cmd *serviceRollbackCommand) Validate(ctx *ecso.CommandContext) error {
+func (cmd *ServiceRollbackCommand) WithVersion(version string) *ServiceRollbackCommand {
+	cmd.version = version
+	return cmd
+}
+
+func (cmd *ServiceRollbackCommand) Validate(ctx *ecso.CommandContext) error {
 	if err := cmd.ServiceCommand.Validate(ctx); err != nil {
 		return err
 	}
 
-	if ctx.Options.String(ServiceRollbackVersionOption) == "" {
+	if cmd.version == "" {
 		return fmt.Errorf("Version is required")
 	}
 
 	return nil
 }
 
-func (cmd *serviceRollbackCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
+func (cmd *ServiceRollbackCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	var (
 		project = ctx.Project
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)
-		version = ctx.Options.String(ServiceRollbackVersionOption)
 		blue    = ui.NewBannerWriter(w, ui.BlueBold)
 		green   = ui.NewBannerWriter(w, ui.GreenBold)
 	)
 
-	fmt.Fprintf(blue, "Rolling back service '%s' to version '%s' in the '%s' environment", service.Name, version, env.Name)
+	fmt.Fprintf(blue, "Rolling back service '%s' to version '%s' in the '%s' environment", service.Name, cmd.version, env.Name)
 
-	description, err := cmd.serviceAPI.ServiceRollback(project, env, service, version)
+	description, err := cmd.serviceAPI.ServiceRollback(project, env, service, cmd.version)
 	if err != nil {
 		return err
 	}
 
 	description.WriteTo(w)
 
-	fmt.Fprintf(green, "Rolled back service '%s' to version '%s' in the '%s' environment", service.Name, version, env.Name)
+	fmt.Fprintf(green, "Rolled back service '%s' to version '%s' in the '%s' environment", service.Name, cmd.version, env.Name)
 
 	return nil
 }

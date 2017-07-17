@@ -19,7 +19,7 @@ const (
 	EnvironmentAddKeyPairOption         = "keypair"
 )
 
-type environmentAddCommand struct {
+type EnvironmentAddCommand struct {
 	*EnvironmentCommand
 
 	vpcID           string
@@ -34,8 +34,58 @@ type environmentAddCommand struct {
 	datadogAPIKey   string
 }
 
-func NewEnvironmentAddCommand(environmentName string, environmentAPI api.EnvironmentAPI) ecso.Command {
-	return &environmentAddCommand{
+func (c *EnvironmentAddCommand) WithDatadogAPIKey(apiKey string) *EnvironmentAddCommand {
+	c.datadogAPIKey = apiKey
+	return c
+}
+
+func (c *EnvironmentAddCommand) WithDNSZone(zone string) *EnvironmentAddCommand {
+	c.dnsZone = zone
+	return c
+}
+
+func (c *EnvironmentAddCommand) WithKeyPair(keyPair string) *EnvironmentAddCommand {
+	c.keyPair = keyPair
+	return c
+}
+
+func (c *EnvironmentAddCommand) WithSize(size int) *EnvironmentAddCommand {
+	c.size = size
+	return c
+}
+
+func (c *EnvironmentAddCommand) WithInstanceType(instanceType string) *EnvironmentAddCommand {
+	c.instanceType = instanceType
+	return c
+}
+
+func (c *EnvironmentAddCommand) WithAccount(account string) *EnvironmentAddCommand {
+	c.account = account
+	return c
+}
+
+func (c *EnvironmentAddCommand) WithRegion(region string) *EnvironmentAddCommand {
+	c.region = region
+	return c
+}
+
+func (c *EnvironmentAddCommand) WithInstanceSubnets(subnets string) *EnvironmentAddCommand {
+	c.instanceSubnets = subnets
+	return c
+}
+
+func (c *EnvironmentAddCommand) WithALBSubnets(subnets string) *EnvironmentAddCommand {
+	c.albSubnets = subnets
+	return c
+}
+
+func (c *EnvironmentAddCommand) WithVPCID(vpcID string) *EnvironmentAddCommand {
+	c.vpcID = vpcID
+	return c
+}
+
+func NewEnvironmentAddCommand(environmentName string, environmentAPI api.EnvironmentAPI) *EnvironmentAddCommand {
+	return &EnvironmentAddCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
 			environmentAPI:  environmentAPI,
@@ -43,7 +93,7 @@ func NewEnvironmentAddCommand(environmentName string, environmentAPI api.Environ
 	}
 }
 
-func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
+func (c *EnvironmentAddCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	project := ctx.Project
 	green := ui.NewBannerWriter(w, ui.GreenBold)
 
@@ -84,18 +134,11 @@ func (c *environmentAddCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w
 	return nil
 }
 
-func (c *environmentAddCommand) Validate(ctx *ecso.CommandContext) error {
+func (c *EnvironmentAddCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (c *environmentAddCommand) prompt(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
-	c.albSubnets = ctx.Options.String(EnvironmentAddALBSubnetsOption)
-	c.instanceSubnets = ctx.Options.String(EnvironmentAddInstanceSubnetsOption)
-	c.instanceType = ctx.Options.String(EnvironmentAddInstanceTypeOption)
-	c.region = ctx.Options.String(EnvironmentAddRegionOption)
-	c.size = ctx.Options.Int(EnvironmentAddSizeOption)
-	c.vpcID = ctx.Options.String(EnvironmentAddVPCOption)
-
+func (c *EnvironmentAddCommand) prompt(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	var (
 		project         = ctx.Project
 		prefs           = ctx.UserPreferences

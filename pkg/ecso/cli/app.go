@@ -23,32 +23,14 @@ func NewApp(cfg *config.Config, dispatcher dispatcher.Dispatcher) *cli.App {
 	// cli.ErrWriter = cfg.Logger().ErrWriter()
 	cli.ErrWriter = cfg.ErrWriter()
 
-	cliDispatcher := Dispatcher(dispatcher)
-
 	app.Commands = []cli.Command{
-		NewInitCliCommand(cliDispatcher),
-		NewEnvironmentCliCommand(cliDispatcher),
-		NewServiceCliCommand(cliDispatcher),
-		NewEnvCliCommand(cliDispatcher),
+		NewInitCliCommand(dispatcher),
+		NewEnvironmentCliCommand(dispatcher),
+		NewServiceCliCommand(dispatcher),
+		NewEnvCliCommand(dispatcher),
 	}
 
 	return app
-}
-
-// Dispatcher wraps a standard ecso dispatcher. It handles showing usage in the case of an arg or option error
-// and also wraps any errors in the cli ExitError type, to ensure correct exit codes are returned from the cli
-// process
-func Dispatcher(d dispatcher.Dispatcher) dispatcher.Dispatcher {
-	return dispatcher.DispatcherFunc(func(factory dispatcher.CommandFactory, cOptions ecso.CommandOptions, options ...func(*dispatcher.DispatchOptions)) error {
-		if err := d.Dispatch(factory, cOptions, options...); err != nil {
-			if ecso.IsArgumentRequiredError(err) || ecso.IsOptionRequiredError(err) {
-				cli.ShowSubcommandHelp(cOptions.(*cli.Context))
-			}
-
-			return cli.NewExitError(err.Error(), 1)
-		}
-		return nil
-	})
 }
 
 // CommandFactory is a function that creates an `ecso.Command` from a `cli.Context` and `config.Config`
@@ -65,6 +47,13 @@ func MakeEcsoCommandFactory(ctx *cli.Context, fn CommandFactory) dispatcher.Comm
 // with the urfave/cli command line interface semantics and types
 func MakeAction(dispatcher dispatcher.Dispatcher, factory CommandFactory, options ...func(*dispatcher.DispatchOptions)) func(*cli.Context) error {
 	return func(ctx *cli.Context) error {
-		return dispatcher.Dispatch(MakeEcsoCommandFactory(ctx, factory), ctx, options...)
+		if err := dispatcher.Dispatch(MakeEcsoCommandFactory(ctx, factory), options...); err != nil {
+			if ecso.IsArgumentRequiredError(err) || ecso.IsOptionRequiredError(err) {
+				cli.ShowSubcommandHelp(ctx)
+			}
+
+			return cli.NewExitError(err.Error(), 1)
+		}
+		return nil
 	}
 }

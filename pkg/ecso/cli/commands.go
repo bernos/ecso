@@ -12,7 +12,8 @@ import (
 
 func NewEnvCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return commands.NewEnvCommand(ctx.Args().First()), nil
+		return commands.NewEnvCommand(ctx.Args().First()).
+			WithUnset(ctx.Bool(commands.EnvUnsetOption)), nil
 	}
 
 	return cli.Command{
@@ -46,7 +47,13 @@ func NewEnvironmentCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 
 func NewEnvironmentAddCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return commands.NewEnvironmentAddCommand(ctx.Args().First(), cfg.EnvironmentAPI()), nil
+		return commands.NewEnvironmentAddCommand(ctx.Args().First(), cfg.EnvironmentAPI()).
+			WithALBSubnets(ctx.String(commands.EnvironmentAddALBSubnetsOption)).
+			WithInstanceSubnets(ctx.String(commands.EnvironmentAddInstanceSubnetsOption)).
+			WithInstanceType(ctx.String(commands.EnvironmentAddInstanceTypeOption)).
+			WithRegion(ctx.String(commands.EnvironmentAddRegionOption)).
+			WithSize(ctx.Int(commands.EnvironmentAddSizeOption)).
+			WithVPCID(ctx.String(commands.EnvironmentAddVPCOption)), nil
 	}
 
 	return cli.Command{
@@ -105,7 +112,8 @@ func NewEnvironmentDescribeCliCommand(dispatcher dispatcher.Dispatcher) cli.Comm
 func NewEnvironmentDownCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
-			return commands.NewEnvironmentDownCommand(name, cfg.EnvironmentAPI())
+			return commands.NewEnvironmentDownCommand(name, cfg.EnvironmentAPI()).
+				WithForce(ctx.Bool(commands.EnvironmentDownForceOption))
 		})
 	}
 
@@ -143,7 +151,8 @@ func NewEnvironmentPsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 func NewEnvironmentRmCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
-			return commands.NewEnvironmentRmCommand(name, cfg.EnvironmentAPI())
+			return commands.NewEnvironmentRmCommand(name, cfg.EnvironmentAPI()).
+				WithForce(ctx.Bool(commands.EnvironmentRmForceOption))
 		})
 	}
 
@@ -165,7 +174,9 @@ func NewEnvironmentRmCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 func NewEnvironmentUpCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
-			return commands.NewEnvironmentUpCommand(name, cfg.EnvironmentAPI())
+			return commands.NewEnvironmentUpCommand(name, cfg.EnvironmentAPI()).
+				WithDryRun(ctx.Bool(commands.EnvironmentUpDryRunOption)).
+				WithForce(ctx.Bool(commands.EnvironmentUpForceOption))
 		})
 	}
 
@@ -223,7 +234,10 @@ func NewServiceCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 
 func NewServiceAddCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return commands.NewServiceAddCommand(ctx.Args().First()), nil
+		return commands.NewServiceAddCommand(ctx.Args().First()).
+			WithDesiredCount(ctx.Int(commands.ServiceAddDesiredCountOption)).
+			WithRoute(ctx.String(commands.ServiceAddRouteOption)).
+			WithPort(ctx.Int(commands.ServiceAddPortOption)), nil
 	}
 
 	return cli.Command{
@@ -251,8 +265,8 @@ func NewServiceAddCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 
 func NewServiceDescribeCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeServiceCommand(ctx, func(name string) ecso.Command {
-			return commands.NewServiceDescribeCommand(name, cfg.ServiceAPI())
+		return makeServiceCommand(ctx, func(name, env string) ecso.Command {
+			return commands.NewServiceDescribeCommand(name, env, cfg.ServiceAPI())
 		})
 	}
 
@@ -274,8 +288,9 @@ func NewServiceDescribeCliCommand(dispatcher dispatcher.Dispatcher) cli.Command 
 
 func NewServiceDownCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeServiceCommand(ctx, func(name string) ecso.Command {
-			return commands.NewServiceDownCommand(name, cfg.ServiceAPI())
+		return makeServiceCommand(ctx, func(name, env string) ecso.Command {
+			return commands.NewServiceDownCommand(name, env, cfg.ServiceAPI()).
+				WithForce(ctx.Bool(commands.ServiceDownForceOption))
 		})
 	}
 
@@ -301,8 +316,8 @@ func NewServiceDownCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 
 func NewServiceEventsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeServiceCommand(ctx, func(name string) ecso.Command {
-			return commands.NewServiceEventsCommand(name, cfg.ServiceAPI())
+		return makeServiceCommand(ctx, func(name, env string) ecso.Command {
+			return commands.NewServiceEventsCommand(name, env, cfg.ServiceAPI())
 		})
 	}
 
@@ -323,8 +338,8 @@ func NewServiceEventsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 
 func NewServiceLogsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeServiceCommand(ctx, func(name string) ecso.Command {
-			return commands.NewServiceLogsCommand(name, cfg.ServiceAPI())
+		return makeServiceCommand(ctx, func(name, env string) ecso.Command {
+			return commands.NewServiceLogsCommand(name, env, cfg.ServiceAPI())
 		})
 	}
 
@@ -375,8 +390,8 @@ func NewServiceLsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 
 func NewServicePsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeServiceCommand(ctx, func(name string) ecso.Command {
-			return commands.NewServicePsCommand(name, cfg.ServiceAPI())
+		return makeServiceCommand(ctx, func(name, env string) ecso.Command {
+			return commands.NewServicePsCommand(name, env, cfg.ServiceAPI())
 		})
 	}
 
@@ -397,8 +412,9 @@ func NewServicePsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 
 func NewServiceRollbackCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeServiceCommand(ctx, func(name string) ecso.Command {
-			return commands.NewServiceRollbackCommand(name, cfg.ServiceAPI())
+		return makeServiceCommand(ctx, func(name, env string) ecso.Command {
+			return commands.NewServiceRollbackCommand(name, env, cfg.ServiceAPI()).
+				WithVersion(ctx.String(commands.ServiceRollbackVersionOption))
 		})
 	}
 
@@ -424,8 +440,8 @@ func NewServiceRollbackCliCommand(dispatcher dispatcher.Dispatcher) cli.Command 
 
 func NewServiceUpCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeServiceCommand(ctx, func(name string) ecso.Command {
-			return commands.NewServiceUpCommand(name, cfg.ServiceAPI())
+		return makeServiceCommand(ctx, func(name, env string) ecso.Command {
+			return commands.NewServiceUpCommand(name, env, cfg.ServiceAPI())
 		})
 	}
 
@@ -447,8 +463,8 @@ func NewServiceUpCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 
 func NewServiceVersionsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeServiceCommand(ctx, func(name string) ecso.Command {
-			return commands.NewServiceVersionsCommand(name, cfg.ServiceAPI())
+		return makeServiceCommand(ctx, func(name, env string) ecso.Command {
+			return commands.NewServiceVersionsCommand(name, env, cfg.ServiceAPI())
 		})
 	}
 
@@ -481,12 +497,17 @@ func makeEnvironmentCommand(c *cli.Context, fn func(string) ecso.Command) (ecso.
 	return fn(name), nil
 }
 
-func makeServiceCommand(c *cli.Context, fn func(string) ecso.Command) (ecso.Command, error) {
+func makeServiceCommand(c *cli.Context, fn func(name, environmentName string) ecso.Command) (ecso.Command, error) {
 	name := c.Args().First()
+	environmentName := c.String(commands.ServiceEnvironmentOption)
 
 	if name == "" {
 		return nil, ecso.NewArgumentRequiredError("service")
 	}
 
-	return fn(name), nil
+	if environmentName == "" {
+		return nil, ecso.NewOptionRequiredError("environment")
+	}
+
+	return fn(name, environmentName), nil
 }

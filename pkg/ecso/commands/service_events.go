@@ -11,11 +11,12 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-func NewServiceEventsCommand(name string, serviceAPI api.ServiceAPI) ecso.Command {
+func NewServiceEventsCommand(name string, environmentName string, serviceAPI api.ServiceAPI) ecso.Command {
 	return &serviceEventsCommand{
 		ServiceCommand: &ServiceCommand{
-			name:       name,
-			serviceAPI: serviceAPI,
+			name:            name,
+			environmentName: environmentName,
+			serviceAPI:      serviceAPI,
 		},
 	}
 }

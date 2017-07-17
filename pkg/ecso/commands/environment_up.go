@@ -16,8 +16,8 @@ const (
 	EnvironmentUpForceOption  = "force"
 )
 
-func NewEnvironmentUpCommand(environmentName string, environmentAPI api.EnvironmentAPI) ecso.Command {
-	return &envUpCommand{
+func NewEnvironmentUpCommand(environmentName string, environmentAPI api.EnvironmentAPI) *EnvironmentUpCommand {
+	return &EnvironmentUpCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
 			environmentAPI:  environmentAPI,
@@ -25,17 +25,24 @@ func NewEnvironmentUpCommand(environmentName string, environmentAPI api.Environm
 	}
 }
 
-type envUpCommand struct {
+type EnvironmentUpCommand struct {
 	*EnvironmentCommand
 
 	dryRun bool
 	force  bool
 }
 
-func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
-	cmd.dryRun = ctx.Options.Bool(EnvironmentUpDryRunOption)
-	cmd.force = ctx.Options.Bool(EnvironmentUpForceOption)
+func (cmd *EnvironmentUpCommand) WithDryRun(dryRun bool) *EnvironmentUpCommand {
+	cmd.dryRun = dryRun
+	return cmd
+}
 
+func (cmd *EnvironmentUpCommand) WithForce(force bool) *EnvironmentUpCommand {
+	cmd.force = force
+	return cmd
+}
+
+func (cmd *EnvironmentUpCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	var (
 		project = ctx.Project
 		env     = cmd.Environment(ctx)
@@ -78,7 +85,7 @@ func (cmd *envUpCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Wri
 	return nil
 }
 
-func (cmd *envUpCommand) ensureTemplates(ctx *ecso.CommandContext, project *ecso.Project, env *ecso.Environment) error {
+func (cmd *EnvironmentUpCommand) ensureTemplates(ctx *ecso.CommandContext, project *ecso.Project, env *ecso.Environment) error {
 	dst := env.GetCloudFormationTemplateDir()
 
 	exists, err := util.DirExists(dst)
@@ -100,7 +107,7 @@ func (cmd *envUpCommand) ensureTemplates(ctx *ecso.CommandContext, project *ecso
 	return resources.EnvironmentCloudFormationTemplates.WriteTo(dst, nil)
 }
 
-func (cmd *envUpCommand) ensureResources(ctx *ecso.CommandContext, project *ecso.Project, env *ecso.Environment) error {
+func (cmd *EnvironmentUpCommand) ensureResources(ctx *ecso.CommandContext, project *ecso.Project, env *ecso.Environment) error {
 	dst := env.GetResourceDir()
 
 	exists, err := util.DirExists(dst)

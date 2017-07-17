@@ -8,7 +8,6 @@ import (
 	"text/tabwriter"
 	"text/template"
 
-	"github.com/bernos/ecso/pkg/ecso"
 	ecsocli "github.com/bernos/ecso/pkg/ecso/cli"
 	"github.com/bernos/ecso/pkg/ecso/config"
 	"github.com/bernos/ecso/pkg/ecso/dispatcher"
@@ -16,7 +15,7 @@ import (
 )
 
 func main() {
-	dispatcher := dispatcher.DispatcherFunc(func(c dispatcher.CommandFactory, co ecso.CommandOptions, o ...func(*dispatcher.DispatchOptions)) error {
+	dispatcher := dispatcher.DispatcherFunc(func(c dispatcher.CommandFactory, o ...func(*dispatcher.DispatchOptions)) error {
 		return nil
 	})
 

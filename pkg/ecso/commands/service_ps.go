@@ -7,11 +7,12 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/api"
 )
 
-func NewServicePsCommand(name string, serviceAPI api.ServiceAPI) ecso.Command {
+func NewServicePsCommand(name string, environmentName string, serviceAPI api.ServiceAPI) ecso.Command {
 	return &servicePsCommand{
 		ServiceCommand: &ServiceCommand{
-			name:       name,
-			serviceAPI: serviceAPI,
+			name:            name,
+			environmentName: environmentName,
+			serviceAPI:      serviceAPI,
 		},
 	}
 }

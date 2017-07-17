@@ -16,21 +16,36 @@ const (
 	ServiceAddPortOption         = "port"
 )
 
-func NewServiceAddCommand(name string) ecso.Command {
-	return &serviceAddCommand{
+func NewServiceAddCommand(name string) *ServiceAddCommand {
+	return &ServiceAddCommand{
 		name:         name,
 		desiredCount: 1,
 	}
 }
 
-type serviceAddCommand struct {
+type ServiceAddCommand struct {
 	name         string
 	desiredCount int
 	route        string
 	port         int
 }
 
-func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
+func (cmd *ServiceAddCommand) WithDesiredCount(x int) *ServiceAddCommand {
+	cmd.desiredCount = x
+	return cmd
+}
+
+func (cmd *ServiceAddCommand) WithRoute(route string) *ServiceAddCommand {
+	cmd.route = route
+	return cmd
+}
+
+func (cmd *ServiceAddCommand) WithPort(x int) *ServiceAddCommand {
+	cmd.port = x
+	return cmd
+}
+
+func (cmd *ServiceAddCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	project := ctx.Project
 	green := ui.NewBannerWriter(w, ui.GreenBold)
 
@@ -78,16 +93,12 @@ func (cmd *serviceAddCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w i
 	return nil
 }
 
-func (cmd *serviceAddCommand) Validate(ctx *ecso.CommandContext) error {
+func (cmd *ServiceAddCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }
 
-func (cmd *serviceAddCommand) prompt(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
+func (cmd *ServiceAddCommand) prompt(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	blue := ui.NewBannerWriter(w, ui.BlueBold)
-
-	cmd.desiredCount = ctx.Options.Int(ServiceAddDesiredCountOption)
-	cmd.route = ctx.Options.String(ServiceAddRouteOption)
-	cmd.port = ctx.Options.Int(ServiceAddPortOption)
 
 	var prompts = struct {
 		Name         string
