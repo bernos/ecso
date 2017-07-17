@@ -20,7 +20,6 @@ func NewApp(cfg *config.Config, dispatcher dispatcher.Dispatcher) *cli.App {
 		},
 	}
 
-	// cli.ErrWriter = cfg.Logger().ErrWriter()
 	cli.ErrWriter = cfg.ErrWriter()
 
 	app.Commands = []cli.Command{
@@ -38,9 +37,9 @@ type CommandFactory func(*cli.Context, *config.Config) (ecso.Command, error)
 
 // MakeEcsoCommandFactory creates and ecso.CommandFactory from our local CommandFactory type
 func MakeEcsoCommandFactory(ctx *cli.Context, fn CommandFactory) dispatcher.CommandFactory {
-	return func(cfg *config.Config) (ecso.Command, error) {
+	return dispatcher.CommandFactoryFunc(func(cfg *config.Config) (ecso.Command, error) {
 		return fn(ctx, cfg)
-	}
+	})
 }
 
 // MakeAction is a factory func for generating wrapped ecso.Commands compatible

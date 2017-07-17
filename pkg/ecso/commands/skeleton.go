@@ -6,20 +6,20 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 )
 
-func NewSkeletonCommand(environmentName string) ecso.Command {
-	return &skeletonCommand{
+func NewSkeletonCommand(environmentName string) *SkeletonCommand {
+	return &SkeletonCommand{
 		environmentName: environmentName,
 	}
 }
 
-type skeletonCommand struct {
+type SkeletonCommand struct {
 	environmentName string
 }
 
-func (cmd *skeletonCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
+func (cmd *SkeletonCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	return nil
 }
 
-func (cmd *skeletonCommand) Validate(ctx *ecso.CommandContext) error {
+func (cmd *SkeletonCommand) Validate(ctx *ecso.CommandContext) error {
 	return nil
 }

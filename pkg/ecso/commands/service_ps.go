@@ -7,8 +7,8 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/api"
 )
 
-func NewServicePsCommand(name string, environmentName string, serviceAPI api.ServiceAPI) ecso.Command {
-	return &servicePsCommand{
+func NewServicePsCommand(name string, environmentName string, serviceAPI api.ServiceAPI) *ServicePsCommand {
+	return &ServicePsCommand{
 		ServiceCommand: &ServiceCommand{
 			name:            name,
 			environmentName: environmentName,
@@ -17,11 +17,11 @@ func NewServicePsCommand(name string, environmentName string, serviceAPI api.Ser
 	}
 }
 
-type servicePsCommand struct {
+type ServicePsCommand struct {
 	*ServiceCommand
 }
 
-func (cmd *servicePsCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
+func (cmd *ServicePsCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	var (
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)

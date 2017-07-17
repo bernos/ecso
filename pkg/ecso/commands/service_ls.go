@@ -16,8 +16,8 @@ const (
 	ServiceLsEnvironmentOption = "environment"
 )
 
-func NewServiceLsCommand(environmentName string, environmentAPI api.EnvironmentAPI) ecso.Command {
-	return &serviceLsCommand{
+func NewServiceLsCommand(environmentName string, environmentAPI api.EnvironmentAPI) *ServiceLsCommand {
+	return &ServiceLsCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
 			environmentAPI:  environmentAPI,
@@ -25,11 +25,11 @@ func NewServiceLsCommand(environmentName string, environmentAPI api.EnvironmentA
 	}
 }
 
-type serviceLsCommand struct {
+type ServiceLsCommand struct {
 	*EnvironmentCommand
 }
 
-func (cmd *serviceLsCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
+func (cmd *ServiceLsCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	env := cmd.Environment(ctx)
 
 	services, err := cmd.environmentAPI.GetECSServices(env)

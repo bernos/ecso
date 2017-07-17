@@ -11,8 +11,8 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-func NewServiceEventsCommand(name string, environmentName string, serviceAPI api.ServiceAPI) ecso.Command {
-	return &serviceEventsCommand{
+func NewServiceEventsCommand(name string, environmentName string, serviceAPI api.ServiceAPI) *ServiceEventsCommand {
+	return &ServiceEventsCommand{
 		ServiceCommand: &ServiceCommand{
 			name:            name,
 			environmentName: environmentName,
@@ -21,11 +21,11 @@ func NewServiceEventsCommand(name string, environmentName string, serviceAPI api
 	}
 }
 
-type serviceEventsCommand struct {
+type ServiceEventsCommand struct {
 	*ServiceCommand
 }
 
-func (cmd *serviceEventsCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
+func (cmd *ServiceEventsCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	var (
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)

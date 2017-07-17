@@ -13,24 +13,20 @@ const (
 	ServiceRollbackVersionOption = "version"
 )
 
-func NewServiceRollbackCommand(name string, environmentName string, serviceAPI api.ServiceAPI) *ServiceRollbackCommand {
+func NewServiceRollbackCommand(name string, environmentName string, version string, serviceAPI api.ServiceAPI) *ServiceRollbackCommand {
 	return &ServiceRollbackCommand{
 		ServiceCommand: &ServiceCommand{
 			name:            name,
 			environmentName: environmentName,
 			serviceAPI:      serviceAPI,
 		},
+		version: version,
 	}
 }
 
 type ServiceRollbackCommand struct {
 	*ServiceCommand
 	version string
-}
-
-func (cmd *ServiceRollbackCommand) WithVersion(version string) *ServiceRollbackCommand {
-	cmd.version = version
-	return cmd
 }
 
 func (cmd *ServiceRollbackCommand) Validate(ctx *ecso.CommandContext) error {

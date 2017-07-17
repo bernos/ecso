@@ -413,8 +413,11 @@ func NewServicePsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 func NewServiceRollbackCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, func(name, env string) ecso.Command {
-			return commands.NewServiceRollbackCommand(name, env, cfg.ServiceAPI()).
-				WithVersion(ctx.String(commands.ServiceRollbackVersionOption))
+			return commands.NewServiceRollbackCommand(
+				name,
+				env,
+				ctx.String(commands.ServiceRollbackVersionOption),
+				cfg.ServiceAPI())
 		})
 	}
 
