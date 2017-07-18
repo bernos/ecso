@@ -7,15 +7,9 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/config"
 )
 
-// CommandFactory builds an ecso.Command instance using the options from config
-type CommandFactory interface {
-	Build(*config.Config) (ecso.Command, error)
-}
-
-type CommandFactoryFunc func(*config.Config) (ecso.Command, error)
-
-func (fn CommandFactoryFunc) Build(cfg *config.Config) (ecso.Command, error) {
-	return fn(cfg)
+// Dispatcher executes an ecso Command
+type Dispatcher interface {
+	Dispatch(CommandFactory, ...func(*DispatchOptions)) error
 }
 
 // NewDispatcher creates a default Dispatcher for a Project, with the provided Config and
@@ -47,11 +41,6 @@ func NewDispatcher(project *ecso.Project, cfg *config.Config, prefs *ecso.UserPr
 
 		return cmd.Execute(ctx, cfg.Reader(), cfg.Writer())
 	})
-}
-
-// Dispatcher executes an ecso Command
-type Dispatcher interface {
-	Dispatch(CommandFactory, ...func(*DispatchOptions)) error
 }
 
 // DispatcherFunc is an adaptor to allow the use of ordinary functions as

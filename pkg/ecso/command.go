@@ -31,8 +31,7 @@ func CommandError(err error) Command {
 	})
 }
 
-// CommandContext provides access to configuration options and preferences
-// scoped to a running Command
+// CommandContext provides access to configuration and preferences scoped to a running Command
 type CommandContext struct {
 	EcsoVersion     string
 	Project         *Project
