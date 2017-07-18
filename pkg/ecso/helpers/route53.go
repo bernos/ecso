@@ -10,22 +10,20 @@ import (
 )
 
 type Route53Helper interface {
-	DeleteResourceRecordSetsByName(name, zone, reason string) error
+	DeleteResourceRecordSetsByName(name, zone, reason string, w io.Writer) error
 }
 
-func NewRoute53Helper(route53API route53iface.Route53API, w io.Writer) Route53Helper {
+func NewRoute53Helper(route53API route53iface.Route53API) Route53Helper {
 	return &route53Helper{
-		w:          w,
 		route53API: route53API,
 	}
 }
 
 type route53Helper struct {
-	w          io.Writer
 	route53API route53iface.Route53API
 }
 
-func (h *route53Helper) DeleteResourceRecordSetsByName(name, zone, reason string) error {
+func (h *route53Helper) DeleteResourceRecordSetsByName(name, zone, reason string, w io.Writer) error {
 	zones, err := h.route53API.ListHostedZonesByName(&route53.ListHostedZonesByNameInput{
 		DNSName: aws.String(zone),
 	})
@@ -52,7 +50,7 @@ func (h *route53Helper) DeleteResourceRecordSetsByName(name, zone, reason string
 					ResourceRecordSet: record,
 				})
 
-				fmt.Fprintf(h.w, "Deleting recordset %s\n", *record.Name)
+				fmt.Fprintf(w, "Deleting recordset %s\n", *record.Name)
 			}
 		}
 
@@ -67,10 +65,10 @@ func (h *route53Helper) DeleteResourceRecordSetsByName(name, zone, reason string
 				return err
 			}
 
-			fmt.Fprint(h.w, "Done\n")
+			fmt.Fprint(w, "Done\n")
 		} else {
 
-			fmt.Fprintf(h.w, "No recordsets matching '%s' found\n", name)
+			fmt.Fprintf(w, "No recordsets matching '%s' found\n", name)
 		}
 	}
 

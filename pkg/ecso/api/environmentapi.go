@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"time"
@@ -23,12 +22,12 @@ type EnvironmentAPI interface {
 	EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun bool) error
 	EnvironmentDown(p *ecso.Project, env *ecso.Environment) error
 	IsEnvironmentUp(env *ecso.Environment) (bool, error)
-	SendNotification(env *ecso.Environment, msg string) error
 	GetCurrentAWSAccount(region string) (string, error)
 	GetEcsoBucket(env *ecso.Environment) (string, error)
 	GetECSServices(env *ecso.Environment) ([]*ecs.Service, error)
 	GetECSTasks(env *ecso.Environment) ([]*ecs.Task, error)
 	GetECSContainers(env *ecso.Environment) (ContainerList, error)
+	SendNotification(env *ecso.Environment, msg string) error
 }
 
 // New creates a new API
@@ -42,38 +41,6 @@ func NewEnvironmentAPI(w io.Writer, registryFactory awsregistry.RegistryFactory)
 type environmentAPI struct {
 	w               io.Writer
 	registryFactory awsregistry.RegistryFactory
-}
-
-type EnvironmentDescription struct {
-	Name                     string
-	CloudFormationConsoleURL string
-	CloudWatchLogsConsoleURL string
-	ECSConsoleURL            string
-	ECSClusterBaseURL        string
-	CloudFormationOutputs    map[string]string
-}
-
-func (env *EnvironmentDescription) WriteTo(w io.Writer) (int64, error) {
-	buf := &bytes.Buffer{}
-	blue := ui.NewBannerWriter(buf, ui.BlueBold)
-	pw := ui.NewPrefixWriter(buf, "  ")
-	dt := ui.NewDefinitionWriter(pw, ":")
-
-	fmt.Fprintf(blue, "Details of the '%s' environment:", env.Name)
-	fmt.Fprintf(dt, "CloudFormation console:%s", env.CloudFormationConsoleURL)
-	fmt.Fprintf(dt, "CloudWatch logs:%s", env.CloudWatchLogsConsoleURL)
-	fmt.Fprintf(dt, "ECS console:%s", env.ECSConsoleURL)
-	fmt.Fprintf(dt, "ECS base URL:%s", env.ECSClusterBaseURL)
-
-	fmt.Fprintf(blue, "CloudFormation Outputs:")
-
-	for k, v := range env.CloudFormationOutputs {
-		fmt.Fprintf(dt, "%s:%s", k, v)
-	}
-
-	n, err := w.Write(buf.Bytes())
-
-	return int64(n), err
 }
 
 func (api *environmentAPI) GetCurrentAWSAccount(region string) (string, error) {
@@ -118,7 +85,7 @@ func (api *environmentAPI) DescribeEnvironment(env *ecso.Environment) (*Environm
 		return description, err
 	}
 
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewPrefixWriter(api.w, "  "))
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI())
 
 	outputs, err := cfn.GetStackOutputs(stack)
 
@@ -251,7 +218,7 @@ func (api *environmentAPI) IsEnvironmentUp(env *ecso.Environment) (bool, error) 
 		return false, err
 	}
 
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewPrefixWriter(api.w, "  "))
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI())
 
 	return cfn.StackExists(env.GetCloudFormationStackName())
 }
@@ -264,8 +231,8 @@ func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environmen
 	}
 
 	var (
-		cfnHelper      = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewPrefixWriter(api.w, "  "))
-		r53Helper      = helpers.NewRoute53Helper(reg.Route53API(), ui.NewPrefixWriter(api.w, "  "))
+		cfnHelper      = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI())
+		r53Helper      = helpers.NewRoute53Helper(reg.Route53API())
 		zone           = fmt.Sprintf("%s.", env.CloudFormationParameters["DNSZone"])
 		datadogDNSName = fmt.Sprintf("%s.%s.%s", "datadog", env.GetClusterName(), zone)
 		serviceAPI     = NewServiceAPI(api.w, api.registryFactory)
@@ -283,7 +250,7 @@ func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environmen
 
 	fmt.Fprintf(info, "Deleting environment Cloud Formation stack '%s'", env.GetCloudFormationStackName())
 
-	if err := cfnHelper.DeleteStack(env.GetCloudFormationStackName()); err != nil {
+	if err := cfnHelper.DeleteStack(env.GetCloudFormationStackName(), ui.NewPrefixWriter(api.w, "  ")); err != nil {
 		return err
 	}
 
@@ -292,7 +259,8 @@ func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environmen
 	return r53Helper.DeleteResourceRecordSetsByName(
 		datadogDNSName,
 		zone,
-		"Deleted by ecso environment rm")
+		"Deleted by ecso environment rm",
+		ui.NewPrefixWriter(api.w, "  "))
 }
 
 func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun bool) error {
@@ -350,7 +318,7 @@ func (api *environmentAPI) SendNotification(env *ecso.Environment, msg string) e
 		return err
 	}
 
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewPrefixWriter(api.w, "  "))
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI())
 
 	outputs, err := cfn.GetStackOutputs(stack)
 
@@ -390,8 +358,7 @@ func (api *environmentAPI) deployEnvironmentStack(reg awsregistry.Registry, buck
 		env.Region,
 		reg.CloudFormationAPI(),
 		reg.S3API(),
-		reg.STSAPI(),
-		ui.NewPrefixWriter(api.w, "  "))
+		reg.STSAPI())
 
 	if tags == nil {
 		tags = make(map[string]string)
@@ -404,12 +371,12 @@ func (api *environmentAPI) deployEnvironmentStack(reg awsregistry.Registry, buck
 	params["Version"] = version
 	params["S3KeyPrefix"] = env.GetBaseBucketPrefix()
 
-	pkg, err := cfn.Package(template, bucket, prefix, tags, params)
+	pkg, err := cfn.Package(template, bucket, prefix, tags, params, ui.NewPrefixWriter(api.w, "  "))
 	if err != nil {
 		return nil, err
 	}
 
-	return cfn.Deploy(pkg, stackName, dryRun)
+	return cfn.Deploy(pkg, stackName, dryRun, ui.NewPrefixWriter(api.w, "  "))
 }
 
 func (api *environmentAPI) uploadEnvironmentResources(reg awsregistry.Registry, bucket string, env *ecso.Environment, version string) error {
@@ -417,7 +384,7 @@ func (api *environmentAPI) uploadEnvironmentResources(reg awsregistry.Registry, 
 
 	fmt.Fprintf(info, "Uploading resources for the '%s' environment to S3", env.Name)
 
-	s3Helper := helpers.NewS3Helper(reg.S3API(), env.Region, ui.NewPrefixWriter(api.w, "  "))
+	s3Helper := helpers.NewS3Helper(reg.S3API(), env.Region)
 
-	return s3Helper.UploadDir(env.GetResourceDir(), bucket, env.GetResourceBucketPrefix())
+	return s3Helper.UploadDir(env.GetResourceDir(), bucket, env.GetResourceBucketPrefix(), ui.NewPrefixWriter(api.w, "  "))
 }

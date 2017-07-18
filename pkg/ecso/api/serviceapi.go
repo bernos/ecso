@@ -171,7 +171,7 @@ func (api *serviceAPI) GetECSService(p *ecso.Project, env *ecso.Environment, s *
 	}
 
 	var (
-		cfn    = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewPrefixWriter(api.w, "  "))
+		cfn    = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI())
 		ecsAPI = reg.ECSAPI()
 	)
 
@@ -273,7 +273,7 @@ func (api *serviceAPI) DescribeService(env *ecso.Environment, service *ecso.Serv
 		return nil, err
 	}
 
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewPrefixWriter(api.w, "  "))
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI())
 
 	envOutputs, err := cfn.GetStackOutputs(env.GetCloudFormationStackName())
 	if err != nil {
@@ -340,7 +340,7 @@ func (api *serviceAPI) ServiceEvents(p *ecso.Project, env *ecso.Environment, s *
 		return nil, fmt.Errorf("No service named %s is running", s.Name)
 	}
 
-	h := helpers.NewECSHelper(reg.ECSAPI(), ui.NewPrefixWriter(api.w, "  "))
+	h := helpers.NewECSHelper(reg.ECSAPI())
 
 	return h.LogServiceEvents(*runningService.ServiceArn, env.GetClusterName(), f), nil
 }
@@ -394,7 +394,7 @@ func (api *serviceAPI) ServiceRollback(project *ecso.Project, env *ecso.Environm
 		return nil, err
 	}
 
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewPrefixWriter(api.w, "  "))
+	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI())
 	pkg := helpers.NewPackage(bucket, service.GetDeploymentBucketPrefixForVersion(env, version), env.Region)
 
 	exists, err := cfn.PackageIsUploadedToS3(pkg)
@@ -489,12 +489,12 @@ func (api *serviceAPI) deployServiceStack(reg awsregistry.Registry, pkg *helpers
 	var (
 		stackName = service.GetCloudFormationStackName(env)
 		info      = ui.NewInfoWriter(api.w)
-		cfn       = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewPrefixWriter(api.w, "  "))
+		cfn       = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI())
 	)
 
 	fmt.Fprintf(info, "Deploying service cloudformation stack '%s'...", stackName)
 
-	result, err := cfn.Deploy(pkg, stackName, false)
+	result, err := cfn.Deploy(pkg, stackName, false, ui.NewPrefixWriter(api.w, "  "))
 	if err != nil {
 		return err
 	}
@@ -510,7 +510,7 @@ func (api *serviceAPI) packageAndDeployServiceStack(reg awsregistry.Registry, bu
 	var (
 		prefix   = service.GetDeploymentBucketPrefixForVersion(env, version)
 		template = service.GetCloudFormationTemplateFile()
-		cfn      = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewPrefixWriter(api.w, "  "))
+		cfn      = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI())
 	)
 
 	params, err := getServiceStackParameters(cfn, project, env, service, taskDefinition, version)
@@ -521,7 +521,7 @@ func (api *serviceAPI) packageAndDeployServiceStack(reg awsregistry.Registry, bu
 
 	tags := getServiceStackTags(project, env, service, version)
 
-	pkg, err := cfn.Package(template, bucket, prefix, tags, params)
+	pkg, err := cfn.Package(template, bucket, prefix, tags, params, ui.NewPrefixWriter(api.w, "  "))
 	if err != nil {
 		return err
 	}
@@ -646,14 +646,14 @@ func (api *serviceAPI) registerECSTaskDefinition(reg awsregistry.Registry, proje
 
 func (api *serviceAPI) clearServiceDNSRecords(reg awsregistry.Registry, env *ecso.Environment, service *ecso.Service) error {
 	var (
-		r53Helper = helpers.NewRoute53Helper(reg.Route53API(), ui.NewPrefixWriter(api.w, "  "))
+		r53Helper = helpers.NewRoute53Helper(reg.Route53API())
 		dnsName   = fmt.Sprintf("%s.%s.", service.Name, env.CloudFormationParameters["DNSZone"])
 		info      = ui.NewInfoWriter(api.w)
 	)
 
 	fmt.Fprintf(info, "Deleting any service SRV DNS records for %s...", dnsName)
 
-	if err := r53Helper.DeleteResourceRecordSetsByName(dnsName, env.CloudFormationParameters["DNSZone"], "Deleted by ecso service down"); err != nil {
+	if err := r53Helper.DeleteResourceRecordSetsByName(dnsName, env.CloudFormationParameters["DNSZone"], "Deleted by ecso service down", ui.NewPrefixWriter(api.w, "  ")); err != nil {
 		return err
 	}
 
@@ -663,7 +663,7 @@ func (api *serviceAPI) clearServiceDNSRecords(reg awsregistry.Registry, env *ecs
 func (api *serviceAPI) deleteServiceStack(reg awsregistry.Registry, env *ecso.Environment, service *ecso.Service) error {
 	var (
 		stack = service.GetCloudFormationStackName(env)
-		cfn   = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI(), ui.NewPrefixWriter(api.w, "  "))
+		cfn   = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI())
 		info  = ui.NewInfoWriter(api.w)
 	)
 
@@ -680,5 +680,5 @@ func (api *serviceAPI) deleteServiceStack(reg awsregistry.Registry, env *ecso.En
 		return nil
 	}
 
-	return cfn.DeleteStack(stack)
+	return cfn.DeleteStack(stack, ui.NewPrefixWriter(api.w, "  "))
 }
