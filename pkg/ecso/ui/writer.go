@@ -79,9 +79,15 @@ func (w *definitionWriter) Write(p []byte) (int, error) {
 		value = strings.Join(tokens[1:], w.delimiter)
 	}
 
-	str := fmt.Sprintf("%s\n  %s\n", bold(label), value)
+	if n, err := w.output.Write([]byte(fmt.Sprintf("%s\n", bold(label)))); err != nil {
+		return n, err
+	}
 
-	return w.output.Write([]byte(str))
+	if n, err := w.output.Write([]byte(fmt.Sprintf("  %s\n", value))); err != nil {
+		return n, err
+	}
+
+	return len(p), nil
 }
 
 type TableWriter struct {

@@ -36,7 +36,7 @@ func (c *Config) ServiceAPI() api.ServiceAPI {
 
 func (c *Config) EnvironmentAPI() api.EnvironmentAPI {
 	if c.environmentAPI == nil {
-		c.environmentAPI = api.NewEnvironmentAPI(c.w, c.awsRegistryFactory())
+		c.environmentAPI = api.NewEnvironmentAPI(c.awsRegistryFactory())
 	}
 	return c.environmentAPI
 }

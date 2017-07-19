@@ -65,7 +65,7 @@ func (cmd *EnvironmentUpCommand) Execute(ctx *ecso.CommandContext, r io.Reader, 
 		return err
 	}
 
-	if err := cmd.environmentAPI.EnvironmentUp(project, env, cmd.dryRun); err != nil {
+	if err := cmd.environmentAPI.EnvironmentUp(project, env, cmd.dryRun, w); err != nil {
 		return err
 	}
 

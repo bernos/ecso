@@ -42,7 +42,7 @@ func (cmd *EnvironmentRmCommand) Execute(ctx *ecso.CommandContext, r io.Reader, 
 
 	fmt.Fprintf(blue, "Removing '%s' environment", env.Name)
 
-	if err := cmd.environmentAPI.EnvironmentDown(project, env); err != nil {
+	if err := cmd.environmentAPI.EnvironmentDown(project, env, w); err != nil {
 		return err
 	}
 
