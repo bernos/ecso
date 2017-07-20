@@ -13,8 +13,8 @@ const (
 	EnvironmentDownForceOption = "force"
 )
 
-func NewEnvironmentDownCommand(environmentName string, environmentAPI api.EnvironmentAPI) ecso.Command {
-	return &environmentDownCommand{
+func NewEnvironmentDownCommand(environmentName string, environmentAPI api.EnvironmentAPI) *EnvironmentDownCommand {
+	return &EnvironmentDownCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
 			environmentAPI:  environmentAPI,
@@ -22,11 +22,17 @@ func NewEnvironmentDownCommand(environmentName string, environmentAPI api.Enviro
 	}
 }
 
-type environmentDownCommand struct {
+type EnvironmentDownCommand struct {
 	*EnvironmentCommand
+	force bool
 }
 
-func (cmd *environmentDownCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
+func (cmd *EnvironmentDownCommand) WithForce(force bool) *EnvironmentDownCommand {
+	cmd.force = force
+	return cmd
+}
+
+func (cmd *EnvironmentDownCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	var (
 		project = ctx.Project
 		env     = cmd.Environment(ctx)
@@ -36,7 +42,7 @@ func (cmd *environmentDownCommand) Execute(ctx *ecso.CommandContext, r io.Reader
 
 	fmt.Fprintf(blue, "Stopping '%s' environment", env.Name)
 
-	if err := cmd.environmentAPI.EnvironmentDown(project, env); err != nil {
+	if err := cmd.environmentAPI.EnvironmentDown(project, env, w); err != nil {
 		return err
 	}
 
@@ -45,13 +51,12 @@ func (cmd *environmentDownCommand) Execute(ctx *ecso.CommandContext, r io.Reader
 	return nil
 }
 
-func (cmd *environmentDownCommand) Validate(ctx *ecso.CommandContext) error {
+func (cmd *EnvironmentDownCommand) Validate(ctx *ecso.CommandContext) error {
 	if err := cmd.EnvironmentCommand.Validate(ctx); err != nil {
 		return err
 	}
 
-	force := ctx.Options.Bool(EnvironmentDownForceOption)
-	if !force {
+	if !cmd.force {
 		return ecso.NewOptionRequiredError(EnvironmentDownForceOption)
 	}
 

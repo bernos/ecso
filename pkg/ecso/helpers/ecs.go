@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -14,15 +13,13 @@ type ECSHelper interface {
 	LogServiceEvents(service, cluster string, logger func(*ecs.ServiceEvent, error)) (cancel func())
 }
 
-func NewECSHelper(ecsClient ecsiface.ECSAPI, w io.Writer) ECSHelper {
+func NewECSHelper(ecsClient ecsiface.ECSAPI) ECSHelper {
 	return &ecsHelper{
-		w:         w,
 		ecsClient: ecsClient,
 	}
 }
 
 type ecsHelper struct {
-	w         io.Writer
 	ecsClient ecsiface.ECSAPI
 }
 

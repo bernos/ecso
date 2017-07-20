@@ -12,18 +12,17 @@ const (
 )
 
 type ServiceCommand struct {
-	name       string
-	serviceAPI api.ServiceAPI
+	name            string
+	environmentName string
+	serviceAPI      api.ServiceAPI
 }
 
 func (cmd *ServiceCommand) Environment(ctx *ecso.CommandContext) *ecso.Environment {
-	environmentName := ctx.Options.String(ServiceEnvironmentOption)
-
-	if environmentName == "" {
+	if cmd.environmentName == "" {
 		return nil
 	}
 
-	return ctx.Project.Environments[environmentName]
+	return ctx.Project.Environments[cmd.environmentName]
 }
 
 func (cmd *ServiceCommand) Service(ctx *ecso.CommandContext) *ecso.Service {
@@ -35,7 +34,7 @@ func (cmd *ServiceCommand) Validate(ctx *ecso.CommandContext) error {
 		return fmt.Errorf("Name is required")
 	}
 
-	if ctx.Options.String(ServiceEnvironmentOption) == "" {
+	if cmd.environmentName == "" {
 		return fmt.Errorf("Environment is required")
 	}
 

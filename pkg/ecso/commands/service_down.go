@@ -13,20 +13,27 @@ const (
 	ServiceDownForceOption = "force"
 )
 
-func NewServiceDownCommand(name string, serviceAPI api.ServiceAPI) ecso.Command {
-	return &serviceDownCommand{
+func NewServiceDownCommand(name string, environmentName string, serviceAPI api.ServiceAPI) *ServiceDownCommand {
+	return &ServiceDownCommand{
 		ServiceCommand: &ServiceCommand{
-			name:       name,
-			serviceAPI: serviceAPI,
+			name:            name,
+			environmentName: environmentName,
+			serviceAPI:      serviceAPI,
 		},
 	}
 }
 
-type serviceDownCommand struct {
+type ServiceDownCommand struct {
 	*ServiceCommand
+	force bool
 }
 
-func (cmd *serviceDownCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
+func (cmd *ServiceDownCommand) WithForce(force bool) *ServiceDownCommand {
+	cmd.force = force
+	return cmd
+}
+
+func (cmd *ServiceDownCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	var (
 		env     = cmd.Environment(ctx)
 		service = cmd.Service(ctx)
@@ -45,14 +52,12 @@ func (cmd *serviceDownCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w 
 	return nil
 }
 
-func (cmd *serviceDownCommand) Validate(ctx *ecso.CommandContext) error {
+func (cmd *ServiceDownCommand) Validate(ctx *ecso.CommandContext) error {
 	if err := cmd.ServiceCommand.Validate(ctx); err != nil {
 		return err
 	}
 
-	force := ctx.Options.Bool(ServiceDownForceOption)
-
-	if !force {
+	if !cmd.force {
 		return ecso.NewOptionRequiredError(ServiceDownForceOption)
 	}
 

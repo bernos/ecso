@@ -1,23 +1,22 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/cli"
 	"github.com/bernos/ecso/pkg/ecso/config"
 	"github.com/bernos/ecso/pkg/ecso/dispatcher"
-	"github.com/bernos/ecso/pkg/ecso/log"
+	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
 var (
-	logger  = log.NewLogger(os.Stderr, "")
-	version = "0.0.2"
+	errWriter = ui.NewErrWriter(os.Stderr)
+	version   = "0.0.2"
 )
 
 func main() {
-	// fmt.Print(ui.BlueBanner("Hello"))
-	// ExitWithError(fmt.Errorf("asd"), 0)
 	project := MustLoadProject(ecso.LoadCurrentProject())
 	cfg := MustLoadConfig(config.NewConfig(version))
 	prefs := MustLoadUserPreferences(ecso.LoadCurrentUserPreferences())
@@ -32,7 +31,7 @@ func main() {
 }
 
 func ExitWithError(err error, code int) {
-	logger.Errorf(err.Error())
+	fmt.Fprintf(errWriter, "%s\n", err.Error())
 	os.Exit(code)
 }
 

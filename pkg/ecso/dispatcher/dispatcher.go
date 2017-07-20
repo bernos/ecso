@@ -7,12 +7,15 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/config"
 )
 
-type CommandFactory func(*config.Config) (ecso.Command, error)
+// Dispatcher executes an ecso Command
+type Dispatcher interface {
+	Dispatch(CommandFactory, ...func(*DispatchOptions)) error
+}
 
 // NewDispatcher creates a default Dispatcher for a Project, with the provided Config and
 // UserPreferences
 func NewDispatcher(project *ecso.Project, cfg *config.Config, prefs *ecso.UserPreferences) Dispatcher {
-	return DispatcherFunc(func(factory CommandFactory, cOptions ecso.CommandOptions, options ...func(*DispatchOptions)) error {
+	return DispatcherFunc(func(factory CommandFactory, options ...func(*DispatchOptions)) error {
 		opt := &DispatchOptions{
 			EnsureProjectExists: true,
 		}
@@ -25,9 +28,9 @@ func NewDispatcher(project *ecso.Project, cfg *config.Config, prefs *ecso.UserPr
 			return fmt.Errorf("No ecso project file was found")
 		}
 
-		ctx := ecso.NewCommandContext(project, prefs, cfg.Version, cOptions)
+		ctx := ecso.NewCommandContext(project, prefs, cfg.Version)
 
-		cmd, err := factory(cfg)
+		cmd, err := factory.Build(cfg)
 		if err != nil {
 			return err
 		}
@@ -40,18 +43,13 @@ func NewDispatcher(project *ecso.Project, cfg *config.Config, prefs *ecso.UserPr
 	})
 }
 
-// Dispatcher executes an ecso Command
-type Dispatcher interface {
-	Dispatch(CommandFactory, ecso.CommandOptions, ...func(*DispatchOptions)) error
-}
-
 // DispatcherFunc is an adaptor to allow the use of ordinary functions as
 // an ecso Dispatcher
-type DispatcherFunc func(CommandFactory, ecso.CommandOptions, ...func(*DispatchOptions)) error
+type DispatcherFunc func(CommandFactory, ...func(*DispatchOptions)) error
 
 // Dispatch calls fn(cmd, options...)
-func (fn DispatcherFunc) Dispatch(factory CommandFactory, cOptions ecso.CommandOptions, dOptions ...func(*DispatchOptions)) error {
-	return fn(factory, cOptions, dOptions...)
+func (fn DispatcherFunc) Dispatch(factory CommandFactory, options ...func(*DispatchOptions)) error {
+	return fn(factory, options...)
 }
 
 // DispatchOptions alter how a Dispatcher dispatches Commands

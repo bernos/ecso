@@ -9,20 +9,21 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-func NewServiceUpCommand(name string, serviceAPI api.ServiceAPI) ecso.Command {
-	return &serviceUpCommand{
+func NewServiceUpCommand(name string, environmentName string, serviceAPI api.ServiceAPI) *ServiceUpCommand {
+	return &ServiceUpCommand{
 		ServiceCommand: &ServiceCommand{
-			name:       name,
-			serviceAPI: serviceAPI,
+			name:            name,
+			environmentName: environmentName,
+			serviceAPI:      serviceAPI,
 		},
 	}
 }
 
-type serviceUpCommand struct {
+type ServiceUpCommand struct {
 	*ServiceCommand
 }
 
-func (cmd *serviceUpCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
+func (cmd *ServiceUpCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	var (
 		project = ctx.Project
 		env     = cmd.Environment(ctx)

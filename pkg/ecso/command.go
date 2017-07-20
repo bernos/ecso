@@ -31,28 +31,18 @@ func CommandError(err error) Command {
 	})
 }
 
-// CommandContext provides access to configuration options and preferences
-// scoped to a running Command
+// CommandContext provides access to configuration and preferences scoped to a running Command
 type CommandContext struct {
 	EcsoVersion     string
-	Options         CommandOptions
 	Project         *Project
 	UserPreferences *UserPreferences
 }
 
 // NewCommandContext creates a CommandContext
-func NewCommandContext(project *Project, preferences *UserPreferences, version string, options CommandOptions) *CommandContext {
+func NewCommandContext(project *Project, preferences *UserPreferences, version string /*, options CommandOptions*/) *CommandContext {
 	return &CommandContext{
-		Options:         options,
 		Project:         project,
 		UserPreferences: preferences,
 		EcsoVersion:     version,
 	}
-}
-
-// CommandOptions are optional settings used to alter command execution behaviour
-type CommandOptions interface {
-	String(name string) string
-	Bool(name string) bool
-	Int(name string) int
 }

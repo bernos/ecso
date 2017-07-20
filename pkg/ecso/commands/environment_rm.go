@@ -13,8 +13,8 @@ const (
 	EnvironmentRmForceOption = "force"
 )
 
-func NewEnvironmentRmCommand(environmentName string, environmentAPI api.EnvironmentAPI) ecso.Command {
-	return &environmentRmCommand{
+func NewEnvironmentRmCommand(environmentName string, environmentAPI api.EnvironmentAPI) *EnvironmentRmCommand {
+	return &EnvironmentRmCommand{
 		EnvironmentCommand: &EnvironmentCommand{
 			environmentName: environmentName,
 			environmentAPI:  environmentAPI,
@@ -22,11 +22,17 @@ func NewEnvironmentRmCommand(environmentName string, environmentAPI api.Environm
 	}
 }
 
-type environmentRmCommand struct {
+type EnvironmentRmCommand struct {
 	*EnvironmentCommand
+	force bool
 }
 
-func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
+func (cmd *EnvironmentRmCommand) WithForce(force bool) *EnvironmentRmCommand {
+	cmd.force = force
+	return cmd
+}
+
+func (cmd *EnvironmentRmCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	var (
 		project = ctx.Project
 		env     = cmd.Environment(ctx)
@@ -36,7 +42,7 @@ func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext, r io.Reader, 
 
 	fmt.Fprintf(blue, "Removing '%s' environment", env.Name)
 
-	if err := cmd.environmentAPI.EnvironmentDown(project, env); err != nil {
+	if err := cmd.environmentAPI.EnvironmentDown(project, env, w); err != nil {
 		return err
 	}
 
@@ -51,13 +57,12 @@ func (cmd *environmentRmCommand) Execute(ctx *ecso.CommandContext, r io.Reader, 
 	return nil
 }
 
-func (cmd *environmentRmCommand) Validate(ctx *ecso.CommandContext) error {
+func (cmd *EnvironmentRmCommand) Validate(ctx *ecso.CommandContext) error {
 	if err := cmd.EnvironmentCommand.Validate(ctx); err != nil {
 		return err
 	}
 
-	force := ctx.Options.Bool(EnvironmentRmForceOption)
-	if !force {
+	if !cmd.force {
 		return ecso.NewOptionRequiredError(EnvironmentRmForceOption)
 	}
 
