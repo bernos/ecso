@@ -252,7 +252,8 @@ func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environmen
 		return err
 	}
 
-	fmt.Fprintf(info, "\nDeleting %s SRV records", datadogDNSName)
+	fmt.Fprint(w, "\n")
+	fmt.Fprintf(info, "Deleting %s SRV records", datadogDNSName)
 
 	return r53Helper.DeleteResourceRecordSetsByName(
 		datadogDNSName,

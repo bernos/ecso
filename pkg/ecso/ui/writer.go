@@ -18,12 +18,7 @@ type prefixWriter struct {
 }
 
 func NewPrefixWriter(w io.Writer, prefix string) io.Writer {
-	switch parent := w.(type) {
-	case *prefixWriter:
-		return &prefixWriter{w: w, p: parent.p + prefix}
-	default:
-		return &prefixWriter{w: w, p: prefix}
-	}
+	return &prefixWriter{w: w, p: prefix}
 }
 
 func (pw *prefixWriter) Write(p []byte) (int, error) {
