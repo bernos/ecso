@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"strings"
 	"text/template"
@@ -10,7 +9,6 @@ import (
 	ecsocli "github.com/bernos/ecso/pkg/ecso/cli"
 	"github.com/bernos/ecso/pkg/ecso/config"
 	"github.com/bernos/ecso/pkg/ecso/dispatcher"
-	"gopkg.in/urfave/cli.v1"
 )
 
 var (
@@ -28,8 +26,18 @@ func main() {
 	}
 
 	app := ecsocli.NewApp(cfg, NoopDispatcher())
+	app.Setup()
 
-	WriteTo(app, os.Stdout)
+	templates := map[string]string{
+		"root":    rootTemplate,
+		"command": commandHelpTemplate,
+	}
+
+	tmpl := template.Must(parseTemplates(templates))
+
+	if err := tmpl.Execute(os.Stdout, app); err != nil {
+		panic(err)
+	}
 }
 
 // NoopDispatcher creates a dispatcher that does nothing. We need a dispatcher in order to create
@@ -41,67 +49,46 @@ func NoopDispatcher() dispatcher.Dispatcher {
 	})
 }
 
-func WriteTo(app *cli.App, w io.Writer) {
-	app.Setup()
-
-	fmt.Fprintln(w, "# ECSO ")
-	fmt.Fprintf(w, "\n#### Table of contents\n\n")
-
-	for _, command := range app.Commands {
-		fmt.Fprintf(w, "- [%s](#%s)\n", command.Name, command.Name)
-
-		for _, sub := range command.Subcommands {
-			fmt.Fprintf(w, "  * [%s](#%s-%s)\n", sub.Name, command.Name, sub.Name)
-		}
-	}
-
-	for _, command := range app.Commands {
-		WriteCommand(&Command{&command, nil}, w)
-
-		for _, sub := range command.Subcommands {
-			WriteCommand(&Command{&sub, &command}, w)
-		}
-	}
-}
-
-func WriteCommand(c *Command, w io.Writer) {
+func parseTemplates(templates map[string]string) (*template.Template, error) {
 	var t *template.Template
 
-	if c.Parent != nil {
-		t = SubCommandHelpTemplate
-	} else {
-		t = CommandHelpTemplate
+	for name, body := range templates {
+		var tmpl *template.Template
+
+		if t == nil {
+			t = template.New(name).Funcs(funcMap)
+		}
+
+		if name == t.Name() {
+			tmpl = t
+		} else {
+			tmpl = t.New(name)
+		}
+
+		_, err := tmpl.Parse(body)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	if err := t.Execute(w, c); err != nil {
-		panic(err)
-	}
+	return t, nil
 }
 
-type Command struct {
-	*cli.Command
-	Parent *cli.Command
-}
+var rootTemplate = `
+# ECSO
 
-var SubCommandHelpTemplate = template.Must(template.New("SubCommandHelp").Funcs(funcMap).Parse(`
-<a id="{{.Parent.Name}}-{{.Name}}"></a>
-## {{.Name}}
+#### Table of contents
+{{range .Commands}}{{$command:=.}}
+- [{{.Name}}](#{{.Name}})
+{{range .Subcommands}} * [{{.Name}}](#{{$command.Name}}-{{.Name}})
+{{end}} {{end}}
 
-{{.Usage}}{{if .Description}}
+{{range .Commands}}
+{{template "command" .}}
+{{end}}
+`
 
-{{.Description}}{{end}}
-
-` + "````" + `
-ecso {{.Parent.Name}} {{.Name}}{{if .VisibleFlags}} [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}
-` + "````" + `{{if .VisibleFlags}}
-
-#### Options
-| option | usage |
-|:---    |:---   |{{range .VisibleFlags}}
-| --{{.Name}} | {{.Usage}} |{{end}}{{end}}
-`))
-
-var CommandHelpTemplate = template.Must(template.New("CommandHelp").Funcs(funcMap).Parse(`
+var commandHelpTemplate = `
 <a id="{{.Name}}"></a>
 # {{.Name}}
 
@@ -120,5 +107,19 @@ ecso {{.Name}}{{if .Subcommands}} <command>{{end}}{{if .VisibleFlags}} [command 
 #### Options
 | option | usage |
 |:---    |:---   |{{range .VisibleFlags}}
-| --{{.Name}} | {{.Usage}} |{{end}}{{end}}
-`))
+| --{{.Name}} | {{.Usage}} |{{end}}{{end}}{{$Parent:=.}}{{range .Subcommands}} 
+<a id="{{$Parent.Name}}-{{.Name}}"></a>
+## {{.Name}}
+
+{{.Usage}}{{if .Description}}
+
+{{.Description}}{{end}}
+
+` + "````" + `
+ecso {{$Parent.Name}} {{.Name}}{{if .VisibleFlags}} [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}
+` + "````" + `{{if .VisibleFlags}}
+
+#### Options
+| option | usage |
+|:---    |:---   |{{range .VisibleFlags}}
+| --{{.Name}} | {{.Usage}} |{{end}}{{end}} {{end}}`
