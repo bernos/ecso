@@ -5,6 +5,7 @@
 - [init](#init)
 - [environment](#environment)
   * [add](#environment-add)
+  * [ps](#environment-ps)
   * [up](#environment-up)
   * [rm](#environment-rm)
   * [describe](#environment-describe)
@@ -18,6 +19,8 @@
   * [events](#service-events)
   * [logs](#service-logs)
   * [describe](#service-describe)
+  * [rollback](#service-rollback)
+  * [versions](#service-versions)
 - [env](#env)
 - [help](#help)
 
@@ -43,6 +46,7 @@ ecso environment <command> [arguments...]
 | Name  | Description |
 |:---   |:---         |
 | [add](#environment-add) | Add a new environment to the project | 
+| [ps](#environment-ps) | Lists containers running in an environment | 
 | [up](#environment-up) | Deploys the infrastructure for an ecso environment | 
 | [rm](#environment-rm) | Removes an ecso environment | 
 | [describe](#environment-describe) | Describes an ecso environment | 
@@ -67,6 +71,16 @@ ecso environment add [command options] [ENVIRONMENT]
 | --region | The AWS region to create the environment in |
 | --size | Then number of container instances to create |
 | --instance-type | The type of container instances to create |
+| --keypair | The keypair to use when accessing EC2 instances |
+
+<a id="environment-ps"></a>
+## ps
+
+Lists containers running in an environment
+
+````
+ecso environment ps ENVIRONMENT
+````
 
 <a id="environment-up"></a>
 ## up
@@ -83,6 +97,7 @@ ecso environment up [command options] ENVIRONMENT
 | option | usage |
 |:---    |:---   |
 | --dry-run | If set, list pending changes, but do not execute the updates. |
+| --force | Override warnings about first time environment deployments if cloud formation stack already exists |
 
 <a id="environment-rm"></a>
 ## rm
@@ -123,7 +138,7 @@ ecso environment down [command options] ENVIRONMENT
 #### Options
 | option | usage |
 |:---    |:---   |
-| --force | Required. Confirms the environment will be stopped |
+| --force | Required. Confirms the environment will be terminated |
 
 <a id="service"></a>
 # service
@@ -145,6 +160,8 @@ ecso service <command> [arguments...]
 | [events](#service-events) | List ECS events for a service | 
 | [logs](#service-logs) | output service logs | 
 | [describe](#service-describe) | Lists details of a deployed service | 
+| [rollback](#service-rollback) | Rollback a service to an earlier version | 
+| [versions](#service-versions) | Show available versions for a service | 
 
 
 <a id="service-add"></a>
@@ -196,6 +213,7 @@ ecso service down [command options] SERVICE
 | option | usage |
 |:---    |:---   |
 | --environment | The environment to terminate the service from |
+| --force | Required. Confirms the service will be terminated |
 
 <a id="service-ls"></a>
 ## ls
@@ -268,6 +286,37 @@ ecso service describe [command options] SERVICE
 | option | usage |
 |:---    |:---   |
 | --environment | The environment to query |
+
+<a id="service-rollback"></a>
+## rollback
+
+Rollback a service to an earlier version
+
+Replace the currently running service with a previously deployed service version
+
+````
+ecso service rollback [command options] SERVICE
+````
+
+#### Options
+| option | usage |
+|:---    |:---   |
+| --environment | The name of the environment to deploy to |
+| --version | The version to rollback to |
+
+<a id="service-versions"></a>
+## versions
+
+Show available versions for a service
+
+````
+ecso service versions [command options] SERVICE
+````
+
+#### Options
+| option | usage |
+|:---    |:---   |
+| --environment | The name of the environment |
 
 <a id="env"></a>
 # env

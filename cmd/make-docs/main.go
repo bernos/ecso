@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"strings"
-	"text/tabwriter"
 	"text/template"
 
 	ecsocli "github.com/bernos/ecso/pkg/ecso/cli"
@@ -14,11 +13,13 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
-func main() {
-	dispatcher := dispatcher.DispatcherFunc(func(c dispatcher.CommandFactory, o ...func(*dispatcher.DispatchOptions)) error {
-		return nil
-	})
+var (
+	funcMap = template.FuncMap{
+		"join": strings.Join,
+	}
+)
 
+func main() {
 	cfg, err := config.NewConfig("")
 
 	if err != nil {
@@ -26,35 +27,54 @@ func main() {
 		os.Exit(1)
 	}
 
-	app := ecsocli.NewApp(cfg, dispatcher)
+	app := ecsocli.NewApp(cfg, NoopDispatcher())
 
-	viaCustom(app)
+	WriteTo(app, os.Stdout)
 }
 
-func viaCustom(app *cli.App) {
+// NoopDispatcher creates a dispatcher that does nothing. We need a dispatcher in order to create
+// the ecso cli app so that we can introspect all the commands and subcommands when creating the
+// documentation
+func NoopDispatcher() dispatcher.Dispatcher {
+	return dispatcher.DispatcherFunc(func(c dispatcher.CommandFactory, o ...func(*dispatcher.DispatchOptions)) error {
+		return nil
+	})
+}
+
+func WriteTo(app *cli.App, w io.Writer) {
 	app.Setup()
 
-	fmt.Println("# ECSO ")
-	fmt.Printf("\n#### Table of contents\n\n")
+	fmt.Fprintln(w, "# ECSO ")
+	fmt.Fprintf(w, "\n#### Table of contents\n\n")
 
 	for _, command := range app.Commands {
-		fmt.Printf("- [%s](#%s)\n", command.Name, command.Name)
+		fmt.Fprintf(w, "- [%s](#%s)\n", command.Name, command.Name)
 
 		for _, sub := range command.Subcommands {
-			fmt.Printf("  * [%s](#%s-%s)\n", sub.Name, command.Name, sub.Name)
+			fmt.Fprintf(w, "  * [%s](#%s-%s)\n", sub.Name, command.Name, sub.Name)
 		}
 	}
 
 	for _, command := range app.Commands {
-		printHelp(os.Stdout, CustomSubCommandHelpTemplate, &Command{
-			Command: &command,
-		})
+		WriteCommand(&Command{&command, nil}, w)
+
 		for _, sub := range command.Subcommands {
-			printHelp(os.Stdout, CustomCommandHelpTemplate, &Command{
-				Command: &sub,
-				Parent:  &command,
-			})
+			WriteCommand(&Command{&sub, &command}, w)
 		}
+	}
+}
+
+func WriteCommand(c *Command, w io.Writer) {
+	var t *template.Template
+
+	if c.Parent != nil {
+		t = SubCommandHelpTemplate
+	} else {
+		t = CommandHelpTemplate
+	}
+
+	if err := t.Execute(w, c); err != nil {
+		panic(err)
 	}
 }
 
@@ -63,7 +83,7 @@ type Command struct {
 	Parent *cli.Command
 }
 
-var CustomCommandHelpTemplate = `
+var SubCommandHelpTemplate = template.Must(template.New("SubCommandHelp").Funcs(funcMap).Parse(`
 <a id="{{.Parent.Name}}-{{.Name}}"></a>
 ## {{.Name}}
 
@@ -79,9 +99,9 @@ ecso {{.Parent.Name}} {{.Name}}{{if .VisibleFlags}} [command options]{{end}} {{i
 | option | usage |
 |:---    |:---   |{{range .VisibleFlags}}
 | --{{.Name}} | {{.Usage}} |{{end}}{{end}}
-`
+`))
 
-var CustomSubCommandHelpTemplate = `
+var CommandHelpTemplate = template.Must(template.New("CommandHelp").Funcs(funcMap).Parse(`
 <a id="{{.Name}}"></a>
 # {{.Name}}
 
@@ -101,23 +121,4 @@ ecso {{.Name}}{{if .Subcommands}} <command>{{end}}{{if .VisibleFlags}} [command 
 | option | usage |
 |:---    |:---   |{{range .VisibleFlags}}
 | --{{.Name}} | {{.Usage}} |{{end}}{{end}}
-`
-
-func printHelp(out io.Writer, templ string, data interface{}) {
-	funcMap := template.FuncMap{
-		"join": strings.Join,
-	}
-
-	w := tabwriter.NewWriter(out, 0, 8, 1, '\t', 0)
-	t := template.Must(template.New("help").Funcs(funcMap).Parse(templ))
-	err := t.Execute(w, data)
-	if err != nil {
-		// If the writer is closed, t.Execute will fail, and there's nothing
-		// we can do to recover.
-		if os.Getenv("CLI_TEMPLATE_ERROR_DEBUG") != "" {
-			// fmt.Fprintf(ErrWriter, "CLI TEMPLATE ERROR: %#v\n", err)
-		}
-		return
-	}
-	w.Flush()
-}
+`))

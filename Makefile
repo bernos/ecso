@@ -20,14 +20,14 @@ clean:
 	go clean ./... && rm -rf ./$(RELEASE_DIR)
 
 clean-docs:
-	rm -f ./docs.md
+	rm -f ./docs/docs.md
 
 deps:
 	@echo "\n$(OK_COLOR)====> Fetching depenencies$(NO_COLOR)"
 	go get github.com/aktau/github-release
 
 docs: test build clean-docs
-	go run cmd/make-docs/main.go > docs.md
+	go run cmd/make-docs/main.go > ./docs/docs.md
 
 install: test
 	@echo "\n$(OK_COLOR)====> Installing$(NO_COLOR)"
