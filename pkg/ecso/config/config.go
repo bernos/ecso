@@ -87,10 +87,11 @@ func NewConfig(version string, options ...func(*Config)) (*Config, error) {
 	}
 
 	cfg := &Config{
-		Version: version,
-		w:       os.Stderr,
-		reader:  os.Stdin,
-		sess:    sess,
+		Version:  version,
+		w:        os.Stderr,
+		reader:   os.Stdin,
+		sess:     sess,
+		sessions: make(map[string]*session.Session),
 	}
 
 	for _, o := range options {
