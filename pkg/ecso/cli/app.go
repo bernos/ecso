@@ -8,7 +8,7 @@ import (
 )
 
 // NewApp creates a new `cli.App` interface for the ecso command line utility
-func NewApp(cfg *config.Config, dispatcher dispatcher.Dispatcher) *cli.App {
+func NewApp(cfg *config.Config, project *ecso.Project, dispatcher dispatcher.Dispatcher) *cli.App {
 	app := cli.NewApp()
 	app.Name = "ecso"
 	app.Usage = "Manage Amazon ECS projects"
@@ -23,10 +23,10 @@ func NewApp(cfg *config.Config, dispatcher dispatcher.Dispatcher) *cli.App {
 	cli.ErrWriter = cfg.ErrWriter()
 
 	app.Commands = []cli.Command{
-		NewInitCliCommand(dispatcher),
-		NewEnvironmentCliCommand(dispatcher),
-		NewServiceCliCommand(dispatcher),
-		NewEnvCliCommand(dispatcher),
+		NewInitCliCommand(project, dispatcher),
+		NewEnvironmentCliCommand(project, dispatcher),
+		NewServiceCliCommand(project, dispatcher),
+		NewEnvCliCommand(project, dispatcher),
 	}
 
 	return app

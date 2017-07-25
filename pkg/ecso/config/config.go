@@ -15,9 +15,6 @@ type Config struct {
 	w      io.Writer
 	reader io.Reader
 	r      awsregistry.RegistryFactory
-
-	serviceAPI     api.ServiceAPI
-	environmentAPI api.EnvironmentAPI
 }
 
 func (c *Config) awsRegistryFactory() awsregistry.RegistryFactory {
@@ -27,18 +24,30 @@ func (c *Config) awsRegistryFactory() awsregistry.RegistryFactory {
 	return c.r
 }
 
-func (c *Config) ServiceAPI() api.ServiceAPI {
-	if c.serviceAPI == nil {
-		c.serviceAPI = api.NewServiceAPI(c.w, c.awsRegistryFactory())
-	}
-	return c.serviceAPI
+func (c *Config) ServiceAPI(region string) api.ServiceAPI {
+	reg := awsregistry.Must(awsregistry.DefaultRegistryFactory.ForRegion(region))
+
+	return api.NewServiceAPI(
+		reg.CloudFormationAPI(),
+		reg.CloudWatchLogsAPI(),
+		reg.ECSAPI(),
+		reg.Route53API(),
+		reg.S3API(),
+		reg.SNSAPI(),
+		reg.STSAPI())
 }
 
-func (c *Config) EnvironmentAPI() api.EnvironmentAPI {
-	if c.environmentAPI == nil {
-		c.environmentAPI = api.NewEnvironmentAPI(c.awsRegistryFactory())
-	}
-	return c.environmentAPI
+func (c *Config) EnvironmentAPI(region string) api.EnvironmentAPI {
+	reg := awsregistry.Must(awsregistry.DefaultRegistryFactory.ForRegion(region))
+
+	return api.NewEnvironmentAPI(
+		reg.CloudFormationAPI(),
+		reg.CloudWatchLogsAPI(),
+		reg.ECSAPI(),
+		reg.Route53API(),
+		reg.S3API(),
+		reg.SNSAPI(),
+		reg.STSAPI())
 }
 
 func (c *Config) Writer() io.Writer {

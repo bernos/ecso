@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/bernos/ecso/pkg/ecso"
@@ -10,7 +11,7 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
-func NewEnvCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewEnvCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return commands.NewEnvCommand(ctx.Args().First()).
 			WithUnset(ctx.Bool(commands.EnvUnsetOption)), nil
@@ -30,24 +31,29 @@ func NewEnvCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	}
 }
 
-func NewEnvironmentCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewEnvironmentCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	return cli.Command{
 		Name:  "environment",
 		Usage: "Manage ecso environments",
 		Subcommands: []cli.Command{
-			NewEnvironmentAddCliCommand(dispatcher),
-			NewEnvironmentPsCliCommand(dispatcher),
-			NewEnvironmentUpCliCommand(dispatcher),
-			NewEnvironmentRmCliCommand(dispatcher),
-			NewEnvironmentDescribeCliCommand(dispatcher),
-			NewEnvironmentDownCliCommand(dispatcher),
+			NewEnvironmentAddCliCommand(project, dispatcher),
+			NewEnvironmentPsCliCommand(project, dispatcher),
+			NewEnvironmentUpCliCommand(project, dispatcher),
+			NewEnvironmentRmCliCommand(project, dispatcher),
+			NewEnvironmentDescribeCliCommand(project, dispatcher),
+			NewEnvironmentDownCliCommand(project, dispatcher),
 		},
 	}
 }
 
-func NewEnvironmentAddCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewEnvironmentAddCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return commands.NewEnvironmentAddCommand(ctx.Args().First(), cfg.EnvironmentAPI()).
+		region := ctx.String(commands.EnvironmentAddRegionOption)
+		if region == "" {
+			region = "ap-southeast-2"
+		}
+
+		return commands.NewEnvironmentAddCommand(ctx.Args().First(), cfg.EnvironmentAPI(region)).
 			WithALBSubnets(ctx.String(commands.EnvironmentAddALBSubnetsOption)).
 			WithInstanceSubnets(ctx.String(commands.EnvironmentAddInstanceSubnetsOption)).
 			WithInstanceType(ctx.String(commands.EnvironmentAddInstanceTypeOption)).
@@ -94,10 +100,10 @@ func NewEnvironmentAddCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	}
 }
 
-func NewEnvironmentDescribeCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewEnvironmentDescribeCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
-			return commands.NewEnvironmentDescribeCommand(name, cfg.EnvironmentAPI())
+		return makeEnvironmentCommand(ctx, project, func(env *ecso.Environment) ecso.Command {
+			return commands.NewEnvironmentDescribeCommand(env.Name, cfg.EnvironmentAPI(env.Region))
 		})
 	}
 
@@ -109,10 +115,10 @@ func NewEnvironmentDescribeCliCommand(dispatcher dispatcher.Dispatcher) cli.Comm
 	}
 }
 
-func NewEnvironmentDownCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewEnvironmentDownCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
-			return commands.NewEnvironmentDownCommand(name, cfg.EnvironmentAPI()).
+		return makeEnvironmentCommand(ctx, project, func(env *ecso.Environment) ecso.Command {
+			return commands.NewEnvironmentDownCommand(env.Name, cfg.EnvironmentAPI(env.Region)).
 				WithForce(ctx.Bool(commands.EnvironmentDownForceOption))
 		})
 	}
@@ -132,10 +138,10 @@ func NewEnvironmentDownCliCommand(dispatcher dispatcher.Dispatcher) cli.Command 
 	}
 }
 
-func NewEnvironmentPsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewEnvironmentPsCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
-			return commands.NewEnvironmentPsCommand(name, cfg.EnvironmentAPI())
+		return makeEnvironmentCommand(ctx, project, func(env *ecso.Environment) ecso.Command {
+			return commands.NewEnvironmentPsCommand(env.Name, cfg.EnvironmentAPI(env.Region))
 		})
 	}
 
@@ -148,10 +154,10 @@ func NewEnvironmentPsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	}
 }
 
-func NewEnvironmentRmCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewEnvironmentRmCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
-			return commands.NewEnvironmentRmCommand(name, cfg.EnvironmentAPI()).
+		return makeEnvironmentCommand(ctx, project, func(env *ecso.Environment) ecso.Command {
+			return commands.NewEnvironmentRmCommand(env.Name, cfg.EnvironmentAPI(env.Region)).
 				WithForce(ctx.Bool(commands.EnvironmentRmForceOption))
 		})
 	}
@@ -171,10 +177,10 @@ func NewEnvironmentRmCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	}
 }
 
-func NewEnvironmentUpCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewEnvironmentUpCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeEnvironmentCommand(ctx, func(name string) ecso.Command {
-			return commands.NewEnvironmentUpCommand(name, cfg.EnvironmentAPI()).
+		return makeEnvironmentCommand(ctx, project, func(env *ecso.Environment) ecso.Command {
+			return commands.NewEnvironmentUpCommand(env.Name, cfg.EnvironmentAPI(env.Region)).
 				WithDryRun(ctx.Bool(commands.EnvironmentUpDryRunOption)).
 				WithForce(ctx.Bool(commands.EnvironmentUpForceOption))
 		})
@@ -199,7 +205,7 @@ func NewEnvironmentUpCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	}
 }
 
-func NewInitCliCommand(d dispatcher.Dispatcher) cli.Command {
+func NewInitCliCommand(project *ecso.Project, d dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return commands.NewInitCommand(ctx.Args().First()), nil
 	}
@@ -213,26 +219,26 @@ func NewInitCliCommand(d dispatcher.Dispatcher) cli.Command {
 	}
 }
 
-func NewServiceCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewServiceCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	return cli.Command{
 		Name:  "service",
 		Usage: "Manage ecso services",
 		Subcommands: []cli.Command{
-			NewServiceAddCliCommand(dispatcher),
-			NewServiceUpCliCommand(dispatcher),
-			NewServiceDownCliCommand(dispatcher),
-			NewServiceLsCliCommand(dispatcher),
-			NewServicePsCliCommand(dispatcher),
-			NewServiceEventsCliCommand(dispatcher),
-			NewServiceLogsCliCommand(dispatcher),
-			NewServiceDescribeCliCommand(dispatcher),
-			NewServiceRollbackCliCommand(dispatcher),
-			NewServiceVersionsCliCommand(dispatcher),
+			NewServiceAddCliCommand(project, dispatcher),
+			NewServiceUpCliCommand(project, dispatcher),
+			NewServiceDownCliCommand(project, dispatcher),
+			NewServiceLsCliCommand(project, dispatcher),
+			NewServicePsCliCommand(project, dispatcher),
+			NewServiceEventsCliCommand(project, dispatcher),
+			NewServiceLogsCliCommand(project, dispatcher),
+			NewServiceDescribeCliCommand(project, dispatcher),
+			NewServiceRollbackCliCommand(project, dispatcher),
+			NewServiceVersionsCliCommand(project, dispatcher),
 		},
 	}
 }
 
-func NewServiceAddCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewServiceAddCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return commands.NewServiceAddCommand(ctx.Args().First()).
 			WithDesiredCount(ctx.Int(commands.ServiceAddDesiredCountOption)).
@@ -263,10 +269,10 @@ func NewServiceAddCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	}
 }
 
-func NewServiceDescribeCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewServiceDescribeCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeServiceCommand(ctx, func(name, env string) ecso.Command {
-			return commands.NewServiceDescribeCommand(name, env, cfg.ServiceAPI())
+		return makeServiceCommand(ctx, project, func(service *ecso.Service, env *ecso.Environment) ecso.Command {
+			return commands.NewServiceDescribeCommand(service.Name, env.Name, cfg.ServiceAPI(env.Region))
 		})
 	}
 
@@ -286,10 +292,10 @@ func NewServiceDescribeCliCommand(dispatcher dispatcher.Dispatcher) cli.Command 
 	}
 }
 
-func NewServiceDownCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewServiceDownCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeServiceCommand(ctx, func(name, env string) ecso.Command {
-			return commands.NewServiceDownCommand(name, env, cfg.ServiceAPI()).
+		return makeServiceCommand(ctx, project, func(service *ecso.Service, env *ecso.Environment) ecso.Command {
+			return commands.NewServiceDownCommand(service.Name, env.Name, cfg.ServiceAPI(env.Region)).
 				WithForce(ctx.Bool(commands.ServiceDownForceOption))
 		})
 	}
@@ -314,10 +320,10 @@ func NewServiceDownCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	}
 }
 
-func NewServiceEventsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewServiceEventsCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeServiceCommand(ctx, func(name, env string) ecso.Command {
-			return commands.NewServiceEventsCommand(name, env, cfg.ServiceAPI())
+		return makeServiceCommand(ctx, project, func(service *ecso.Service, env *ecso.Environment) ecso.Command {
+			return commands.NewServiceEventsCommand(service.Name, env.Name, cfg.ServiceAPI(env.Region))
 		})
 	}
 
@@ -336,10 +342,10 @@ func NewServiceEventsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	}
 }
 
-func NewServiceLogsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewServiceLogsCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeServiceCommand(ctx, func(name, env string) ecso.Command {
-			return commands.NewServiceLogsCommand(name, env, cfg.ServiceAPI())
+		return makeServiceCommand(ctx, project, func(service *ecso.Service, env *ecso.Environment) ecso.Command {
+			return commands.NewServiceLogsCommand(service.Name, env.Name, cfg.ServiceAPI(env.Region))
 		})
 	}
 
@@ -358,7 +364,7 @@ func NewServiceLogsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	}
 }
 
-func NewServiceLsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewServiceLsCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		e := ctx.String(commands.ServiceLsEnvironmentOption)
 
@@ -370,7 +376,11 @@ func NewServiceLsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 			return nil, ecso.NewArgumentRequiredError("environment")
 		}
 
-		return commands.NewServiceLsCommand(e, cfg.EnvironmentAPI()), nil
+		if !project.HasEnvironment(e) {
+			return nil, fmt.Errorf("Environment '%s' does not exist in the project", e)
+		}
+
+		return commands.NewServiceLsCommand(e, cfg.EnvironmentAPI(project.Environments[e].Region)), nil
 	}
 
 	return cli.Command{
@@ -388,10 +398,10 @@ func NewServiceLsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	}
 }
 
-func NewServicePsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewServicePsCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeServiceCommand(ctx, func(name, env string) ecso.Command {
-			return commands.NewServicePsCommand(name, env, cfg.ServiceAPI())
+		return makeServiceCommand(ctx, project, func(service *ecso.Service, env *ecso.Environment) ecso.Command {
+			return commands.NewServicePsCommand(service.Name, env.Name, cfg.ServiceAPI(env.Region))
 		})
 	}
 
@@ -410,14 +420,14 @@ func NewServicePsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	}
 }
 
-func NewServiceRollbackCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewServiceRollbackCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeServiceCommand(ctx, func(name, env string) ecso.Command {
+		return makeServiceCommand(ctx, project, func(service *ecso.Service, env *ecso.Environment) ecso.Command {
 			return commands.NewServiceRollbackCommand(
-				name,
-				env,
+				service.Name,
+				env.Name,
 				ctx.String(commands.ServiceRollbackVersionOption),
-				cfg.ServiceAPI())
+				cfg.ServiceAPI(env.Region))
 		})
 	}
 
@@ -441,10 +451,10 @@ func NewServiceRollbackCliCommand(dispatcher dispatcher.Dispatcher) cli.Command 
 	}
 }
 
-func NewServiceUpCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewServiceUpCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeServiceCommand(ctx, func(name, env string) ecso.Command {
-			return commands.NewServiceUpCommand(name, env, cfg.ServiceAPI())
+		return makeServiceCommand(ctx, project, func(service *ecso.Service, env *ecso.Environment) ecso.Command {
+			return commands.NewServiceUpCommand(service.Name, env.Name, cfg.ServiceAPI(env.Region))
 		})
 	}
 
@@ -464,10 +474,10 @@ func NewServiceUpCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
 	}
 }
 
-func NewServiceVersionsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command {
+func NewServiceVersionsCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		return makeServiceCommand(ctx, func(name, env string) ecso.Command {
-			return commands.NewServiceVersionsCommand(name, env, cfg.ServiceAPI())
+		return makeServiceCommand(ctx, project, func(service *ecso.Service, env *ecso.Environment) ecso.Command {
+			return commands.NewServiceVersionsCommand(service.Name, env.Name, cfg.ServiceAPI(env.Region))
 		})
 	}
 
@@ -486,7 +496,7 @@ func NewServiceVersionsCliCommand(dispatcher dispatcher.Dispatcher) cli.Command 
 	}
 }
 
-func makeEnvironmentCommand(c *cli.Context, fn func(string) ecso.Command) (ecso.Command, error) {
+func makeEnvironmentCommand(c *cli.Context, project *ecso.Project, fn func(*ecso.Environment) ecso.Command) (ecso.Command, error) {
 	name := c.Args().First()
 
 	if name == "" {
@@ -497,10 +507,14 @@ func makeEnvironmentCommand(c *cli.Context, fn func(string) ecso.Command) (ecso.
 		return nil, ecso.NewArgumentRequiredError("environment")
 	}
 
-	return fn(name), nil
+	if !project.HasEnvironment(name) {
+		return nil, fmt.Errorf("Environment '%s' does not exist in the project", name)
+	}
+
+	return fn(project.Environments[name]), nil
 }
 
-func makeServiceCommand(c *cli.Context, fn func(name, environmentName string) ecso.Command) (ecso.Command, error) {
+func makeServiceCommand(c *cli.Context, project *ecso.Project, fn func(*ecso.Service, *ecso.Environment) ecso.Command) (ecso.Command, error) {
 	name := c.Args().First()
 	environmentName := c.String(commands.ServiceEnvironmentOption)
 
@@ -512,5 +526,13 @@ func makeServiceCommand(c *cli.Context, fn func(name, environmentName string) ec
 		return nil, ecso.NewOptionRequiredError("environment")
 	}
 
-	return fn(name, environmentName), nil
+	if !project.HasService(name) {
+		return nil, fmt.Errorf("Service '%s' does not exist in the project", name)
+	}
+
+	if !project.HasEnvironment(environmentName) {
+		return nil, fmt.Errorf("Environment '%s' does not exist in the project", name)
+	}
+
+	return fn(project.Services[name], project.Environments[environmentName]), nil
 }

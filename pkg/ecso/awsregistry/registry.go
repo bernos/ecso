@@ -25,6 +25,13 @@ var (
 	registries map[string]*registry = make(map[string]*registry)
 )
 
+func Must(r Registry, err error) Registry {
+	if err != nil {
+		panic(err)
+	}
+	return r
+}
+
 type RegistryFactory interface {
 	ForRegion(string) (Registry, error)
 }

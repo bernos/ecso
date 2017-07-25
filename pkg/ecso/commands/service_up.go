@@ -34,7 +34,7 @@ func (cmd *ServiceUpCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io
 
 	fmt.Fprintf(blue, "Deploying service '%s' to the '%s' environment", service.Name, env.Name)
 
-	description, err := cmd.serviceAPI.ServiceUp(project, env, service)
+	description, err := cmd.serviceAPI.ServiceUp(project, env, service, w)
 
 	if err != nil {
 		return err
