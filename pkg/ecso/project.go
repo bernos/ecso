@@ -124,18 +124,24 @@ func (p *Project) UnmarshalJSON(b []byte) error {
 
 func (p *Project) Save() error {
 	w, err := os.Create(p.ProjectFile())
-
 	if err != nil {
 		return err
 	}
 
-	return p.Write(w)
+	_, err = p.WriteTo(w)
+
+	return err
 }
 
-func (p *Project) Write(w io.Writer) error {
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "    ")
-	return enc.Encode(p)
+func (p *Project) WriteTo(w io.Writer) (int64, error) {
+	b, err := json.Marshal(p)
+	if err != nil {
+		return 0, err
+	}
+
+	n, err := w.Write(b)
+
+	return int64(n), err
 }
 
 func (p *Project) AddEnvironment(environment *Environment) {
