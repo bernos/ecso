@@ -42,7 +42,7 @@ func (cmd *ServiceLsCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io
 
 	for _, s := range services {
 		row := fmt.Sprintf(
-			"%s|%s|%s|%s|%s|%s",
+			"%s|%s|%s|%d|%d|%s",
 			localServiceName(s, env, ctx.Project),
 			*s.ServiceName,
 			util.GetIDFromArn(*s.TaskDefinition),

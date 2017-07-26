@@ -143,7 +143,6 @@ func (c *EnvironmentAddCommand) prompt(ctx *ecso.CommandContext, r io.Reader, w 
 		project         = ctx.Project
 		prefs           = ctx.UserPreferences
 		accountDefaults = ecso.AccountDefaults{}
-		region          = "ap-southeast-2"
 		blue            = ui.NewBannerWriter(w, ui.BlueBold)
 	)
 
@@ -199,7 +198,7 @@ func (c *EnvironmentAddCommand) prompt(ctx *ecso.CommandContext, r io.Reader, w 
 	// If yes, then ask for the cfn stack id and collect outputs
 	fmt.Fprintf(blue, "Adding a new environment to the %s project", project.Name)
 
-	if account, _ := c.environmentAPI.GetCurrentAWSAccount(region); c.account == "" {
+	if account, _ := c.environmentAPI.GetCurrentAWSAccount(); c.account == "" {
 		c.account = account
 	}
 

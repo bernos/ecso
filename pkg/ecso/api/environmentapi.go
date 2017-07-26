@@ -7,11 +7,17 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/cloudformation/cloudformationiface"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
+	"github.com/aws/aws-sdk-go/service/route53/route53iface"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/bernos/ecso/pkg/ecso"
-	"github.com/bernos/ecso/pkg/ecso/awsregistry"
 	"github.com/bernos/ecso/pkg/ecso/helpers"
 	"github.com/bernos/ecso/pkg/ecso/ui"
 	"github.com/bernos/ecso/pkg/ecso/util"
@@ -22,7 +28,7 @@ type EnvironmentAPI interface {
 	EnvironmentUp(p *ecso.Project, env *ecso.Environment, dryRun bool, w io.Writer) error
 	EnvironmentDown(p *ecso.Project, env *ecso.Environment, w io.Writer) error
 	IsEnvironmentUp(env *ecso.Environment) (bool, error)
-	GetCurrentAWSAccount(region string) (string, error)
+	GetCurrentAWSAccount() (string, error)
 	GetEcsoBucket(env *ecso.Environment) (string, error)
 	GetECSServices(env *ecso.Environment) ([]*ecs.Service, error)
 	GetECSTasks(env *ecso.Environment) ([]*ecs.Task, error)
@@ -31,23 +37,38 @@ type EnvironmentAPI interface {
 }
 
 // New creates a new API
-func NewEnvironmentAPI(registryFactory awsregistry.RegistryFactory) EnvironmentAPI {
+func NewEnvironmentAPI(
+	cloudformationAPI cloudformationiface.CloudFormationAPI,
+	cloudwatchlogsAPI cloudwatchlogsiface.CloudWatchLogsAPI,
+	ecsAPI ecsiface.ECSAPI,
+	route53API route53iface.Route53API,
+	s3API s3iface.S3API,
+	snsAPI snsiface.SNSAPI,
+	stsAPI stsiface.STSAPI,
+) EnvironmentAPI {
 	return &environmentAPI{
-		registryFactory: registryFactory,
+		cloudformationAPI: cloudformationAPI,
+		cloudwatchlogsAPI: cloudwatchlogsAPI,
+		ecsAPI:            ecsAPI,
+		route53API:        route53API,
+		s3API:             s3API,
+		snsAPI:            snsAPI,
+		stsAPI:            stsAPI,
 	}
 }
 
 type environmentAPI struct {
-	registryFactory awsregistry.RegistryFactory
+	cloudformationAPI cloudformationiface.CloudFormationAPI
+	cloudwatchlogsAPI cloudwatchlogsiface.CloudWatchLogsAPI
+	ecsAPI            ecsiface.ECSAPI
+	route53API        route53iface.Route53API
+	s3API             s3iface.S3API
+	snsAPI            snsiface.SNSAPI
+	stsAPI            stsiface.STSAPI
 }
 
-func (api *environmentAPI) GetCurrentAWSAccount(region string) (string, error) {
-	reg, err := api.registryFactory.ForRegion(region)
-	if err != nil {
-		return "", err
-	}
-
-	resp, err := reg.STSAPI().GetCallerIdentity(&sts.GetCallerIdentityInput{})
+func (api *environmentAPI) GetCurrentAWSAccount() (string, error) {
+	resp, err := api.stsAPI.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
 		return "", err
 	}
@@ -56,12 +77,7 @@ func (api *environmentAPI) GetCurrentAWSAccount(region string) (string, error) {
 }
 
 func (api *environmentAPI) GetEcsoBucket(env *ecso.Environment) (string, error) {
-	reg, err := api.registryFactory.ForRegion(env.Region)
-	if err != nil {
-		return "", err
-	}
-
-	resp, err := reg.STSAPI().GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	resp, err := api.stsAPI.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
 		return "", err
 	}
@@ -77,13 +93,11 @@ func (api *environmentAPI) DescribeEnvironment(env *ecso.Environment) (*Environm
 		description = &EnvironmentDescription{Name: env.Name}
 	)
 
-	reg, err := api.registryFactory.ForRegion(env.Region)
-
-	if err != nil {
-		return description, err
-	}
-
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI())
+	cfn := helpers.NewCloudFormationHelper(
+		env.Region,
+		api.cloudformationAPI,
+		api.s3API,
+		api.stsAPI)
 
 	outputs, err := cfn.GetStackOutputs(stack)
 
@@ -105,19 +119,12 @@ func (api *environmentAPI) DescribeEnvironment(env *ecso.Environment) (*Environm
 }
 
 func (api *environmentAPI) GetECSContainers(env *ecso.Environment) (ContainerList, error) {
-	reg, err := api.registryFactory.ForRegion(env.Region)
-
-	if err != nil {
-		return nil, err
-	}
-
 	tasks, err := api.GetECSTasks(env)
-
 	if err != nil {
 		return nil, err
 	}
 
-	return LoadContainerList(tasks, reg.ECSAPI())
+	return LoadContainerList(tasks, api.ecsAPI)
 }
 
 func (api *environmentAPI) GetECSServices(env *ecso.Environment) ([]*ecs.Service, error) {
@@ -128,25 +135,17 @@ func (api *environmentAPI) GetECSServices(env *ecso.Environment) ([]*ecs.Service
 		services  = make([]*ecs.Service, 0)
 	)
 
-	reg, err := api.registryFactory.ForRegion(env.Region)
-
-	if err != nil {
-		return nil, err
-	}
-
 	params := &ecs.ListServicesInput{
 		Cluster: aws.String(env.GetClusterName()),
 	}
 
-	ecsAPI := reg.ECSAPI()
-
 	// TODO handle pages concurrently
-	if err := ecsAPI.ListServicesPages(params, func(o *ecs.ListServicesOutput, last bool) bool {
+	if err := api.ecsAPI.ListServicesPages(params, func(o *ecs.ListServicesOutput, last bool) bool {
 		if count%batchSize == 0 {
 			batches = append(batches, make([]*string, 0))
 		}
 
-		for i, _ := range o.ServiceArns {
+		for i := range o.ServiceArns {
 			batch := append(batches[len(batches)-1], o.ServiceArns[i])
 			batches[len(batches)-1] = batch
 			count = count + 1
@@ -162,7 +161,7 @@ func (api *environmentAPI) GetECSServices(env *ecso.Environment) ([]*ecs.Service
 			continue
 		}
 
-		desc, err := ecsAPI.DescribeServices(&ecs.DescribeServicesInput{
+		desc, err := api.ecsAPI.DescribeServices(&ecs.DescribeServicesInput{
 			Services: batch,
 			Cluster:  aws.String(env.GetClusterName()),
 		})
@@ -181,27 +180,19 @@ func (api *environmentAPI) GetECSServices(env *ecso.Environment) ([]*ecs.Service
 
 func (api *environmentAPI) GetECSTasks(env *ecso.Environment) ([]*ecs.Task, error) {
 	taskArns := make([]*string, 0)
-	reg, err := api.registryFactory.ForRegion(env.Region)
 
-	if err != nil {
-		return nil, err
-	}
-
-	ecsAPI := reg.ECSAPI()
 	params := &ecs.ListTasksInput{
 		Cluster: aws.String(env.GetClusterName()),
 	}
 
-	err = ecsAPI.ListTasksPages(params, func(o *ecs.ListTasksOutput, lastPage bool) bool {
+	if err := api.ecsAPI.ListTasksPages(params, func(o *ecs.ListTasksOutput, lastPage bool) bool {
 		taskArns = append(taskArns, o.TaskArns...)
 		return !lastPage
-	})
-
-	if err != nil {
+	}); err != nil {
 		return nil, err
 	}
 
-	resp, err := ecsAPI.DescribeTasks(&ecs.DescribeTasksInput{
+	resp, err := api.ecsAPI.DescribeTasks(&ecs.DescribeTasksInput{
 		Cluster: aws.String(env.GetClusterName()),
 		Tasks:   taskArns,
 	})
@@ -210,36 +201,28 @@ func (api *environmentAPI) GetECSTasks(env *ecso.Environment) ([]*ecs.Task, erro
 }
 
 func (api *environmentAPI) IsEnvironmentUp(env *ecso.Environment) (bool, error) {
-	reg, err := api.registryFactory.ForRegion(env.Region)
-
-	if err != nil {
-		return false, err
-	}
-
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI())
+	cfn := helpers.NewCloudFormationHelper(
+		env.Region,
+		api.cloudformationAPI,
+		api.s3API,
+		api.stsAPI)
 
 	return cfn.StackExists(env.GetCloudFormationStackName())
 }
 
 func (api *environmentAPI) EnvironmentDown(p *ecso.Project, env *ecso.Environment, w io.Writer) error {
-	reg, err := api.registryFactory.ForRegion(env.Region)
-
-	if err != nil {
-		return err
-	}
-
 	var (
-		cfnHelper      = helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI())
-		r53Helper      = helpers.NewRoute53Helper(reg.Route53API())
+		cfnHelper      = helpers.NewCloudFormationHelper(env.Region, api.cloudformationAPI, api.s3API, api.stsAPI)
+		r53Helper      = helpers.NewRoute53Helper(api.route53API)
 		zone           = fmt.Sprintf("%s.", env.CloudFormationParameters["DNSZone"])
 		datadogDNSName = fmt.Sprintf("%s.%s.%s", "datadog", env.GetClusterName(), zone)
-		serviceAPI     = NewServiceAPI(w, api.registryFactory)
+		serviceAPI     = NewServiceAPI(api.cloudformationAPI, api.cloudwatchlogsAPI, api.ecsAPI, api.route53API, api.s3API, api.snsAPI, api.stsAPI)
 		info           = ui.NewInfoWriter(w)
 	)
 
 	// TODO do these concurrently
 	for _, service := range p.Services {
-		if err := serviceAPI.ServiceDown(p, env, service); err != nil {
+		if err := serviceAPI.ServiceDown(p, env, service, w); err != nil {
 			return err
 		}
 
@@ -268,29 +251,22 @@ func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment,
 
 	fmt.Fprintf(info, "Updating environment to version %s", version)
 
-	reg, err := api.registryFactory.ForRegion(env.Region)
-	if err != nil {
-		return err
-	}
-
 	bucket, err := api.GetEcsoBucket(env)
 	if err != nil {
 		return err
 	}
 
-	if err := api.uploadEnvironmentResources(reg, bucket, env, version, w); err != nil {
+	if err := api.uploadEnvironmentResources(bucket, env, version, w); err != nil {
 		return err
 	}
 
-	result, err := api.deployEnvironmentStack(reg, bucket, p, env, version, dryRun, w)
+	result, err := api.deployEnvironmentStack(bucket, p, env, version, dryRun, w)
 	if err != nil {
 		return err
 	}
 
 	if dryRun {
-		cfnAPI := reg.CloudFormationAPI()
-
-		resp, err := cfnAPI.DescribeChangeSet(&cloudformation.DescribeChangeSetInput{
+		resp, err := api.cloudformationAPI.DescribeChangeSet(&cloudformation.DescribeChangeSetInput{
 			ChangeSetName: aws.String(result.ChangeSetID),
 			StackName:     aws.String(result.StackID),
 		})
@@ -311,20 +287,15 @@ func (api *environmentAPI) SendNotification(env *ecso.Environment, msg string) e
 		stack = env.GetCloudFormationStackName()
 	)
 
-	reg, err := api.registryFactory.ForRegion(env.Region)
+	cfn := helpers.NewCloudFormationHelper(env.Region, api.cloudformationAPI, api.s3API, api.stsAPI)
 
+	outputs, err := cfn.GetStackOutputs(stack)
 	if err != nil {
 		return err
 	}
 
-	cfn := helpers.NewCloudFormationHelper(env.Region, reg.CloudFormationAPI(), reg.S3API(), reg.STSAPI())
-
-	outputs, err := cfn.GetStackOutputs(stack)
-
 	if topic, ok := outputs["NotificationsTopic"]; ok {
-		snsAPI := reg.SNSAPI()
-
-		_, err := snsAPI.Publish(&sns.PublishInput{
+		_, err := api.snsAPI.Publish(&sns.PublishInput{
 			Message: aws.String(msg),
 			MessageAttributes: map[string]*sns.MessageAttributeValue{
 				"Environment": {
@@ -341,7 +312,7 @@ func (api *environmentAPI) SendNotification(env *ecso.Environment, msg string) e
 	return nil
 }
 
-func (api *environmentAPI) deployEnvironmentStack(reg awsregistry.Registry, bucket string, project *ecso.Project, env *ecso.Environment, version string, dryRun bool, w io.Writer) (*helpers.DeploymentResult, error) {
+func (api *environmentAPI) deployEnvironmentStack(bucket string, project *ecso.Project, env *ecso.Environment, version string, dryRun bool, w io.Writer) (*helpers.DeploymentResult, error) {
 	var (
 		stackName = env.GetCloudFormationStackName()
 		prefix    = env.GetDeploymentBucketPrefix(version)
@@ -355,9 +326,9 @@ func (api *environmentAPI) deployEnvironmentStack(reg awsregistry.Registry, buck
 
 	cfn := helpers.NewCloudFormationHelper(
 		env.Region,
-		reg.CloudFormationAPI(),
-		reg.S3API(),
-		reg.STSAPI())
+		api.cloudformationAPI,
+		api.s3API,
+		api.stsAPI)
 
 	if tags == nil {
 		tags = make(map[string]string)
@@ -378,12 +349,12 @@ func (api *environmentAPI) deployEnvironmentStack(reg awsregistry.Registry, buck
 	return cfn.Deploy(pkg, stackName, dryRun, ui.NewPrefixWriter(w, "  "))
 }
 
-func (api *environmentAPI) uploadEnvironmentResources(reg awsregistry.Registry, bucket string, env *ecso.Environment, version string, w io.Writer) error {
+func (api *environmentAPI) uploadEnvironmentResources(bucket string, env *ecso.Environment, version string, w io.Writer) error {
 	info := ui.NewInfoWriter(w)
 
 	fmt.Fprintf(info, "Uploading resources for the '%s' environment to S3", env.Name)
 
-	s3Helper := helpers.NewS3Helper(reg.S3API(), env.Region)
+	s3Helper := helpers.NewS3Helper(api.s3API, env.Region)
 
 	return s3Helper.UploadDir(env.GetResourceDir(), bucket, env.GetResourceBucketPrefix(), ui.NewPrefixWriter(w, "  "))
 }

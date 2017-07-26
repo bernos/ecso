@@ -43,7 +43,7 @@ func (cmd *ServiceDownCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w 
 
 	fmt.Fprintf(blue, "Terminating the '%s' service in the '%s' environment", service.Name, env.Name)
 
-	if err := cmd.serviceAPI.ServiceDown(ctx.Project, env, service); err != nil {
+	if err := cmd.serviceAPI.ServiceDown(ctx.Project, env, service, w); err != nil {
 		return err
 	}
 

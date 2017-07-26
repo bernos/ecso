@@ -25,7 +25,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	app := ecsocli.NewApp(cfg, NoopDispatcher())
+	app := ecsocli.NewApp(cfg, nil, NoopDispatcher())
 	app.Setup()
 
 	templates := map[string]string{

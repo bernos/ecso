@@ -52,7 +52,7 @@ func (cmd *ServiceRollbackCommand) Execute(ctx *ecso.CommandContext, r io.Reader
 
 	fmt.Fprintf(blue, "Rolling back service '%s' to version '%s' in the '%s' environment", service.Name, cmd.version, env.Name)
 
-	description, err := cmd.serviceAPI.ServiceRollback(project, env, service, cmd.version)
+	description, err := cmd.serviceAPI.ServiceRollback(project, env, service, cmd.version, w)
 	if err != nil {
 		return err
 	}
