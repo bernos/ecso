@@ -36,7 +36,7 @@ func (cmd *initCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writ
 
 	project := ecso.NewProject(wd, cmd.projectName, ctx.EcsoVersion)
 
-	if err := os.MkdirAll(filepath.Join(project.Dir(), ".ecso"), os.ModePerm); err != nil {
+	if err := os.MkdirAll(project.DotDir(), os.ModePerm); err != nil {
 		return err
 	}
 

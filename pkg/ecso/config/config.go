@@ -17,6 +17,8 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
+const DefaultRegion = "ap-southeast-2"
+
 type Config struct {
 	Version string
 
@@ -79,7 +81,7 @@ func (c *Config) ErrWriter() io.Writer {
 
 func NewConfig(version string, options ...func(*Config)) (*Config, error) {
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("ap-southeast-2"),
+		Region: aws.String(DefaultRegion),
 	})
 
 	if err != nil {

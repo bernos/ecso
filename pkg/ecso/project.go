@@ -8,6 +8,13 @@ import (
 	"path/filepath"
 )
 
+const (
+	ecsoDotDir      = ".ecso"
+	projectFilename = "project.json"
+)
+
+// LoadCurrentProject loads the current ecso project from the project.json
+// file located at the dir given by GetCurrentProjectDir()
 func LoadCurrentProject() (*Project, error) {
 	dir, err := GetCurrentProjectDir()
 
@@ -24,12 +31,16 @@ func LoadCurrentProject() (*Project, error) {
 	return project, err
 }
 
+// GetCurrentProjectDir locates the root directory of the current ecso
+// project.
+// For now this is just pwd, but later might want to walk up
+// the dir tree, so ecso can run from sub folders in a project
 func GetCurrentProjectDir() (string, error) {
-	// For now this is just pwd, but later might want to walk up
-	// the dir tree, so ecso can run from sub folders in a project
 	return os.Getwd()
 }
 
+// LoadProject loads a project from the project.json file in the dir
+// given by dir
 func LoadProject(dir string) (*Project, error) {
 	project := NewProject(dir, "unknown", "unknown")
 
@@ -44,6 +55,7 @@ func LoadProject(dir string) (*Project, error) {
 	return project, err
 }
 
+// NewProject creates a new project
 func NewProject(dir, name, version string) *Project {
 	return &Project{
 		dir:          dir,
@@ -54,6 +66,9 @@ func NewProject(dir, name, version string) *Project {
 	}
 }
 
+// Project is a container for all environment and service configurations
+// Projects are saved to a project.json file located in the `.ecso` dir of
+// the project directory
 type Project struct {
 	dir string
 
@@ -67,6 +82,10 @@ func (p *Project) Dir() string {
 	return p.dir
 }
 
+func (p *Project) DotDir() string {
+	return filepath.Join(p.Dir(), ecsoDotDir)
+}
+
 func (p *Project) HasEnvironment(name string) bool {
 	return p.Environments[name] != nil
 }
@@ -76,7 +95,7 @@ func (p *Project) HasService(name string) bool {
 }
 
 func (p *Project) ProjectFile() string {
-	return filepath.Join(p.Dir(), ".ecso", "project.json")
+	return filepath.Join(p.DotDir(), projectFilename)
 }
 
 func (p *Project) UnmarshalJSON(b []byte) error {

@@ -36,7 +36,7 @@ func (e *Environment) GetResourceBucketPrefix() string {
 }
 
 func (e *Environment) GetCloudFormationTemplateDir() string {
-	return filepath.Join(e.project.Dir(), ".ecso", "infrastructure", "templates")
+	return filepath.Join(e.project.Dir(), ecsoDotDir, "infrastructure", "templates")
 }
 
 func (e *Environment) GetResourceDir() string {
