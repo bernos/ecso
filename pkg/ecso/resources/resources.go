@@ -12,12 +12,41 @@ import (
 )
 
 var (
-	EnvironmentCloudFormationTemplates = &Resources{make([]Resource, 0)}
-	EnvironmentResources               = &Resources{make([]Resource, 0)}
+	// Cloudformation template for our default web service
+	WebServiceCloudFormationTemplate = NewTextFile(MustParseTemplate("stack.yaml", webServiceCloudFormationTemplate))
+
+	// Docker compose file for default web service
+	WebServiceDockerComposeFile = NewTextFile(MustParseTemplate("docker-compose.yaml", webServiceComposeFileTemplate))
+
+	// Cloudformation template for default worker service
+	WorkerServiceCloudFormationTemplate = NewTextFile(MustParseTemplate("stack.yaml", workerCloudFormationTemplate))
+
+	// Docker compose file for default worker service
+	WorkerServiceDockerComposeFile = NewTextFile(MustParseTemplate("docker-compose.yaml", workerComposeFileTemplate))
+
+	// EnvironmentFiles is the list of all files needed to build an environment
+	EnvironmentFiles = &Resources{[]Resource{
+		NewTextFile(MustParseTemplate(ecso.EnvironmentCloudFormationDir+"/alarms.yaml", environmentAlarmsTemplate)),
+		NewTextFile(MustParseTemplate(ecso.EnvironmentCloudFormationDir+"/dd-agent.yaml", environmentDataDogTemplate)),
+		NewTextFile(MustParseTemplate(ecso.EnvironmentCloudFormationDir+"/dns-cleaner.yaml", environmentDNSCleanerTemplate)),
+		NewTextFile(MustParseTemplate(ecso.EnvironmentCloudFormationDir+"/ecs-cluster.yaml", environmentClusterTemplate)),
+		NewTextFile(MustParseTemplate(ecso.EnvironmentCloudFormationDir+"/instance-drainer.yaml", environmentInstanceDrainerLambda)),
+		NewTextFile(MustParseTemplate(ecso.EnvironmentCloudFormationDir+"/load-balancers.yaml", environmentALBTemplate)),
+		NewTextFile(MustParseTemplate(ecso.EnvironmentCloudFormationDir+"/logging.yaml", environmentLoggingTemplate)),
+		NewTextFile(MustParseTemplate(ecso.EnvironmentCloudFormationDir+"/security-groups.yaml", environmentSecurityGroupTemplate)),
+		NewTextFile(MustParseTemplate(ecso.EnvironmentCloudFormationDir+"/sns.yaml", environmentSNSTemplate)),
+		NewTextFile(MustParseTemplate(ecso.EnvironmentCloudFormationDir+"/stack.yaml", environmentStackTemplate)),
+
+		NewZipFile(fmt.Sprintf("%s/lambda/instance-drainer-%s.zip", ecso.EnvironmentResourceDir, InstanceDrainerLambdaVersion),
+			template.Must(template.New("index.py").Parse(environmentInstanceDrainerLambdaSource))),
+	}}
 )
 
+func MustParseTemplate(name, body string) *template.Template {
+	return template.Must(template.New(name).Parse(body))
+}
+
 func WriteServiceFiles(s *ecso.Service, data interface{}) error {
-	fmt.Println("writing service files")
 	if len(s.Route) > 0 {
 		if err := WebServiceCloudFormationTemplate.WriteTo(s.GetCloudFormationTemplateDir(), data); err != nil {
 			return err
@@ -61,35 +90,15 @@ type Resource interface {
 }
 
 type textFile struct {
-	file string
-	tmpl *template.Template
+	*template.Template
 }
 
-func NewTextFile(file string, tmpl *template.Template) Resource {
-	return &textFile{
-		file: file,
-		tmpl: tmpl,
-	}
+func NewTextFile(tmpl *template.Template) Resource {
+	return &textFile{tmpl}
 }
 
 func (r *textFile) WriteTo(basePath string, data interface{}) error {
-	return writeTemplateTo(filepath.Join(basePath, r.file), r.tmpl, data)
-}
-
-type cloudFormationTemplate struct {
-	file string
-	tmpl *template.Template
-}
-
-func NewCloudFormationTemplate(file string, tmpl *template.Template) Resource {
-	return &cloudFormationTemplate{
-		file: file,
-		tmpl: tmpl,
-	}
-}
-
-func (r *cloudFormationTemplate) WriteTo(basePath string, data interface{}) error {
-	return writeTemplateTo(filepath.Join(basePath, r.file), r.tmpl, data)
+	return writeTemplateTo(filepath.Join(basePath, r.Name()), r.Template, data)
 }
 
 func writeTemplateTo(filename string, tmpl *template.Template, data interface{}) error {
@@ -109,7 +118,7 @@ func getWriter(filename string) (io.Writer, error) {
 	return os.Create(filename)
 }
 
-func NewZipFile(file string, entries map[string]*template.Template) Resource {
+func NewZipFile(file string, entries ...*template.Template) Resource {
 	return &zipFile{
 		file:    file,
 		entries: entries,
@@ -118,7 +127,7 @@ func NewZipFile(file string, entries map[string]*template.Template) Resource {
 
 type zipFile struct {
 	file    string
-	entries map[string]*template.Template
+	entries []*template.Template
 }
 
 func (z *zipFile) WriteTo(basePath string, data interface{}) error {
@@ -129,8 +138,8 @@ func (z *zipFile) WriteTo(basePath string, data interface{}) error {
 
 	zipWriter := zip.NewWriter(w)
 
-	for file, tmpl := range z.entries {
-		f, err := zipWriter.Create(file)
+	for _, tmpl := range z.entries {
+		f, err := zipWriter.Create(tmpl.Name())
 		if err != nil {
 			return err
 		}

@@ -1,12 +1,6 @@
 package resources
 
-import "text/template"
-
-func init() {
-	EnvironmentCloudFormationTemplates.Add(NewCloudFormationTemplate("sns.yaml", environmentSNSTemplate))
-}
-
-var environmentSNSTemplate = template.Must(template.New("environmentSNSTemplate").Parse(`
+var environmentSNSTemplate = `
 Parameters:
     EnvironmentName:
         Description: An environment name that will be prefixed to resource names
@@ -39,4 +33,4 @@ Outputs:
     NotificationsTopic:
         Description: A reference to the notifications SNS topic
         Value: !Ref NotificationsTopic
-`))
+`

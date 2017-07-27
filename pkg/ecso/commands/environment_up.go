@@ -57,11 +57,7 @@ func (cmd *EnvironmentUpCommand) Execute(ctx *ecso.CommandContext, r io.Reader, 
 		fmt.Fprintf(info, "THIS IS A DRY RUN - no changes to the environment will be made.")
 	}
 
-	if err := cmd.ensureTemplates(ctx, project, env); err != nil {
-		return err
-	}
-
-	if err := cmd.ensureResources(ctx, project, env); err != nil {
+	if err := cmd.ensureEnvironmentFiles(ctx, project, env); err != nil {
 		return err
 	}
 
@@ -85,11 +81,8 @@ func (cmd *EnvironmentUpCommand) Execute(ctx *ecso.CommandContext, r io.Reader, 
 	return nil
 }
 
-func (cmd *EnvironmentUpCommand) ensureTemplates(ctx *ecso.CommandContext, project *ecso.Project, env *ecso.Environment) error {
-	dst := env.GetCloudFormationTemplateDir()
-
-	exists, err := util.DirExists(dst)
-
+func (cmd *EnvironmentUpCommand) ensureEnvironmentFiles(ctx *ecso.CommandContext, project *ecso.Project, env *ecso.Environment) error {
+	exists, err := util.DirExists(env.GetCloudFormationTemplateDir())
 	if err != nil || exists {
 		return err
 	}
@@ -104,16 +97,5 @@ func (cmd *EnvironmentUpCommand) ensureTemplates(ctx *ecso.CommandContext, proje
 		return fmt.Errorf("This looks like the first time you've run `environment up` for the %s environment from this repository, however there is already a CloudFormation stack up and running. This could mean that someone has already created the %s environment for the %s project. If you really know what you are doing, you can rerun `environment up` with the `--force` flag.", env.Name, env.Name, project.Name)
 	}
 
-	return resources.EnvironmentCloudFormationTemplates.WriteTo(dst, nil)
-}
-
-func (cmd *EnvironmentUpCommand) ensureResources(ctx *ecso.CommandContext, project *ecso.Project, env *ecso.Environment) error {
-	dst := env.GetResourceDir()
-
-	exists, err := util.DirExists(dst)
-	if err != nil || exists {
-		return err
-	}
-
-	return resources.EnvironmentResources.WriteTo(dst, nil)
+	return resources.EnvironmentFiles.WriteTo(project.Dir(), nil)
 }

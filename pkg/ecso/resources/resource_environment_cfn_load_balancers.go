@@ -1,12 +1,6 @@
 package resources
 
-import "text/template"
-
-func init() {
-	EnvironmentCloudFormationTemplates.Add(NewCloudFormationTemplate("load-balancers.yaml", environmentALBTemplate))
-}
-
-var environmentALBTemplate = template.Must(template.New("environmentALBTemplate").Parse(`
+var environmentALBTemplate = `
 Description: >
     This template deploys an Application Load Balancer that exposes our various ECS services.
     We create them it a seperate nested template, so it can be referenced by all of the other nested templates.
@@ -93,4 +87,4 @@ Outputs:
     Listener:
         Description: A reference to a port 80 listener
         Value: !Ref LoadBalancerListener
-`))
+`

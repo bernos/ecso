@@ -1,12 +1,6 @@
 package resources
 
-import "text/template"
-
-func init() {
-	EnvironmentCloudFormationTemplates.Add(NewCloudFormationTemplate("dd-agent.yaml", environmentDataDogTemplate))
-}
-
-var environmentDataDogTemplate = template.Must(template.New("environmentDataDogTemplate").Parse(`
+var environmentDataDogTemplate = `
 Parameters:
     EnvironmentName:
         Description: An environment name that will be prefixed to resource names
@@ -62,4 +56,4 @@ Resources:
                         awslogs-group: !Ref LogGroupName
                         awslogs-region: !Ref AWS::Region
                         awslogs-stream-prefix: daemon-services/datadog
-`))
+`

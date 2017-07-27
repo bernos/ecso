@@ -1,10 +1,6 @@
 package resources
 
-import "text/template"
-
-var WorkerServiceCloudFormationTemplate = NewCloudFormationTemplate("stack.yaml", workerCloudFormationTemplate)
-
-var workerCloudFormationTemplate = template.Must(template.New("workerCloudFormationFile").Parse(`
+var workerCloudFormationTemplate = `
 Parameters:
 
     AlertsTopic:
@@ -158,4 +154,4 @@ Outputs:
     Service:
         Description: Reference to the ecs service
         Value: !Ref Service
-`))
+`

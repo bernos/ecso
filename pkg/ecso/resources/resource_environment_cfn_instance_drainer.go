@@ -1,12 +1,6 @@
 package resources
 
-import "text/template"
-
-func init() {
-	EnvironmentCloudFormationTemplates.Add(NewCloudFormationTemplate("instance-drainer.yaml", environmentInstanceDrainerLambda))
-}
-
-var environmentInstanceDrainerLambda = template.Must(template.New("environmentInstanceDrainerLambda").Parse(`
+var environmentInstanceDrainerLambda = `
 Parameters:
 
     EnvironmentName:
@@ -125,4 +119,4 @@ Resources:
                                 - sns:Publish
                                 - sns:ListSubscriptions
 
-`))
+`

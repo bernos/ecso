@@ -1,19 +1,15 @@
 package resources
 
-import (
-	"fmt"
-	"text/template"
-)
-
 const InstanceDrainerLambdaVersion = "1.0.0"
 
-func init() {
-	EnvironmentResources.Add(NewZipFile(fmt.Sprintf("lambda/instance-drainer-%s.zip", InstanceDrainerLambdaVersion), map[string]*template.Template{
-		"index.py": environmentInstanceDrainerLambdaSource,
-	}))
-}
+// func init() {
+// 	EnvironmentResources.Add(NewZipFile(fmt.Sprintf("lambda/instance-drainer-%s.zip", InstanceDrainerLambdaVersion), map[string]*template.Template{
+// 		"index.py": environmentInstanceDrainerLambdaSource,
+// 	}))
+// }
 
-var environmentInstanceDrainerLambdaSource = template.Must(template.New("environmentInstanceDrainerLambdaSource").Parse(`
+// var environmentInstanceDrainerLambdaSource = template.Must(template.New("environmentInstanceDrainerLambdaSource").Parse(`
+var environmentInstanceDrainerLambdaSource = `
 from __future__ import print_function
 import boto3
 from urlparse import urlparse
@@ -195,4 +191,4 @@ def lambda_handler(event, context):
                     logger.info("Completedlifecycle hook action")
                 except Exception, e:
                     print(str(e))
-`))
+`

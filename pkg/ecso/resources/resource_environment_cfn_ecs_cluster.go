@@ -1,12 +1,6 @@
 package resources
 
-import "text/template"
-
-func init() {
-	EnvironmentCloudFormationTemplates.Add(NewCloudFormationTemplate("ecs-cluster.yaml", environmentClusterTemplate))
-}
-
-var environmentClusterTemplate = template.Must(template.New("environmentClusterTemplate").Parse(`
+var environmentClusterTemplate = `
 Description: >
     This template deploys an ECS cluster to the provided VPC and subnets
     using an Auto Scaling Group
@@ -593,4 +587,4 @@ Outputs:
     Cluster:
         Description: A reference to the ECS cluster
         Value: !Ref ECSCluster
-`))
+`

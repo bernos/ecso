@@ -1,12 +1,6 @@
 package resources
 
-import "text/template"
-
-func init() {
-	EnvironmentCloudFormationTemplates.Add(NewCloudFormationTemplate("security-groups.yaml", environmentSecurityGroupTemplate))
-}
-
-var environmentSecurityGroupTemplate = template.Must(template.New("environmentSecurityGroupTemplate").Parse(`
+var environmentSecurityGroupTemplate = `
 Description: >
     This template contains the security groups required by our entire stack.
     We create them in a seperate nested template, so they can be referenced
@@ -65,4 +59,4 @@ Outputs:
     LoadBalancerSecurityGroup:
         Description: A reference to the security group for load balancers
         Value: !Ref LoadBalancerSecurityGroup
-`))
+`

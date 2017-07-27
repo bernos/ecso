@@ -1,12 +1,6 @@
 package resources
 
-import "text/template"
-
-func init() {
-	EnvironmentCloudFormationTemplates.Add(NewCloudFormationTemplate("stack.yaml", environmentStackTemplate))
-}
-
-var environmentStackTemplate = template.Must(template.New("environmentStackTemplate").Parse(`
+var environmentStackTemplate = `
 Description: >
 
     This template deploys a highly available ECS cluster using an AutoScaling Group, with
@@ -249,4 +243,4 @@ Outputs:
           Fn::GetAtt:
             - ALB
             - Outputs.Listener
-`))
+`

@@ -6,6 +6,20 @@ import (
 	"path/filepath"
 )
 
+var (
+	// EnvironmentCloudFormationDir is the path relative to the .ecso dir that the
+	// environment cloudformation templates are stored
+	EnvironmentCloudFormationDir = filepath.Join(ecsoDotDir, "infrastructure", "templates")
+
+	// EnvironmentResourceDir is the path relative to the .ecso dir that the
+	// environment resource files are stored
+	EnvironmentResourceDir = filepath.Join(EnvironmentCloudFormationDir, "resources")
+
+	// EnvironmentCloudFormationTemplateFile is the filename of the root
+	// cloudformation template for an environment
+	EnvironmentCloudFormationTemplateFile = filepath.Join(EnvironmentCloudFormationDir, "stack.yaml")
+)
+
 type Environment struct {
 	project *Project
 
@@ -36,15 +50,15 @@ func (e *Environment) GetResourceBucketPrefix() string {
 }
 
 func (e *Environment) GetCloudFormationTemplateDir() string {
-	return filepath.Join(e.project.Dir(), ecsoDotDir, "infrastructure", "templates")
+	return filepath.Join(e.project.Dir(), EnvironmentCloudFormationDir)
 }
 
 func (e *Environment) GetResourceDir() string {
-	return filepath.Join(e.GetCloudFormationTemplateDir(), "resources")
+	return filepath.Join(e.project.Dir(), EnvironmentResourceDir)
 }
 
 func (e *Environment) GetCloudFormationTemplateFile() string {
-	return filepath.Join(e.GetCloudFormationTemplateDir(), "stack.yaml")
+	return filepath.Join(e.project.Dir(), EnvironmentCloudFormationTemplateFile)
 }
 
 func (e *Environment) GetClusterName() string {

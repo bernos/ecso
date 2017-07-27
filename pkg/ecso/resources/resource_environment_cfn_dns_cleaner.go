@@ -1,12 +1,6 @@
 package resources
 
-import "text/template"
-
-func init() {
-	EnvironmentCloudFormationTemplates.Add(NewCloudFormationTemplate("dns-cleaner.yaml", environmentDNSCleanerTemplate))
-}
-
-var environmentDNSCleanerTemplate = template.Must(template.New("environmentDNSCleanerTemplate").Parse(`
+var environmentDNSCleanerTemplate = `
 Parameters:
     EnvironmentName:
         Description: An environment name that will be prefixed to resource names
@@ -75,4 +69,4 @@ Resources:
                                 "Resource": "*"
                         }]
                     }
-`))
+`

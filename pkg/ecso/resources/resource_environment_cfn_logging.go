@@ -1,12 +1,6 @@
 package resources
 
-import "text/template"
-
-func init() {
-	EnvironmentCloudFormationTemplates.Add(NewCloudFormationTemplate("logging.yaml", environmentLoggingTemplate))
-}
-
-var environmentLoggingTemplate = template.Must(template.New("environmentLoggingTemplate").Parse(`
+var environmentLoggingTemplate = `
 Description: >
     This template deploys a cloudwatch logs logging group for the ecso environment
 
@@ -26,4 +20,4 @@ Outputs:
     LogGroup:
         Description: A reference to the CloudWatch logs group
         Value: !Ref CloudWatchLogsGroup
-`))
+`

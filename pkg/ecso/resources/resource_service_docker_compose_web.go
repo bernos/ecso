@@ -1,10 +1,6 @@
 package resources
 
-import "text/template"
-
-var WebServiceDockerComposeFile = NewTextFile("docker-compose.yaml", webServiceComposeFileTemplate)
-
-var webServiceComposeFileTemplate = template.Must(template.New("webServiceComposeFile").Parse(`
+var webServiceComposeFileTemplate = `
 version: '2'
 
 volumes:
@@ -25,4 +21,4 @@ services:
     volumes:
       - nginxdata:/nginx
     command: sh -c "while true; do echo \"This is the {{.Service.Name}} service <p><pre>` + "`env`" + `</pre></p> \" > /nginx/index.html; sleep 3; done"
-`))
+`

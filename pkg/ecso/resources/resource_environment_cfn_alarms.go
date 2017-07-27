@@ -1,12 +1,6 @@
 package resources
 
-import "text/template"
-
-func init() {
-	EnvironmentCloudFormationTemplates.Add(NewCloudFormationTemplate("alarms.yaml", environmentAlarmsTemplate))
-}
-
-var environmentAlarmsTemplate = template.Must(template.New("environmentAlarmsTemplate").Parse(`
+var environmentAlarmsTemplate = `
 Parameters:
     EnvironmentName:
         Description: An environment name that will be prefixed to resource names
@@ -96,4 +90,4 @@ Resources:
             Dimensions:
                 - Name: ClusterName
                   Value: !Ref Cluster
-`))
+`
