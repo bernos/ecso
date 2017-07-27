@@ -71,15 +71,7 @@ func (cmd *ServiceAddCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w i
 
 	project.AddService(service)
 
-	templateData := struct {
-		Service *ecso.Service
-		Project *ecso.Project
-	}{
-		Service: service,
-		Project: project,
-	}
-
-	if err := resources.WriteServiceFiles(service, templateData); err != nil {
+	if err := cmd.createResources(project, service); err != nil {
 		return err
 	}
 
@@ -94,6 +86,41 @@ func (cmd *ServiceAddCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w i
 }
 
 func (cmd *ServiceAddCommand) Validate(ctx *ecso.CommandContext) error {
+	return nil
+}
+
+func (cmd *ServiceAddCommand) createResources(project *ecso.Project, service *ecso.Service) error {
+	cfnWriter := resources.NewFileSystemResourceWriter(service.GetCloudFormationTemplateDir())
+	resourceWriter := resources.NewFileSystemResourceWriter(service.Dir())
+
+	templateData := struct {
+		Service *ecso.Service
+		Project *ecso.Project
+	}{
+		Service: service,
+		Project: project,
+	}
+
+	if len(service.Route) > 0 {
+		if err := cfnWriter.WriteResource(resources.WebServiceCloudFormationTemplate, templateData); err != nil {
+			return err
+		}
+
+		if err := resourceWriter.WriteResource(resources.WebServiceDockerComposeFile, templateData); err != nil {
+			return err
+		}
+
+	} else {
+
+		if err := cfnWriter.WriteResource(resources.WorkerServiceCloudFormationTemplate, templateData); err != nil {
+			return err
+		}
+
+		if err := resourceWriter.WriteResource(resources.WorkerServiceDockerComposeFile, templateData); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
