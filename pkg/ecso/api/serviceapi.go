@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -364,24 +363,6 @@ func (api *serviceAPI) ServiceUp(project *ecso.Project, env *ecso.Environment, s
 	return api.DescribeService(env, service)
 }
 
-func (api *serviceAPI) setEnv(project *ecso.Project, env *ecso.Environment, service *ecso.Service) error {
-	if err := util.AnyError(
-		os.Setenv("ECSO_ENVIRONMENT", env.Name),
-		os.Setenv("ECSO_AWS_REGION", env.Region),
-		os.Setenv("ECSO_CLUSTER_NAME", env.GetClusterName())); err != nil {
-		return err
-	}
-
-	// set any env vars from the service configuration for the current environment
-	for k, v := range service.Environments[env.Name].Env {
-		if err := os.Setenv(k, v); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func (api *serviceAPI) deployServiceStack(pkg *helpers.Package, env *ecso.Environment, service *ecso.Service, w io.Writer) error {
 	var (
 		stackName = service.GetCloudFormationStackName(env)
@@ -481,12 +462,6 @@ func (api *serviceAPI) registerECSTaskDefinition(project *ecso.Project, env *ecs
 	// TODO: fully qualify the path to the service compose file
 	// taskDefinition, err := ConvertToTaskDefinition(taskName, service.ComposeFile)
 	fmt.Fprintf(info, "Converting '%s' to task definition...", service.ComposeFile)
-
-	// set env vars so that they are available when converting the docker
-	// compose file to a task definition
-	if err := api.setEnv(project, env, service); err != nil {
-		return nil, err
-	}
 
 	taskDefinition, err := service.GetECSTaskDefinition(env)
 
