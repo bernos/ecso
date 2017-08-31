@@ -2,22 +2,20 @@ package ecso
 
 import (
 	"fmt"
-	"os"
 	"path"
 	"path/filepath"
 
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/compose/ecs/utils"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/bernos/ecso/pkg/ecso/util"
 	"github.com/docker/libcompose/lookup"
 	"github.com/docker/libcompose/project"
 
 	logrus "github.com/Sirupsen/logrus"
-	lConfig "github.com/docker/libcompose/config"
+	lconfig "github.com/docker/libcompose/config"
 )
 
 func init() {
-	// HACK The aws ecs-cli lib we use to conver the compose file to an ecs task
+	// HACK The aws ecs-cli lib we use to convert the compose file to an ecs task
 	// definition uses logrus directly and warns about a bunch of unsupported
 	// and irrelevant compose fields. Setting logrus level here to keep it quiet
 	logrus.SetLevel(logrus.ErrorLevel)
@@ -77,34 +75,19 @@ func (s *Service) GetECSTaskDefinitionName(env *Environment) string {
 	return fmt.Sprintf("%s-%s-%s", s.project.Name, env.Name, s.Name)
 }
 
+func (s *Service) GetEnvFile(env *Environment) string {
+	return filepath.Join(path.Dir(s.ComposeFile), fmt.Sprintf(".%s.env", env.Name))
+}
+
 func (s *Service) GetECSTaskDefinition(env *Environment) (*ecs.TaskDefinition, error) {
-
-	// set env vars so that they are available when converting the docker
-	// compose file to a task definition
-	if err := util.AnyError(
-		os.Setenv("ECSO_ENVIRONMENT", env.Name),
-		os.Setenv("ECSO_AWS_REGION", env.Region),
-		os.Setenv("ECSO_CLUSTER_NAME", env.GetClusterName())); err != nil {
-		return nil, err
-	}
-
-	// set any env vars from the service configuration for the current environment
-	for k, v := range s.Environments[env.Name].Env {
-		if err := os.Setenv(k, v); err != nil {
-			return nil, err
-		}
-	}
-
 	name := s.GetECSTaskDefinitionName(env)
 
 	envLookup, err := s.GetEnvironmentLookup(env)
-
 	if err != nil {
 		return nil, err
 	}
 
 	resourceLookup, err := utils.GetDefaultResourceLookup()
-
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +100,6 @@ func (s *Service) GetECSTaskDefinition(env *Environment) (*ecs.TaskDefinition, e
 	}
 
 	p := project.NewProject(context, nil, nil)
-
 	if err := p.Parse(); err != nil {
 		return nil, err
 	}
@@ -130,14 +112,40 @@ func (s *Service) SetProject(p *Project) {
 }
 
 func (s *Service) GetEnvironmentLookup(env *Environment) (*lookup.ComposableEnvLookup, error) {
-	envfile := filepath.Join(path.Dir(s.ComposeFile), fmt.Sprintf(".%s.env", env.Name))
-
 	return &lookup.ComposableEnvLookup{
-		Lookups: []lConfig.EnvironmentLookup{
+		Lookups: []lconfig.EnvironmentLookup{
 			&lookup.EnvfileLookup{
-				Path: envfile,
+				Path: s.GetEnvFile(env),
 			},
-			&lookup.OsEnvLookup{},
+			&EcsoServiceEnvironmentLookup{
+				Service:     s,
+				Environment: env,
+			},
 		},
 	}, nil
+}
+
+type EcsoServiceEnvironmentLookup struct {
+	Service     *Service
+	Environment *Environment
+}
+
+func (l *EcsoServiceEnvironmentLookup) Lookup(key string, config *lconfig.ServiceConfig) []string {
+	defaults := map[string]string{
+		"ECSO_ENVIRONMENT":  l.Environment.Name,
+		"ECSO_AWS_REGION":   l.Environment.Region,
+		"ECSO_CLUSTER_NAME": l.Environment.GetClusterName(),
+	}
+
+	val, ok := l.Service.Environments[l.Environment.Name][key]
+	if ok {
+		return []string{fmt.Sprintf("%s=%s", key, val)}
+	}
+
+	val, ok = defaults[key]
+	if ok {
+		return []string{fmt.Sprintf("%s=%s", key, val)}
+	}
+
+	return []string{}
 }
