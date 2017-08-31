@@ -150,8 +150,11 @@ Resources:
                   PropagateAtLaunch: true
         CreationPolicy:
             ResourceSignal:
+                Count: !Ref ClusterSize
                 Timeout: PT15M
         UpdatePolicy:
+            AutoScalingScheduledAction:
+                IgnoreUnmodifiedGroupSizeProperties: 'true'
             AutoScalingRollingUpdate:
                 MinInstancesInService: !Ref ClusterSize
                 MaxBatchSize: 1
@@ -275,6 +278,10 @@ Resources:
                 "Fn::Base64": !Sub |
                     #!/bin/bash
                     echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
+
+                    function error_exit {
+                        /opt/aws/bin/cfn-signal -e 1 --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSAutoScalingGroup
+                    }
 
                     yum install -y aws-cfn-bootstrap aws-cli jq
 
