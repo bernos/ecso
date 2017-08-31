@@ -39,7 +39,7 @@ type CommandContext struct {
 }
 
 // NewCommandContext creates a CommandContext
-func NewCommandContext(project *Project, preferences *UserPreferences, version string /*, options CommandOptions*/) *CommandContext {
+func NewCommandContext(project *Project, preferences *UserPreferences, version string) *CommandContext {
 	return &CommandContext{
 		Project:         project,
 		UserPreferences: preferences,
