@@ -143,7 +143,7 @@ func (l *EcsoServiceEnvironmentLookup) Lookup(key string, config *lconfig.Servic
 		"ECSO_CLUSTER_NAME": l.Environment.GetClusterName(),
 	}
 
-	val, ok := l.Service.Environments[l.Environment.Name][key]
+	val, ok := l.Service.Environments[l.Environment.Name].Env[key]
 	if ok {
 		return []string{fmt.Sprintf("%s=%s", key, val)}
 	}
