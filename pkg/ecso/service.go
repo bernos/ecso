@@ -107,6 +107,7 @@ func (s *Service) GetECSTaskDefinition(env *Environment) (*ecs.TaskDefinition, e
 	return utils.ConvertToTaskDefinition(name, context, p.ServiceConfigs)
 }
 
+// SetProject sets the project that the service belongs to
 func (s *Service) SetProject(p *Project) {
 	s.project = p
 }
