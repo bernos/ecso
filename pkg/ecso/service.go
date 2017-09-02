@@ -117,7 +117,7 @@ func (s *Service) GetEnvironmentLookup(env *Environment) (*lookup.ComposableEnvL
 			&lookup.EnvfileLookup{
 				Path: s.GetEnvFile(env),
 			},
-			&EcsoServiceEnvironmentLookup{
+			&ServiceEnvironmentLookup{
 				Service:     s,
 				Environment: env,
 			},
@@ -125,18 +125,18 @@ func (s *Service) GetEnvironmentLookup(env *Environment) (*lookup.ComposableEnvL
 	}, nil
 }
 
-// EcsoServiceEnvironmentLookup will lookup environment vars found in a docker compose
+// ServiceEnvironmentLookup will lookup environment vars found in a docker compose
 // file from the service configuration section in the ecso project json file. It will
 // also provide the default ECSO_ENVIRONMENT, ECSO_AWS_REGION and ECSO_CLUSTER_NAME
 // env vars
-type EcsoServiceEnvironmentLookup struct {
+type ServiceEnvironmentLookup struct {
 	Service     *Service
 	Environment *Environment
 }
 
 // Lookup attempts to find a value for the requested key in either the service's
 // configuration loaded from the ecso project.json file, or from the ecso defaults
-func (l *EcsoServiceEnvironmentLookup) Lookup(key string, config *lconfig.ServiceConfig) []string {
+func (l *ServiceEnvironmentLookup) Lookup(key string, config *lconfig.ServiceConfig) []string {
 	defaults := map[string]string{
 		"ECSO_ENVIRONMENT":  l.Environment.Name,
 		"ECSO_AWS_REGION":   l.Environment.Region,
