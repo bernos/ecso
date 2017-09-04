@@ -18,11 +18,16 @@ func init() {
 	// HACK The aws ecs-cli lib we use to convert the compose file to an ecs task
 	// definition uses logrus directly and warns about a bunch of unsupported
 	// and irrelevant compose fields. Setting logrus level here to keep it quiet
-	logrus.SetLevel(logrus.ErrorLevel)
+	logrus.SetLevel(logrus.PanicLevel)
 }
 
+// Service is a single deployable ECS service. Services are defined by a
+// docker compose file located in the service source dir, and cloudformation
+// template(s) located under the .ecso project dir
 type Service struct {
-	project *Project
+	project           *Project
+	environmentLookup func(env *Environment) (lconfig.EnvironmentLookup, error)
+	resourceLookup    func(env *Environment) (lconfig.ResourceLookup, error)
 
 	Name          string
 	ComposeFile   string
@@ -34,11 +39,14 @@ type Service struct {
 	Environments  map[string]ServiceConfiguration
 }
 
+// ServiceConfiguration contains environment vars and cloudformation params
+// for a service
 type ServiceConfiguration struct {
 	Env                      map[string]string
 	CloudFormationParameters map[string]string
 }
 
+// Dir returns the source directory of the service
 func (s *Service) Dir() string {
 	return filepath.Join(s.project.Dir(), "services", s.Name)
 }
@@ -87,7 +95,7 @@ func (s *Service) GetECSTaskDefinition(env *Environment) (*ecs.TaskDefinition, e
 		return nil, err
 	}
 
-	resourceLookup, err := utils.GetDefaultResourceLookup()
+	resourceLookup, err := s.GetResourceLookup(env)
 	if err != nil {
 		return nil, err
 	}
@@ -112,18 +120,30 @@ func (s *Service) SetProject(p *Project) {
 	s.project = p
 }
 
-func (s *Service) GetEnvironmentLookup(env *Environment) (*lookup.ComposableEnvLookup, error) {
+func (s *Service) GetEnvironmentLookup(env *Environment) (lconfig.EnvironmentLookup, error) {
+	if s.environmentLookup != nil {
+		return s.environmentLookup(env)
+	}
+
 	return &lookup.ComposableEnvLookup{
 		Lookups: []lconfig.EnvironmentLookup{
-			&lookup.EnvfileLookup{
-				Path: s.GetEnvFile(env),
-			},
 			&ServiceEnvironmentLookup{
 				Service:     s,
 				Environment: env,
 			},
+			&lookup.EnvfileLookup{
+				Path: s.GetEnvFile(env),
+			},
 		},
 	}, nil
+}
+
+func (s *Service) GetResourceLookup(env *Environment) (lconfig.ResourceLookup, error) {
+	if s.resourceLookup != nil {
+		return s.resourceLookup(env)
+	}
+
+	return utils.GetDefaultResourceLookup()
 }
 
 // ServiceEnvironmentLookup will lookup environment vars found in a docker compose
