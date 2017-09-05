@@ -461,17 +461,15 @@ func (api *serviceAPI) registerECSTaskDefinition(project *ecso.Project, env *ecs
 
 	// TODO: fully qualify the path to the service compose file
 	// taskDefinition, err := ConvertToTaskDefinition(taskName, service.ComposeFile)
-	fmt.Fprintf(info, "Converting '%s' to task definition...", service.ComposeFile)
+	fmt.Fprintf(info, "Converting '%s' to task definition...\n", service.ComposeFile)
 
 	taskDefinition, err := service.GetECSTaskDefinition(env)
-
-	fmt.Fprintf(info, "\nRegistering ECS task definition '%s'...", taskName)
-
 	if err != nil {
 		return nil, err
 	}
 
 	for _, container := range taskDefinition.ContainerDefinitions {
+		fmt.Fprintf(info, "Configuring cloudwatch logs for %s container\n", *container.Name)
 		container.SetLogConfiguration(&ecs.LogConfiguration{
 			LogDriver: aws.String(ecs.LogDriverAwslogs),
 			Options: map[string]*string{
@@ -486,6 +484,7 @@ func (api *serviceAPI) registerECSTaskDefinition(project *ecso.Project, env *ecs
 		//      required env vars to the helpers docker-compose file. This is
 		//      less magic and more flexible
 		for _, p := range container.PortMappings {
+			fmt.Fprintf(info, "Adding service discovery env var SERVICE_%d_NAME to %s container\n", *p.ContainerPort, *container.Name)
 			container.Environment = append(container.Environment, &ecs.KeyValuePair{
 				Name:  aws.String(fmt.Sprintf("SERVICE_%d_NAME", *p.ContainerPort)),
 				Value: aws.String(fmt.Sprintf("%s.%s", service.Name, env.GetClusterName())),
@@ -493,6 +492,7 @@ func (api *serviceAPI) registerECSTaskDefinition(project *ecso.Project, env *ecs
 		}
 	}
 
+	fmt.Fprintf(info, "Registering ECS task definition '%s'...", taskName)
 	resp, err := api.ecsAPI.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
 		ContainerDefinitions: taskDefinition.ContainerDefinitions,
 		Family:               taskDefinition.Family,
