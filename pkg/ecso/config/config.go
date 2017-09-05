@@ -108,3 +108,15 @@ func WithAWSSession(sess *session.Session) func(*Config) {
 		cfg.sess = sess
 	}
 }
+
+func WithReader(r io.Reader) func(*Config) {
+	return func(cfg *Config) {
+		cfg.reader = r
+	}
+}
+
+func WithWriter(w io.Writer) func(*Config) {
+	return func(cfg *Config) {
+		cfg.w = w
+	}
+}

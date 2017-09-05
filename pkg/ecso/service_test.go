@@ -2,14 +2,19 @@ package ecso
 
 import (
 	"fmt"
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	lconfig "github.com/docker/libcompose/config"
 )
 
+const (
+	testDir = "testdata"
+)
+
 func makeTestProject() *Project {
-	return NewProject("/project", "my-project", "1")
+	return NewProject(filepath.Join(testDir, "my-project"), "my-project", "1")
 }
 
 func makeTestEnvironment() *Environment {
@@ -23,7 +28,7 @@ func makeTestService() *Service {
 	return &Service{
 		project:     makeTestProject(),
 		Name:        "my-service",
-		ComposeFile: "testdata/services/my-service/docker-compose.yaml",
+		ComposeFile: testDir + "/services/my-service/docker-compose.yaml",
 	}
 }
 
@@ -34,17 +39,17 @@ func assertEqual(want, got interface{}, t *testing.T) {
 }
 
 func TestDir(t *testing.T) {
-	assertEqual("/project/services/my-service",
+	assertEqual(testDir+"/my-project/services/my-service",
 		makeTestService().Dir(), t)
 }
 
 func TestGetCloudFormationTemplateDir(t *testing.T) {
-	assertEqual("/project/.ecso/services/my-service",
+	assertEqual(testDir+"/my-project/.ecso/services/my-service",
 		makeTestService().GetCloudFormationTemplateDir(), t)
 }
 
 func TestGetCloudFormationTemplateFile(t *testing.T) {
-	assertEqual("/project/.ecso/services/my-service/stack.yaml",
+	assertEqual(testDir+"/my-project/.ecso/services/my-service/stack.yaml",
 		makeTestService().GetCloudFormationTemplateFile(), t)
 }
 
