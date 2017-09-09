@@ -28,6 +28,7 @@ var (
 		NewTextFile(MustParseTemplate(ecso.EnvironmentCloudFormationDir+"/dns-cleaner.yaml", environmentDNSCleanerTemplate)),
 		NewTextFile(MustParseTemplate(ecso.EnvironmentCloudFormationDir+"/ecs-cluster.yaml", environmentClusterTemplate)),
 		NewTextFile(MustParseTemplate(ecso.EnvironmentCloudFormationDir+"/instance-drainer.yaml", environmentInstanceDrainerLambda)),
+		NewTextFile(MustParseTemplate(ecso.EnvironmentCloudFormationDir+"/service-discovery.yaml", environmentServiceDiscoveryLambda)),
 		NewTextFile(MustParseTemplate(ecso.EnvironmentCloudFormationDir+"/load-balancers.yaml", environmentALBTemplate)),
 		NewTextFile(MustParseTemplate(ecso.EnvironmentCloudFormationDir+"/logging.yaml", environmentLoggingTemplate)),
 		NewTextFile(MustParseTemplate(ecso.EnvironmentCloudFormationDir+"/security-groups.yaml", environmentSecurityGroupTemplate)),
@@ -36,6 +37,8 @@ var (
 
 		NewZipFile(fmt.Sprintf("%s/lambda/instance-drainer-%s.zip", ecso.EnvironmentResourceDir, InstanceDrainerLambdaVersion),
 			template.Must(template.New("index.py").Parse(environmentInstanceDrainerLambdaSource))),
+		NewZipFile(fmt.Sprintf("%s/lambda/service-discovery-%s.zip", ecso.EnvironmentResourceDir, ServiceDiscoveryLambdaVersion),
+			template.Must(template.New("index.js").Parse(environmentServiceDiscoveryLambdaSource))),
 	}
 )
 

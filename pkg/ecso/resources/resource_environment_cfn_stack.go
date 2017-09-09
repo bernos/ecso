@@ -132,6 +132,16 @@ Resources:
                   - SecurityGroups
                   - Outputs.LoadBalancerSecurityGroup
 
+    ServiceDiscoveryLambda:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: ./service-discovery.yaml
+            Parameters:
+                DNSZone: !Ref DNSZone
+                EnvironmentName: !Ref AWS::StackName
+                S3BucketName: !Ref S3BucketName
+                S3Key: !Sub ${S3KeyPrefix}/resources/lambda/service-discovery-` + ServiceDiscoveryLambdaVersion + `.zip
+
     InstanceDrainerLambda:
         Type: AWS::CloudFormation::Stack
         Properties:
