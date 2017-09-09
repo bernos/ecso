@@ -1,0 +1,102 @@
+Parameters:
+
+    EnvironmentName:
+        Description: An environment name that will be prefixed to resource names
+        Type: String
+
+    S3BucketName:
+        Description: Name of the S3 bucket containing the Lambda source code
+        Type: String
+
+    S3Key:
+        Description: Path in the S3 bucket to the lambda source code
+        Type: String
+
+    DNSZone:
+        Description: Select the DNS zone to use for service discovery
+        Type: String
+
+Resources:
+    CloudWatchEvents:
+        Type: AWS::Events::Rule
+        Properties:
+            Name: !Sub ${EnvironmentName}-ServiceDiscovery-Events
+            State: ENABLED
+            EventPattern:
+                source:
+                    - "aws.ecs"
+                detail-type:
+                    - "ECS Task State Change"
+                detail:
+                    clusterArn:
+                        - !Sub arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${EnvironmentName}
+            Targets:
+                - Arn: !GetAtt LambdaFunction.Arn
+                  Id: !Sub ${EnvironmentName}-ServiceDiscovery-Events-Lambda-Target
+
+    LambdaFunction:
+        Type: AWS::Lambda::Function
+        Properties:
+            FunctionName: !Sub ${EnvironmentName}-Service-Discovery
+            Handler: index.handler
+            Role: !GetAtt LambdaExecutionRole.Arn
+            Runtime: nodejs6.10
+            Timeout: 300
+            Description: A Lambda function that adds SRV records to route53 for containers that have exposed ports
+            Environment:
+                Variables:
+                    DNS_ZONE: !Ref DNSZone
+            Code:
+                S3Bucket: !Ref S3BucketName
+                S3Key: !Ref S3Key
+
+    InvokeLambdaPermission:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName:
+                Ref: LambdaFunction
+            Action: "lambda:InvokeFunction"
+            Principal: "events.amazonaws.com"
+            SourceArn: !GetAtt CloudWatchEvents.Arn
+
+    LambdaExecutionRole:
+        Type: AWS::IAM::Role
+        Properties:
+            Path: "/"
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - Effect: Allow
+                      Action:
+                          - sts:AssumeRole
+                      Principal:
+                          Service:
+                              - lambda.amazonaws.com
+            Policies:
+                - PolicyName: root
+                  PolicyDocument:
+                      Version: '2012-10-17'
+                      Statement:
+                          - Effect: Allow
+                            Resource: "*"
+                            Action:
+                                - logs:CreateLogGroup
+                                - logs:CreateLogStream
+                                - logs:PutLogEvents
+                                - ec2:DescribeInstances
+                                - ec2:DescribeInstanceAttribute
+                                - ec2:DescribeInstanceStatus
+                                - ec2:DescribeHosts
+                                - ecs:Describe*
+                                - ecs:ListContainerInstances
+                                - ecs:SubmitContainerStateChange
+                                - ecs:SubmitTaskStateChange
+                                - ecs:DescribeContainerInstances
+                                - ecs:UpdateContainerInstancesState
+                                - ecs:ListTasks
+                                - ecs:DescribeTasks
+                                - route53:*
+
+Outputs:
+    LambdaFunction:
+        Value: !Ref LambdaFunction

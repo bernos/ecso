@@ -1,0 +1,3 @@
+package assets
+
+//go:generate go-bindata -pkg $GOPACKAGE -o asset-files.go ./...
