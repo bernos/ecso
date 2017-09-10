@@ -1,12 +1,13 @@
 package resources
 
+//go:generate go-bindata -pkg $GOPACKAGE -o resources-generated.go ./...
+
 import (
 	"fmt"
 	"io"
 	"path/filepath"
 	"text/template"
 
-	"github.com/bernos/ecso/assets"
 	"github.com/bernos/ecso/pkg/ecso"
 )
 
@@ -98,7 +99,7 @@ func MustParseTemplate(name, body string) *template.Template {
 }
 
 func MustParseTemplateAsset(name, assetPath string) *template.Template {
-	a := assets.MustAsset(assetPath)
+	a := MustAsset(assetPath)
 	t := template.Must(template.New(name).Parse(string(a)))
 
 	return t
