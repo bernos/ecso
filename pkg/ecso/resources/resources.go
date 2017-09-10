@@ -25,6 +25,10 @@ var (
 
 	// EnvironmentFiles is the list of all files needed to build an environment
 	EnvironmentFiles = environmentFiles()
+
+	InstanceDrainerLambdaVersion = "1.0.0"
+
+	ServiceDiscoveryLambdaVersion = "1.0.0"
 )
 
 func environmentFiles() []Resource {
