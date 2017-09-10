@@ -12,25 +12,27 @@ import (
 )
 
 var (
-	// Cloudformation template for our default web service
-	WebServiceCloudFormationTemplate = NewTextFile(MustParseTemplateAsset("stack.yaml", "services/web/cloudformation/stack.yaml"))
-
-	// Docker compose file for default web service
-	WebServiceDockerComposeFile = NewTextFile(MustParseTemplateAsset("docker-compose.yaml", "services/web/docker-compose.yaml"))
-
-	// Cloudformation template for default worker service
-	WorkerServiceCloudFormationTemplate = NewTextFile(MustParseTemplateAsset("stack.yaml", "services/worker/cloudformation/stack.yaml"))
-
-	// Docker compose file for default worker service
-	WorkerServiceDockerComposeFile = NewTextFile(MustParseTemplateAsset("docker-compose.yaml", "services/worker/docker-compose.yaml"))
-
-	// EnvironmentFiles is the list of all files needed to build an environment
-	EnvironmentFiles = environmentFiles()
-
 	InstanceDrainerLambdaVersion = "1.0.0"
 
 	ServiceDiscoveryLambdaVersion = "1.0.0"
+
+	EnvironmentFiles = environmentFiles()
+
+	WebService = ServiceResources{
+		ComposeFile:            NewTextFile(MustParseTemplateAsset("docker-compose.yaml", "services/web/docker-compose.yaml")),
+		CloudFormationTemplate: NewTextFile(MustParseTemplateAsset("stack.yaml", "services/web/cloudformation/stack.yaml")),
+	}
+
+	WorkerService = ServiceResources{
+		ComposeFile:            NewTextFile(MustParseTemplateAsset("docker-compose.yaml", "services/worker/docker-compose.yaml")),
+		CloudFormationTemplate: NewTextFile(MustParseTemplateAsset("stack.yaml", "services/worker/cloudformation/stack.yaml")),
+	}
 )
+
+type ServiceResources struct {
+	ComposeFile            Resource
+	CloudFormationTemplate Resource
+}
 
 func environmentFiles() []Resource {
 	files := environmentCfnTemplates()
@@ -92,10 +94,6 @@ func environmentCfnTemplates() []Resource {
 type Resource interface {
 	Filename() string
 	WriteTo(w io.Writer, data interface{}) error
-}
-
-func MustParseTemplate(name, body string) *template.Template {
-	return template.Must(template.New(name).Parse(body))
 }
 
 func MustParseTemplateAsset(name, assetPath string) *template.Template {
