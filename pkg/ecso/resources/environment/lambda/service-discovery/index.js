@@ -6,29 +6,56 @@ AWS.config.update({
 
 const ecs = new AWS.ECS();
 const ec2 = new AWS.EC2();
+const r53 = new AWS.Route53();
 
-const processContainer = (containerInstance, taskDefinition) => container => {
+const processContainer = (zoneName, containerInstance, taskDefinition) => container => {
+    const createRecords = updateDnsForContainer("CREATE");
+    const deleteRecords = updateDnsForContainer("DELETE");
+
     switch (container.lastStatus) {
         case "RUNNING":
-            return processContainerStarted(containerInstance, taskDefinition, container);
+            return createRecords(zoneName, containerInstance, taskDefinition, container);
         case "STOPPED":
-            return processContainerStopped(containerInstance, taskDefinition, container);
+            return deleteRecords(zoneName, containerInstance, taskDefinition, container);
         default:
-            return Promise.resolve();
+            return Promise.resolve([]);
     }
 }
 
-const processContainerStarted = (containerInstance, taskDefinition, container) => {
-    const recs = resourceRecordSets(containerInstance, taskDefinition, container);
-    return Promise.all(recs.map(ensureResourceRecordSetExists));
+const updateDnsForContainer = action => (zoneName, containerInstance, taskDefinition, container) => {
+    return getDnsZoneId(zoneName)
+        .then(zoneId => Promise.all(
+            containerResourceRecordSets(zoneName, containerInstance, taskDefinition, container)
+                .map(createChangeBatch(action, zoneId))
+                .map(changeResourceRecordSet)));
+};
+
+const createChangeBatch = (action, zoneId) => resourceRecordSet => ({
+    ChangeBatch: {
+        Changes: [
+            {
+                Action: action,
+                ResourceRecordSet: resourceRecordSet
+            }
+        ],
+        Comment: "Created by ecso service discovery lambda"
+    },
+    HostedZoneId: zoneId
+});
+
+const getDnsZoneId = name => {
+    var params = {
+        DNSName: name
+    };
+
+    return new Promise((resolve, reject) => {
+        r53.listHostedZonesByName(params, (err, data) => {
+            err ? reject(err) : resolve(data.HostedZones[0].Id);
+        });
+    });
 }
 
-const processContainerStopped = (containerInstance, taskDefinition, container) => {
-    const recs = resourceRecordSets(containerInstance, taskDefinition, container);
-    return Promise.all(recs.map(ensureResourceRecordSetDoesNotExist));
-}
-
-const resourceRecordSets = (containerInstance, taskDefinition, container) => {
+const containerResourceRecordSets = (zoneName, containerInstance, taskDefinition, container) => {
     const env = containerEnv(taskDefinition, container.name);
 
     return env.reduce((records, envVar) => {
@@ -36,29 +63,36 @@ const resourceRecordSets = (containerInstance, taskDefinition, container) => {
         const info = envVarToServiceDiscoveryInfo(envVar);
 
         if (info != null) {
-            const binding = findBinding(info.port, container.networkBindings);
-
-            records.push({
-                Name: info.name + "." + process.env.DNS_ZONE,
-                Type: "SRV",
-                TTL: 0,
-                Weight: 1,
-                ResourceRecords: [
-                    "1 1 " + binding.containerPort + " " + containerInstance.PrivateDnsName
-                ]
-            });
+            records.push(
+                containerResourceRecordSet(
+                    info.name,
+                    zoneName,
+                    findBinding(info.port, container.networkBindings),
+                    containerInstance));
         }
 
         return records;
     }, []);
 }
 
+const containerResourceRecordSet = (serviceName, dnsZone, networkBinding, containerInstance) => ({
+    Name: serviceName + "." + dnsZone,
+    Type: "SRV",
+    TTL: 0,
+    ResourceRecords: [{
+        Value: srvRecord(1, 1, networkBinding.hostPort, containerInstance.PrivateDnsName)
+    }]
+});
+
+const srvRecord = (priority, weight, port, hostname) =>
+    priority + " " + weight + " " + port + " " + hostname;
+
 const envVarToServiceDiscoveryInfo = envVar => {
     const parts = envVar.name.split("_");
 
     if (parts.length == 3 && parts[0] == "SERVICE" && parts[2] == "NAME") {
         return {
-            name: envVar.name,
+            name: envVar.value,
             port: parts[1]
         };
     }
@@ -76,19 +110,20 @@ const findBinding = (containerPort, bindings) => {
     }, {});
 }
 
-const ensureResourceRecordSetExists = binding => {
-    console.log("Ensuring record exists for", binding);
-    return new Promise((resolve, reject) => resolve(binding));
-};
-
-const ensureResourceRecordSetDoesNotExist = binding => {
-    console.log("Ensuring record does not exist for", binding);
-    return new Promise((resolve, reject) => resolve(binding));
+const changeResourceRecordSet = params => {
+    console.log("Changes: ", JSON.stringify(params));
+    return new Promise((resolve, reject) => {
+        r53.changeResourceRecordSets(params, (err, data) => {
+            err ? reject(err) : resolve(data);
+        });
+    });
 };
 
 const getTaskDefinition = arn => {
     return new Promise((resolve, reject) => {
-        ecs.describeTaskDefinition({ taskDefinition: arn }, (err, data) => {
+        ecs.describeTaskDefinition({
+            taskDefinition: arn
+        }, (err, data) => {
             err ? reject(err) : resolve(data);
         });
     });
@@ -105,7 +140,7 @@ const getEC2Instance = id => {
                 return i.InstanceId == id ? i : instance;
             }, null));
         });
-    })
+    });
 }
 
 const getContainerInstance = (cluster, arn) => {
@@ -129,18 +164,18 @@ const getContainerInstance = (cluster, arn) => {
     });
 }
 
-const handleEvent = event => {
+const handleEvent = (zoneName, event) => {
     return getContainerInstance("ecso-demo-dev", event.detail.containerInstanceArn)
         .then(instance => {
             return getTaskDefinition(event.detail.taskDefinitionArn)
                 .then(data => {
-                    return Promise.all(event.detail.containers.map(processContainer(instance, data.taskDefinition)));
+                    return Promise.all(event.detail.containers.map(processContainer(zoneName, instance, data.taskDefinition)));
                 });
         })
 }
 
 exports.handler = function (event, context, cb) {
-    handleEvent(event)
+    handleEvent(process.env.DNS_ZONE, event)
         .then(val => {
             cb(null, val);
         })

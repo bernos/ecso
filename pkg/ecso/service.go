@@ -52,7 +52,8 @@ func (s *Service) Dir() string {
 }
 
 func (s *Service) GetCloudFormationTemplateDir() string {
-	return filepath.Join(s.project.DotDir(), "services", s.Name)
+	return filepath.Join(s.Dir(), "cloudformation")
+	// return filepath.Join(s.project.DotDir(), "services", s.Name)
 }
 
 func (s *Service) GetCloudFormationTemplateFile() string {

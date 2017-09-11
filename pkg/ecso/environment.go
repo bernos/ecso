@@ -9,7 +9,7 @@ import (
 var (
 	// EnvironmentCloudFormationDir is the path relative to the .ecso dir that the
 	// environment cloudformation templates are stored
-	EnvironmentCloudFormationDir = filepath.Join(ecsoDotDir, "infrastructure", "templates")
+	EnvironmentCloudFormationDir = filepath.Join(ecsoDotDir, "environment", "cloudformation")
 
 	// EnvironmentResourceDir is the path relative to the .ecso dir that the
 	// environment resource files are stored

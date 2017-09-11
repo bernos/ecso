@@ -44,13 +44,17 @@ func TestDir(t *testing.T) {
 }
 
 func TestGetCloudFormationTemplateDir(t *testing.T) {
-	assertEqual(testDir+"/my-project/.ecso/services/my-service",
+	assertEqual(testDir+"/my-project/services/my-service/cloudformation",
 		makeTestService().GetCloudFormationTemplateDir(), t)
+	// assertEqual(testDir+"/my-project/.ecso/services/my-service",
+	// 	makeTestService().GetCloudFormationTemplateDir(), t)
 }
 
 func TestGetCloudFormationTemplateFile(t *testing.T) {
-	assertEqual(testDir+"/my-project/.ecso/services/my-service/stack.yaml",
+	assertEqual(testDir+"/my-project/services/my-service/cloudformation/stack.yaml",
 		makeTestService().GetCloudFormationTemplateFile(), t)
+	// assertEqual(testDir+"/my-project/.ecso/services/my-service/stack.yaml",
+	// 	makeTestService().GetCloudFormationTemplateFile(), t)
 }
 
 func TestGetCloudFormationStackName(t *testing.T) {

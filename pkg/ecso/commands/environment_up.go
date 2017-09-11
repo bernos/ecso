@@ -87,9 +87,19 @@ func (cmd *EnvironmentUpCommand) ensureEnvironmentFiles(ctx *ecso.CommandContext
 		return err
 	}
 
+	templateData := struct {
+		ServiceDiscoveryLambdaVersion string
+		InstanceDrainerLambdaVersion  string
+		Environment                   *ecso.Environment
+	}{
+		ServiceDiscoveryLambdaVersion: resources.ServiceDiscoveryLambdaVersion,
+		InstanceDrainerLambdaVersion:  resources.InstanceDrainerLambdaVersion,
+		Environment:                   env,
+	}
+
 	if cmd.force {
 		w := resources.NewFileSystemResourceWriter(project.Dir())
-		return w.WriteResources(nil, resources.EnvironmentFiles...)
+		return w.WriteResources(templateData, resources.EnvironmentFiles...)
 	}
 
 	stackExists, err := cmd.environmentAPI.IsEnvironmentUp(env)
@@ -102,5 +112,5 @@ func (cmd *EnvironmentUpCommand) ensureEnvironmentFiles(ctx *ecso.CommandContext
 	}
 
 	w := resources.NewFileSystemResourceWriter(project.Dir())
-	return w.WriteResources(nil, resources.EnvironmentFiles...)
+	return w.WriteResources(templateData, resources.EnvironmentFiles...)
 }

@@ -136,7 +136,7 @@ Resources:
                 DNSZone: !Ref DNSZone
                 EnvironmentName: !Ref AWS::StackName
                 S3BucketName: !Ref S3BucketName
-                S3Key: !Sub ${S3KeyPrefix}/resources/lambda/service-discovery-` + ServiceDiscoveryLambdaVersion + `.zip
+                S3Key: !Sub ${S3KeyPrefix}/resources/lambda/service-discovery-{{.ServiceDiscoveryLambdaVersion}}.zip
 
     InstanceDrainerLambda:
         Type: AWS::CloudFormation::Stack
@@ -153,7 +153,7 @@ Resources:
                     - ECS
                     - Outputs.AutoScalingGroupName
                 S3BucketName: !Ref S3BucketName
-                S3Key: !Sub ${S3KeyPrefix}/resources/lambda/instance-drainer-` + InstanceDrainerLambdaVersion + `.zip
+                S3Key: !Sub ${S3KeyPrefix}/resources/lambda/instance-drainer-{{.InstanceDrainerLambdaVersion}}.zip
 
     Logs:
         Type: AWS::CloudFormation::Stack
