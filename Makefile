@@ -24,8 +24,8 @@ clean-docs:
 
 deps:
 	@echo "\n$(OK_COLOR)====> Fetching depenencies$(NO_COLOR)"
-	go get -u -v github.com/aktau/github-release
-	go get -u -v github.com/jteeuwen/go-bindata
+	go get -v github.com/aktau/github-release/...
+	go get -v github.com/jteeuwen/go-bindata/...
 	ls $(GOPATH)
 	ls $(GOPATH)/bin
 
