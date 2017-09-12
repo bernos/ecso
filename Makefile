@@ -24,7 +24,10 @@ clean-docs:
 
 deps:
 	@echo "\n$(OK_COLOR)====> Fetching depenencies$(NO_COLOR)"
-	go get github.com/aktau/github-release
+	go get -v github.com/aktau/github-release/...
+	go get -v github.com/jteeuwen/go-bindata/...
+	ls $(GOPATH)
+	ls $(GOPATH)/bin
 
 docs: test build clean-docs
 	go run cmd/make-docs/main.go > ./docs/docs.md
@@ -41,7 +44,11 @@ tag:
 	@echo "\n$(OK_COLOR)====> Tagging v$(VERSION)$(NO_COLOR)"
 	git tag -a v$(VERSION) -m 'release $(VERSION)'
 
-test: deps
+generate: deps
+	@echo "\n$(OK_COLOR)====> Embedding assets$(NO_COLOR)"
+	go generate -x ./...
+
+test: generate
 	@echo "\n$(OK_COLOR)====> Running tests$(NO_COLOR)"
 	go test ./pkg/... ./cmd/...
 
@@ -68,4 +75,4 @@ $(BINARIES): test
 	@echo "\n$(OK_COLOR)====> Building $@$(NO_COLOR)"
 	GOOS=$(word 1, $(osarch)) GOARCH=$(word 2, $(osarch)) go build -a -ldflags "-X main.version=$(VERSION)" -o $(RELEASE_DIR)/$@ main.go
 
-.PHONY: release tag test deps clean install docs
+.PHONY: release tag test deps clean install docs generate

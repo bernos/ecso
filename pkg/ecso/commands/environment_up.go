@@ -87,16 +87,30 @@ func (cmd *EnvironmentUpCommand) ensureEnvironmentFiles(ctx *ecso.CommandContext
 		return err
 	}
 
-	stackExists, err := cmd.environmentAPI.IsEnvironmentUp(env)
+	templateData := struct {
+		ServiceDiscoveryLambdaVersion string
+		InstanceDrainerLambdaVersion  string
+		Environment                   *ecso.Environment
+	}{
+		ServiceDiscoveryLambdaVersion: resources.ServiceDiscoveryLambdaVersion,
+		InstanceDrainerLambdaVersion:  resources.InstanceDrainerLambdaVersion,
+		Environment:                   env,
+	}
 
+	if cmd.force {
+		w := resources.NewFileSystemResourceWriter(project.Dir())
+		return w.WriteResources(templateData, resources.EnvironmentFiles...)
+	}
+
+	stackExists, err := cmd.environmentAPI.IsEnvironmentUp(env)
 	if err != nil {
 		return err
 	}
 
-	if stackExists && !cmd.force {
+	if stackExists {
 		return fmt.Errorf("This looks like the first time you've run `environment up` for the %s environment from this repository, however there is already a CloudFormation stack up and running. This could mean that someone has already created the %s environment for the %s project. If you really know what you are doing, you can rerun `environment up` with the `--force` flag.", env.Name, env.Name, project.Name)
 	}
 
 	w := resources.NewFileSystemResourceWriter(project.Dir())
-	return w.WriteResources(nil, resources.EnvironmentFiles...)
+	return w.WriteResources(templateData, resources.EnvironmentFiles...)
 }

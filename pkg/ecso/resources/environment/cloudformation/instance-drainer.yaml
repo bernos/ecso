@@ -1,6 +1,3 @@
-package resources
-
-var environmentInstanceDrainerLambda = `
 Parameters:
 
     EnvironmentName:
@@ -118,5 +115,3 @@ Resources:
                                 - ecs:DescribeTasks
                                 - sns:Publish
                                 - sns:ListSubscriptions
-
-`

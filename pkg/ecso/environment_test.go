@@ -30,18 +30,24 @@ func TestEnvironmentResourceBucketPrefix(t *testing.T) {
 }
 
 func TestEnvironmentGetCloudFormationTemplateDir(t *testing.T) {
-	assertEqual(testDir+"/my-project/.ecso/infrastructure/templates",
+	assertEqual(testDir+"/my-project/.ecso/environment/cloudformation",
 		makeTestEnvironment().GetCloudFormationTemplateDir(), t)
+	// assertEqual(testDir+"/my-project/.ecso/infrastructure/templates",
+	// 	makeTestEnvironment().GetCloudFormationTemplateDir(), t)
 }
 
 func TestEnvironmentGetResourceDir(t *testing.T) {
-	assertEqual(testDir+"/my-project/.ecso/infrastructure/templates/resources",
+	assertEqual(testDir+"/my-project/.ecso/environment/cloudformation/resources",
 		makeTestEnvironment().GetResourceDir(), t)
+	// assertEqual(testDir+"/my-project/.ecso/infrastructure/templates/resources",
+	// 	makeTestEnvironment().GetResourceDir(), t)
 }
 
 func TestEnvironmentGetCloudFormationTemplateFile(t *testing.T) {
-	assertEqual(testDir+"/my-project/.ecso/infrastructure/templates/stack.yaml",
+	assertEqual(testDir+"/my-project/.ecso/environment/cloudformation/stack.yaml",
 		makeTestEnvironment().GetCloudFormationTemplateFile(), t)
+	// assertEqual(testDir+"/my-project/.ecso/infrastructure/templates/stack.yaml",
+	// 	makeTestEnvironment().GetCloudFormationTemplateFile(), t)
 }
 
 func TestEnvironmentGetClusterName(t *testing.T) {

@@ -101,24 +101,20 @@ func (cmd *ServiceAddCommand) createResources(project *ecso.Project, service *ec
 		Project: project,
 	}
 
+	var serviceResources *resources.ServiceResources
+
 	if len(service.Route) > 0 {
-		if err := cfnWriter.WriteResource(resources.WebServiceCloudFormationTemplate, templateData); err != nil {
-			return err
-		}
-
-		if err := resourceWriter.WriteResource(resources.WebServiceDockerComposeFile, templateData); err != nil {
-			return err
-		}
-
+		serviceResources = &resources.WebService
 	} else {
+		serviceResources = &resources.WorkerService
+	}
 
-		if err := cfnWriter.WriteResource(resources.WorkerServiceCloudFormationTemplate, templateData); err != nil {
-			return err
-		}
+	if err := cfnWriter.WriteResource(serviceResources.CloudFormationTemplate, templateData); err != nil {
+		return err
+	}
 
-		if err := resourceWriter.WriteResource(resources.WorkerServiceDockerComposeFile, templateData); err != nil {
-			return err
-		}
+	if err := resourceWriter.WriteResource(serviceResources.ComposeFile, templateData); err != nil {
+		return err
 	}
 
 	return nil
