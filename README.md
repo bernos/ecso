@@ -1,4 +1,6 @@
 # ecso
+[![Build Status](https://travis-ci.org/bernos/ecso.svg?branch=master)](https://travis-ci.org/bernos/ecso)
+
 ecso is a command line tool that provides high-level commands for building, 
 deploying, running and monitoring projects on Amazon ECS. It's features include
 - Create and manage multiple project "environments", such as production, 
