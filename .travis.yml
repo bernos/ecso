@@ -1,4 +1,7 @@
 language: go
+install:
+  - go get github.com/aktau/github-release
+  - go get github.com/jteeuwen/go-bindata
 script: make
 go:
   - tip
