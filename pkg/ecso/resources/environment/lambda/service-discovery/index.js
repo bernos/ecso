@@ -22,22 +22,19 @@ const processContainer = (zoneName, containerInstance, taskDefinition) => contai
     }
 }
 
-const updateDnsForContainer = action => (zoneName, containerInstance, taskDefinition, container) => {
-    return getDnsZoneId(zoneName)
-        .then(zoneId => Promise.all(
-            containerResourceRecordSets(zoneName, containerInstance, taskDefinition, container)
-                .map(createChangeBatch(action, zoneId))
-                .map(changeResourceRecordSet)));
-};
+const updateDnsForContainer = action => (zoneName, containerInstance, taskDefinition, container) =>
+    getDnsZoneId(zoneName)
+    .then(zoneId => Promise.all(
+        containerResourceRecordSets(zoneName, containerInstance, taskDefinition, container)
+        .map(createChangeBatch(action, zoneId))
+        .map(changeResourceRecordSet)));
 
 const createChangeBatch = (action, zoneId) => resourceRecordSet => ({
     ChangeBatch: {
-        Changes: [
-            {
-                Action: action,
-                ResourceRecordSet: resourceRecordSet
-            }
-        ],
+        Changes: [{
+            Action: action,
+            ResourceRecordSet: resourceRecordSet
+        }],
         Comment: "Created by ecso service discovery lambda"
     },
     HostedZoneId: zoneId
@@ -104,44 +101,37 @@ const containerEnv = (taskDefinition, name) =>
     taskDefinition.containerDefinitions.reduce((env, c) =>
         name == c.name ? c.environment : env, []);
 
-const findBinding = (containerPort, bindings) => {
-    return (bindings || []).reduce((binding, b) => {
-        return String(b.containerPort) == String(containerPort) ? b : binding;
-    }, {});
-}
+const findBinding = (containerPort, bindings) =>
+    (bindings || []).reduce((binding, b) =>
+        String(b.containerPort) == String(containerPort) ? b : binding, {});
 
-const changeResourceRecordSet = params => {
-    console.log("Changes: ", JSON.stringify(params));
-    return new Promise((resolve, reject) => {
+const changeResourceRecordSet = params =>
+    new Promise((resolve, reject) => {
         r53.changeResourceRecordSets(params, (err, data) => {
             err ? reject(err) : resolve(data);
         });
     });
-};
 
-const getTaskDefinition = arn => {
-    return new Promise((resolve, reject) => {
+const getTaskDefinition = arn =>
+    new Promise((resolve, reject) => {
         ecs.describeTaskDefinition({
             taskDefinition: arn
         }, (err, data) => {
-            err ? reject(err) : resolve(data);
+            err ? reject(err) : resolve(data.taskDefinition);
         });
     });
-};
 
-const getEC2Instance = id => {
-    const params = {
-        InstanceIds: [id]
-    }
-
-    return new Promise((resolve, reject) => {
-        ec2.describeInstances(params, (err, data) => {
-            err ? reject(err) : resolve(data.Reservations[0].Instances.reduce((instance, i) => {
-                return i.InstanceId == id ? i : instance;
-            }, null));
+const getEC2Instance = id =>
+    new Promise((resolve, reject) => {
+        ec2.describeInstances({
+            InstanceIds: [id]
+        }, (err, data) => {
+            err ? reject(err) : resolve(findInstanceById(id, data.Reservations[0].Instances));
         });
     });
-}
+
+const findInstanceById = (id, instances) =>
+    instances.reduce((instance, i) => i.InstanceId === id ? i : instance, null);
 
 const getContainerInstance = (cluster, arn) => {
     const params = {
@@ -164,18 +154,27 @@ const getContainerInstance = (cluster, arn) => {
     });
 }
 
-const handleEvent = (zoneName, event) => {
-    return getContainerInstance("ecso-demo-dev", event.detail.containerInstanceArn)
-        .then(instance => {
-            return getTaskDefinition(event.detail.taskDefinitionArn)
-                .then(data => {
-                    return Promise.all(event.detail.containers.map(processContainer(zoneName, instance, data.taskDefinition)));
-                });
-        })
+const handleEvent = (zoneName, clusterName, event) => {
+    switch (event["detail-type"]) {
+        case "ECS Task State Change":
+            return handleTaskStateChangeEvent(zoneName, clusterName, event);
+        default:
+            return Promise.reject("Unknown event type " + event["detail-type"]);
+    }
 }
 
-exports.handler = function (event, context, cb) {
-    handleEvent(process.env.DNS_ZONE, event)
+const handleTaskStateChangeEvent = (zoneName, clusterName, event) => {
+    return getContainerInstance(clusterName, event.detail.containerInstanceArn)
+        .then(instance => {
+            return getTaskDefinition(event.detail.taskDefinitionArn)
+                .then(taskDefinition => {
+                    return Promise.all(event.detail.containers.map(processContainer(zoneName, instance, taskDefinition)));
+                });
+        });
+}
+
+exports.handler = function(event, context, cb) {
+    handleEvent(process.env.DNS_ZONE, process.env.CLUSTER_NAME, event)
         .then(val => {
             cb(null, val);
         })

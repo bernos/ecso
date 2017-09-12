@@ -46,6 +46,7 @@ Resources:
             Environment:
                 Variables:
                     DNS_ZONE: !Ref DNSZone
+                    CLUSTER_NAME: !Ref EnvironmentName
             Code:
                 S3Bucket: !Ref S3BucketName
                 S3Key: !Ref S3Key
