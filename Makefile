@@ -24,8 +24,8 @@ clean-docs:
 
 deps:
 	@echo "\n$(OK_COLOR)====> Fetching depenencies$(NO_COLOR)"
-	go get github.com/aktau/github-release
-	go get github.com/jteeuwen/go-bindata
+	go get -u -v github.com/aktau/github-release
+	go get -u -v github.com/jteeuwen/go-bindata
 
 docs: test build clean-docs
 	go run cmd/make-docs/main.go > ./docs/docs.md

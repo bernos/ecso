@@ -1,6 +1,6 @@
 package resources
 
-//go:generate $GOPATH/bin/go-bindata -pkg $GOPACKAGE -o resources-generated.go ./...
+//go:generate go-bindata -pkg $GOPACKAGE -o resources-generated.go ./...
 
 import (
 	"fmt"
