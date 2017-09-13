@@ -518,7 +518,7 @@ func (api *serviceAPI) registerECSTaskDefinition(project *ecso.Project, env *ecs
 func (api *serviceAPI) clearServiceDNSRecords(env *ecso.Environment, service *ecso.Service, w io.Writer) error {
 	var (
 		r53Helper = helpers.NewRoute53Helper(api.route53API)
-		dnsName   = fmt.Sprintf("%s.%s.", service.Name, env.CloudFormationParameters["DNSZone"])
+		dnsName   = fmt.Sprintf("%s.%s.%s.", service.Name, env.GetClusterName(), env.CloudFormationParameters["DNSZone"])
 		info      = ui.NewInfoWriter(w)
 	)
 
