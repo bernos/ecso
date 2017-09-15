@@ -16,6 +16,10 @@ Parameters:
         Description: Select the DNS zone to use for service discovery
         Type: String
 
+    ClusterArn:
+        Description: The ARN of the ECS cluster to monitor
+        Type: String
+
 Resources:
     CloudWatchEvents:
         Type: AWS::Events::Rule
@@ -46,7 +50,7 @@ Resources:
             Environment:
                 Variables:
                     DNS_ZONE: !Ref DNSZone
-                    CLUSTER_NAME: !Ref EnvironmentName
+                    CLUSTER_ARN: !Ref ClusterArn
             Code:
                 S3Bucket: !Ref S3BucketName
                 S3Key: !Ref S3Key
