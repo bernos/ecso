@@ -25,17 +25,10 @@ const changeBatch = (action, zoneId, resourceRecordSet) => ({
 /*
   Returns a promise for the DNS zone ID of the route 53 zone matching 'name'
   */
-const getDnsZoneId = name => {
-    var params = {
+const getDnsZoneId = name =>
+    r53.listHostedZonesByName({
         DNSName: name
-    };
-
-    return new Promise((resolve, reject) => {
-        r53.listHostedZonesByName(params, (err, data) => {
-            err ? reject(err) : resolve(data.HostedZones[0].Id);
-        });
-    });
-}
+    }).promise().then(data => data.HostedZones[0].Id);
 
 /*
   Creates an array of route 53 resource record sets for a given container. A record
@@ -121,36 +114,24 @@ const findBinding = (containerPort, bindings) =>
   */
 const executeChangeBatch = params => {
     console.log("Executing change batch ", JSON.stringify(params));
-    return new Promise((resolve, reject) => {
-        r53.changeResourceRecordSets(params, (err, data) => {
-            err ? reject(err) : resolve(data);
-        });
-    });
+    return r53.changeResourceRecordSets(params).promise();
 }
 
 /*
   Returns a promise for the task definition indicated by arn
   */
 const getTaskDefinition = arn =>
-    new Promise((resolve, reject) => {
-        ecs.describeTaskDefinition({
-            taskDefinition: arn
-        }, (err, data) => {
-            err ? reject(err) : resolve(data.taskDefinition);
-        });
-    });
+    ecs.describeTaskDefinition({
+        taskDefinition: arn
+    }).promise().then(data => data.taskDefinition);
 
 /*
   Returns a promise for an ec2 instance matched by id
   */
 const getEC2Instance = id =>
-    new Promise((resolve, reject) => {
-        ec2.describeInstances({
-            InstanceIds: [id]
-        }, (err, data) => {
-            err ? reject(err) : resolve(findInstanceById(id, data.Reservations[0].Instances));
-        });
-    });
+    ec2.describeInstances({
+        InstanceIds: [id]
+    }).promise().then(data => findInstanceById(id, data.Reservations[0].Instances));
 
 /*
   Finds an ec2 instance by id from an array of ec2 instances
@@ -162,26 +143,14 @@ const findInstanceById = (id, instances) =>
   Returns a promise for an ec2 container instance with the given arn, who is a
   member of the given ecs cluster
   */
-const getContainerInstance = (cluster, arn) => {
-    const params = {
+const getContainerInstance = (cluster, arn) =>
+    ecs.describeContainerInstances({
         cluster: cluster,
         containerInstances: [arn]
-    }
-
-    return new Promise((resolve, reject) => {
-        ecs.describeContainerInstances(params, (err, data) => {
-            if (err) {
-                reject(err);
-            } else if (!data.containerInstances.length) {
-                resolve(null);
-            } else {
-                getEC2Instance(data.containerInstances[0].ec2InstanceId)
-                    .then(resolve)
-                    .catch(reject);
-            }
-        });
-    });
-}
+    }).promise().then(data =>
+        data.containerInstances.length ?
+        getEC2Instance(data.containerInstances[0].ec2InstanceId) :
+        null);
 
 /*
   Returns a promise for the result of handling a single ecs task change event
