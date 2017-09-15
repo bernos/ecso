@@ -137,6 +137,7 @@ Resources:
                 EnvironmentName: !Ref AWS::StackName
                 S3BucketName: !Ref S3BucketName
                 S3Key: !Sub ${S3KeyPrefix}/resources/lambda/service-discovery-{{.ServiceDiscoveryLambdaVersion}}.zip
+                ClusterArn: !Sub arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${AWS::StackName}
 
     InstanceDrainerLambda:
         Type: AWS::CloudFormation::Stack

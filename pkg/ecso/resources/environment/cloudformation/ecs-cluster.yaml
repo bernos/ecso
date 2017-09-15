@@ -291,7 +291,6 @@ Resources:
                     install_all:
                         - install_cfn
                         - install_logs
-                        - install_ecssd_agent
                         - install_dd_agent
                         - install_dns_cleaner
 
@@ -460,29 +459,6 @@ Resources:
                                 unsureRunning: true
                                 files:
                                     - /etc/awslogs/awslogs.conf
-
-                install_ecssd_agent:
-                    commands:
-                        start_ecssd_agent:
-                            command: "start ecssd-agent"
-
-                    files:
-                        "/etc/init/ecssd-agent.conf":
-                            mode: "000644"
-                            owner: root
-                            group: root
-                            content: !Sub |
-                                description "Amazon EC2 Container Service Discovery"
-                                author "Javieros Ros"
-                                start on stopped rc RUNLEVEL=[345]
-                                exec /usr/local/bin/ecssd_agent ${DNSZone} >> /var/log/ecssd_agent.log 2>&1
-                                respawn
-
-                        "/usr/local/bin/ecssd_agent":
-                            source: https://github.com/awslabs/service-discovery-ecs-dns/releases/download/1.2/ecssd_agent
-                            mode: "000755"
-                            owner: root
-                            group: root
 
     # This IAM Role is attached to all of the ECS hosts. It is based on the default role
     # published here:
