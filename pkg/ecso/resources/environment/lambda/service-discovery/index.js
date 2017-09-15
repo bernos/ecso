@@ -191,11 +191,13 @@ const handleEvent = (zoneName, clusterArn, event) => {
 
     return Promise.all([
         getContainerInstance(clusterArn, event.detail.containerInstanceArn),
-        getTaskDefinition(event.detail.taskDefinitionArn)
-    ]).then(([instance, taskDefinition]) =>
+        getTaskDefinition(event.detail.taskDefinitionArn),
+        getDnsZoneId(zoneName)
+    ]).then(([instance, taskDefinition, zoneId]) =>
         updateDnsForContainers(
             desiredState,
             filterDiscoverableContainers(event.detail.containers, taskDefinition),
+            zoneId,
             zoneName,
             instance,
             taskDefinition));
@@ -205,16 +207,22 @@ const handleEvent = (zoneName, clusterArn, event) => {
   Returns a promise that will resolve after updating the DNS entries for a list
   of containers in a single task definition
   */
-const updateDnsForContainers = (desiredState, containers, zoneName, instance, taskDefinition) =>
-    Promise.all(containers.map(updateDnsForContainer(desiredState, zoneName, instance, taskDefinition)));
+const updateDnsForContainers = (desiredState, containers, zoneId, zoneName, instance, taskDefinition) =>
+    Promise.all(containers.map(updateDnsForContainer(desiredState, zoneId, zoneName, instance, taskDefinition)));
 
 /*
   Returns a promise that will resolve after updating the DNS entries for a single
   container in a task definition
   */
-const updateDnsForContainer = (desiredState, zoneName, containerInstance, taskDefinition) => container =>
-    containerChangeBatches(desiredState, zoneName, containerInstance, taskDefinition, container)
-    .then(executeChangeBatches);
+const updateDnsForContainer = (desiredState, zoneId, zoneName, containerInstance, taskDefinition) => container =>
+    executeChangeBatches(
+        containerChangeBatches(
+            desiredState,
+            zoneId,
+            zoneName,
+            containerInstance,
+            taskDefinition,
+            container));
 
 /*
   Filters non-discoverable containers from an array of containers
@@ -267,14 +275,12 @@ const executeChangeBatches = changeBatches =>
     Promise.all(changeBatches.map(executeChangeBatch));
 
 /*
-  Returns a promise for an array of route 53 change batches for a container. The action for each
+  Returns an array of route 53 change batches for a container. The action for each
   change set will be determined by the desiredState and the last known container state
   */
-const containerChangeBatches = (desiredState, zoneName, containerInstance, taskDefinition, container) =>
-    getDnsZoneId(zoneName)
-    .then(zoneId =>
-        containerResourceRecordSets(zoneName, containerInstance, taskDefinition, container)
-        .map(rs => changeBatch(containerAction(desiredState, container), zoneId, rs)));
+const containerChangeBatches = (desiredState, zoneId, zoneName, containerInstance, taskDefinition, container) =>
+    containerResourceRecordSets(zoneName, containerInstance, taskDefinition, container)
+    .map(rs => changeBatch(containerAction(desiredState, container), zoneId, rs));
 
 /*
   Converts a desiredState and last known container state into an appropriate route53 changeset
