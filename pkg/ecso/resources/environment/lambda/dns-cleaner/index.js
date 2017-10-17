@@ -37,10 +37,10 @@ const getResourceRecordSets = (zoneId, suffix) => {
             const rs = records.concat(data.ResourceRecordSets);
             return data.IsTruncated ? fetchPage(rs, data.NextRecordName) : rs;
         });
-    }
+    };
 
     return fetchPage([]).then(rs => filterRecordSets(suffix, rs));
-}
+};
 
 /*
   Returns a promise for an ec2 instance, or null if no instance with the requested
@@ -52,7 +52,7 @@ const getInstanceByPrivateDnsName = name => {
             Name: "private-dns-name",
             Values: [name]
         }]
-    }
+    };
 
     return ec2.describeInstances(params).promise().then(data => {
         if (data.Reservations.length) {
@@ -60,7 +60,7 @@ const getInstanceByPrivateDnsName = name => {
         }
         return null;
     });
-}
+};
 
 /*
   Returns a promise that resolves to the list of record sets rs filtered to only
@@ -88,7 +88,7 @@ const isOrphanRecordSet = recordSet =>
 const hostNameFromSrv = srv => {
     const parts = srv.split(" ");
     return parts[parts.length - 1];
-}
+};
 
 /*
   Returns a promise that resolves once all recordsets are deleted
@@ -105,7 +105,7 @@ const deleteRecordSets = zoneId => recordSets =>
 const executeChangeBatch = params => {
     console.log("Executing change batch ", JSON.stringify(params));
     return r53.changeResourceRecordSets(params).promise();
-}
+};
 
 /*
   Creates an r53 change batch for a list of resourceRecordSets
@@ -134,7 +134,7 @@ const log = (message, data) => {
         message: message,
         data: data
     }));
-}
+};
 /*
   Creates a function that returns a promise that resolves once all orphaned
   records that end with suffix have been deleted
