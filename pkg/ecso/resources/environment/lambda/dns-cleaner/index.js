@@ -158,13 +158,24 @@ const cleanupZone = suffix => zoneId =>
 const cleanup = (zoneName, suffix) =>
     getZoneId(zoneName).then(cleanupZone(suffix));
 
-const zoneName = process.env.DNS_ZONE;
-const suffix = "." + process.env.CLUSTER_NAME + "." + zoneName;
+/*
+  Ensures zonename has trailing .
+ */
+const normalizeZoneName = x => x[x.length-1] === "." ? x : x + ".";
+
+/*
+  Builds a normalized zone name from parts
+  */
+const buildNormalizedZoneName = (...parts) => normalizeZoneName("." + parts.join(".")); 
 
 /*
   Lambda entry point
 */
 exports.handler = function(event, context, cb) {
+    const zoneName = process.env.DNS_ZONE;
+    const suffix = buildNormalizedZoneName(process.env.CLUSTER_NAME, zoneName);
+
+    console.log(`Cleaning records with suffix ${suffix} from zone ${zoneName}`);
     console.log(JSON.stringify(event));
 
     cleanup(zoneName, suffix)
