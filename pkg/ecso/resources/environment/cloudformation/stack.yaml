@@ -102,18 +102,6 @@ Resources:
                     - Logs
                     - Outputs.LogGroup
 
-    DNSCleanerTaskDefinition:
-        Type: AWS::CloudFormation::Stack
-        Properties:
-            TemplateURL: ./dns-cleaner.yaml
-            Parameters:
-                EnvironmentName: !Ref AWS::StackName
-                DNSZone: !Ref DNSZone
-                LogGroupName:
-                    Fn::GetAtt:
-                    - Logs
-                    - Outputs.LogGroup
-
     ALB:
         Type: AWS::CloudFormation::Stack
         Properties:
@@ -127,6 +115,17 @@ Resources:
                   Fn::GetAtt:
                   - SecurityGroups
                   - Outputs.LoadBalancerSecurityGroup
+
+    DnsCleanerLambda:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: ./dns-cleaner.yaml
+            Parameters:
+                DNSZone: !Ref DNSZone
+                EnvironmentName: !Ref AWS::StackName
+                S3BucketName: !Ref S3BucketName
+                S3Key: !Sub ${S3KeyPrefix}/resources/lambda/dns-cleaner-{{.DnsCleanerLambdaVersion}}.zip
+                ClusterName: !Ref AWS::StackName
 
     ServiceDiscoveryLambda:
         Type: AWS::CloudFormation::Stack

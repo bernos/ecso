@@ -1,68 +1,100 @@
 Parameters:
+
     EnvironmentName:
         Description: An environment name that will be prefixed to resource names
         Type: String
 
-    DNSZone:
-        Description: Select the DNS zone to clean
+    S3BucketName:
+        Description: Name of the S3 bucket containing the Lambda source code
         Type: String
 
-    LogGroupName:
-        Description: The name of the cloudwatch log group to send container logs to
+    S3Key:
+        Description: Path in the S3 bucket to the lambda source code
+        Type: String
+        
+    DNSZone:
+        Description: Select the DNS zone to run against
+        Type: String
+
+    ClusterName:
+        Description: The name of ECS cluster
         Type: String
 
 Resources:
-    TaskDefinition:
-        Type: AWS::ECS::TaskDefinition
+    CloudWatchEvents:
+        Type: AWS::Events::Rule
         Properties:
-            Family: !Sub ${EnvironmentName}-dns-cleaner
-            TaskRoleArn: !Ref TaskRole
-            ContainerDefinitions:
-                - Name: dns-cleaner
-                  Command:
-                      - go-wrapper
-                      - run
-                      - -region
-                      - !Ref AWS::Region
-                      - -zone
-                      - !Sub "${DNSZone}."
-                      - -records
-                      - !Sub "*.${EnvironmentName}.${DNSZone}."
-                  Essential: true
-                  Image: bernos/ecso-dns-cleaner:latest
-                  Cpu: 10
-                  Memory: 128
-                  LogConfiguration:
-                    LogDriver: awslogs
-                    Options:
-                        awslogs-group: !Ref LogGroupName
-                        awslogs-region: !Ref AWS::Region
-                        awslogs-stream-prefix: daemon-services/dns-cleaner
+            Name: !Sub ${EnvironmentName}-DnsCleaner-Events
+            State: ENABLED
+            ScheduleExpression: "rate(1 minute)"
+            Targets:
+                - Arn: !GetAtt LambdaFunction.Arn
+                  Id: !Sub ${EnvironmentName}-DnsCleaner-Events-Lambda-Target
 
-    TaskRole:
+    LambdaFunction:
+        Type: AWS::Lambda::Function
+        Properties:
+            FunctionName: !Sub ${EnvironmentName}-DnsCleaner
+            Handler: index.handler
+            Role: !GetAtt LambdaExecutionRole.Arn
+            Runtime: nodejs6.10
+            Timeout: 300
+            Description: A Lambda function that identifies and deletes orphaned DNS records
+            Environment:
+                Variables:
+                    DNS_ZONE: !Ref DNSZone
+                    CLUSTER_NAME: !Ref ClusterName
+            Code:
+                S3Bucket: !Ref S3BucketName
+                S3Key: !Ref S3Key
+
+    InvokeLambdaPermission:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName:
+                Ref: LambdaFunction
+            Action: "lambda:InvokeFunction"
+            Principal: "events.amazonaws.com"
+            SourceArn: !GetAtt CloudWatchEvents.Arn
+
+    LambdaExecutionRole:
         Type: AWS::IAM::Role
         Properties:
-            RoleName: !Sub ${EnvironmentName}-dns-cleaner-role
-            Path: /
-            AssumeRolePolicyDocument: |
-                {
-                    "Statement": [{
-                        "Effect": "Allow",
-                        "Principal": { "Service": [ "ecs-tasks.amazonaws.com" ]},
-                        "Action": [ "sts:AssumeRole" ]
-                    }]
-                }
+            Path: "/"
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - Effect: Allow
+                      Action:
+                          - sts:AssumeRole
+                      Principal:
+                          Service:
+                              - lambda.amazonaws.com
             Policies:
-                - PolicyName: !Sub ecs-service-${AWS::StackName}
+                - PolicyName: root
                   PolicyDocument:
-                    {
-                        "Version": "2012-10-17",
-                        "Statement": [{
-                                "Effect": "Allow",
-                                "Action": [
-                                    "ec2:Describe*",
-                                    "route53:*"
-                                ],
-                                "Resource": "*"
-                        }]
-                    }
+                      Version: '2012-10-17'
+                      Statement:
+                          - Effect: Allow
+                            Resource: "*"
+                            Action:
+                                - logs:CreateLogGroup
+                                - logs:CreateLogStream
+                                - logs:PutLogEvents
+                                - ec2:DescribeInstances
+                                - ec2:DescribeInstanceAttribute
+                                - ec2:DescribeInstanceStatus
+                                - ec2:DescribeHosts
+                                - ecs:Describe*
+                                - ecs:ListContainerInstances
+                                - ecs:SubmitContainerStateChange
+                                - ecs:SubmitTaskStateChange
+                                - ecs:DescribeContainerInstances
+                                - ecs:UpdateContainerInstancesState
+                                - ecs:ListTasks
+                                - ecs:DescribeTasks
+                                - route53:*
+
+Outputs:
+    LambdaFunction:
+        Value: !Ref LambdaFunction

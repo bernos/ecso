@@ -94,7 +94,9 @@ const hostNameFromSrv = srv => {
   Returns a promise that resolves once all recordsets are deleted
   */
 const deleteRecordSets = zoneId => recordSets =>
-    executeChangeBatch(createChangeBatch(zoneId, "DELETE", recordSets));
+    recordSets.length ?
+    executeChangeBatch(createChangeBatch(zoneId, "DELETE", recordSets)) :
+    Promise.resolve("Nothing to delete");
 
 /*
   Returns a promise for the result of calling the changeResourceRecordSets route 53
@@ -125,13 +127,30 @@ const createChange = (action, resourceRecordSet) => ({
 });
 
 /*
+  Logs a message and data to console with standard json format
+  */
+const log = (message, data) => {
+    console.log(JSON.stringify({
+        message: message,
+        data: data
+    }));
+}
+/*
   Creates a function that returns a promise that resolves once all orphaned
   records that end with suffix have been deleted
   */
 const cleanupZone = suffix => zoneId =>
     getResourceRecordSets(zoneId, suffix)
-        .then(findOrphanRecordSets)
-        .then(deleteRecordSets(zoneId));
+    .then(rs => {
+        log("Checking records", rs);
+        return rs;
+    })
+    .then(findOrphanRecordSets)
+    .then(rs => {
+        log("Found orphaned records", rs);
+        return rs;
+    })
+    .then(deleteRecordSets(zoneId));
 /*
   Returns a promise which resolves after deleting all orphaned records
   which contain the suffix in a r53 zone identified by zone name
@@ -139,14 +158,21 @@ const cleanupZone = suffix => zoneId =>
 const cleanup = (zoneName, suffix) =>
     getZoneId(zoneName).then(cleanupZone(suffix));
 
-
-process.env.DNS_ZONE = "advertiser.dev.outfra.xyz.";
-process.env.CLUSTER_NAME = "ecso-demo-dev";
-
 const zoneName = process.env.DNS_ZONE;
 const suffix = "." + process.env.CLUSTER_NAME + "." + zoneName;
 
-cleanup(zoneName, suffix)
-    .catch(err => {
-        console.error(err);
-    });
+/*
+  Lambda entry point
+*/
+exports.handler = function(event, context, cb) {
+    console.log(JSON.stringify(event));
+
+    cleanup(zoneName, suffix)
+        .then(val => {
+            console.log(JSON.stringify(val));
+            cb(null, val);
+        })
+        .catch(err => {
+            cb(err);
+        });
+};
