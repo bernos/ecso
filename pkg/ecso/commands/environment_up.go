@@ -90,10 +90,12 @@ func (cmd *EnvironmentUpCommand) ensureEnvironmentFiles(ctx *ecso.CommandContext
 	templateData := struct {
 		ServiceDiscoveryLambdaVersion string
 		InstanceDrainerLambdaVersion  string
+		DNSCleanerLambdaVersion       string
 		Environment                   *ecso.Environment
 	}{
 		ServiceDiscoveryLambdaVersion: resources.ServiceDiscoveryLambdaVersion,
 		InstanceDrainerLambdaVersion:  resources.InstanceDrainerLambdaVersion,
+		DNSCleanerLambdaVersion:       resources.DNSCleanerLambdaVersion,
 		Environment:                   env,
 	}
 

@@ -1,6 +1,6 @@
 package resources
 
-//go:generate go-bindata -pkg $GOPACKAGE -o resources-generated.go ./...
+//go:generate go-bindata -ignore=.*node_modules -pkg $GOPACKAGE -o resources-generated.go ./...
 
 import (
 	"fmt"
@@ -15,6 +15,8 @@ var (
 	InstanceDrainerLambdaVersion = "1.0.0"
 
 	ServiceDiscoveryLambdaVersion = "1.0.0"
+
+	DNSCleanerLambdaVersion = "1.0.0"
 
 	EnvironmentFiles = environmentFiles()
 
@@ -56,6 +58,9 @@ func environmentLambdas() []Resource {
 
 		NewZipFile(zip("service-discovery", ServiceDiscoveryLambdaVersion),
 			MustParseTemplateAsset("index.js", src("service-discovery", "index.js"))),
+
+		NewZipFile(zip("dns-cleaner", DNSCleanerLambdaVersion),
+			MustParseTemplateAsset("index.js", src("dns-cleaner", "index.js"))),
 	}
 }
 
