@@ -16,7 +16,7 @@ var (
 
 	ServiceDiscoveryLambdaVersion = "1.0.0"
 
-	DnsCleanerLambdaVersion = "1.0.0"
+	DNSCleanerLambdaVersion = "1.0.0"
 
 	EnvironmentFiles = environmentFiles()
 
@@ -59,7 +59,7 @@ func environmentLambdas() []Resource {
 		NewZipFile(zip("service-discovery", ServiceDiscoveryLambdaVersion),
 			MustParseTemplateAsset("index.js", src("service-discovery", "index.js"))),
 
-		NewZipFile(zip("dns-cleaner", DnsCleanerLambdaVersion),
+		NewZipFile(zip("dns-cleaner", DNSCleanerLambdaVersion),
 			MustParseTemplateAsset("index.js", src("dns-cleaner", "index.js"))),
 	}
 }

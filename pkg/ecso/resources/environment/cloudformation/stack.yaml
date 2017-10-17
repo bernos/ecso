@@ -124,7 +124,7 @@ Resources:
                 DNSZone: !Ref DNSZone
                 EnvironmentName: !Ref AWS::StackName
                 S3BucketName: !Ref S3BucketName
-                S3Key: !Sub ${S3KeyPrefix}/resources/lambda/dns-cleaner-{{.DnsCleanerLambdaVersion}}.zip
+                S3Key: !Sub ${S3KeyPrefix}/resources/lambda/dns-cleaner-{{.DNSCleanerLambdaVersion}}.zip
                 ClusterName: !Ref AWS::StackName
 
     ServiceDiscoveryLambda:
