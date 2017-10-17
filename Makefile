@@ -46,7 +46,7 @@ tag:
 
 generate: deps
 	@echo "\n$(OK_COLOR)====> Embedding assets$(NO_COLOR)"
-	go generate -x ./...
+	go generate -x ./pkg/...
 
 test: generate
 	@echo "\n$(OK_COLOR)====> Running tests$(NO_COLOR)"
