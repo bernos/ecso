@@ -1,5 +1,4 @@
 .ecso
 /services
 bin/
-pkg/ecso/resources/resources-generated.go
 node_modules
