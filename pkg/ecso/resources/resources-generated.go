@@ -384,7 +384,7 @@ func resourcesGeneratedGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "resources-generated.go", size: 200704, mode: os.FileMode(420), modTime: time.Unix(1518667983, 0)}
+	info := bindataFileInfo{name: "resources-generated.go", size: 200704, mode: os.FileMode(420), modTime: time.Unix(1519072896, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
