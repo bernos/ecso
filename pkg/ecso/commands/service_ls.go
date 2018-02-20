@@ -12,10 +12,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
-const (
-	ServiceLsEnvironmentOption = "environment"
-)
-
 func NewServiceLsCommand(environmentName string, environmentAPI api.EnvironmentAPI) *ServiceLsCommand {
 	return &ServiceLsCommand{
 		EnvironmentCommand: &EnvironmentCommand{

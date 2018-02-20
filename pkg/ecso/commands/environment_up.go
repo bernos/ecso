@@ -11,11 +11,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/util"
 )
 
-const (
-	EnvironmentUpDryRunOption = "dry-run"
-	EnvironmentUpForceOption  = "force"
-)
-
 func NewEnvironmentUpCommand(environmentName string, environmentAPI api.EnvironmentAPI) *EnvironmentUpCommand {
 	return &EnvironmentUpCommand{
 		EnvironmentCommand: &EnvironmentCommand{

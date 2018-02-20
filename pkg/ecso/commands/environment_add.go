@@ -9,16 +9,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-const (
-	EnvironmentAddVPCOption             = "vpc"
-	EnvironmentAddALBSubnetsOption      = "alb-subnets"
-	EnvironmentAddInstanceSubnetsOption = "instance-subnets"
-	EnvironmentAddInstanceTypeOption    = "instance-type"
-	EnvironmentAddRegionOption          = "region"
-	EnvironmentAddSizeOption            = "size"
-	EnvironmentAddKeyPairOption         = "keypair"
-)
-
 type EnvironmentAddCommand struct {
 	*EnvironmentCommand
 

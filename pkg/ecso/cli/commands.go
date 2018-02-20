@@ -12,9 +12,15 @@ import (
 )
 
 func NewEnvCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
+	options := struct {
+		Unset string
+	}{
+		Unset: "unset",
+	}
+
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return commands.NewEnvCommand(ctx.Args().First()).
-			WithUnset(ctx.Bool(commands.EnvUnsetOption)), nil
+			WithUnset(ctx.Bool(options.Unset)), nil
 	}
 
 	return cli.Command{
@@ -23,7 +29,7 @@ func NewEnvCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) c
 		ArgsUsage: "ENVIRONMENT",
 		Flags: []cli.Flag{
 			cli.BoolFlag{
-				Name:  commands.EnvUnsetOption,
+				Name:  options.Unset,
 				Usage: "If set, output shell commands to unset all ecso environment variables",
 			},
 		},
@@ -47,19 +53,38 @@ func NewEnvironmentCliCommand(project *ecso.Project, dispatcher dispatcher.Dispa
 }
 
 func NewEnvironmentAddCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
+	options := struct {
+		VPC             string
+		ALBSubnets      string
+		InstanceSubnets string
+		InstanceType    string
+		Region          string
+		Size            string
+		KeyPair         string
+	}{
+		VPC:             "vpc",
+		ALBSubnets:      "alb-subnets",
+		InstanceSubnets: "instance-subnets",
+		InstanceType:    "instance-type",
+		Region:          "region",
+		Size:            "size",
+		KeyPair:         "keypair",
+	}
+
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		region := ctx.String(commands.EnvironmentAddRegionOption)
+		region := ctx.String(options.Region)
+
 		if region == "" {
 			region = "ap-southeast-2"
 		}
 
 		return commands.NewEnvironmentAddCommand(ctx.Args().First(), cfg.EnvironmentAPI(region)).
-			WithALBSubnets(ctx.String(commands.EnvironmentAddALBSubnetsOption)).
-			WithInstanceSubnets(ctx.String(commands.EnvironmentAddInstanceSubnetsOption)).
-			WithInstanceType(ctx.String(commands.EnvironmentAddInstanceTypeOption)).
-			WithRegion(ctx.String(commands.EnvironmentAddRegionOption)).
-			WithSize(ctx.Int(commands.EnvironmentAddSizeOption)).
-			WithVPCID(ctx.String(commands.EnvironmentAddVPCOption)), nil
+			WithALBSubnets(ctx.String(options.ALBSubnets)).
+			WithInstanceSubnets(ctx.String(options.InstanceSubnets)).
+			WithInstanceType(ctx.String(options.InstanceType)).
+			WithRegion(ctx.String(options.Region)).
+			WithSize(ctx.Int(options.Size)).
+			WithVPCID(ctx.String(options.VPC)), nil
 	}
 
 	return cli.Command{
@@ -68,31 +93,31 @@ func NewEnvironmentAddCliCommand(project *ecso.Project, dispatcher dispatcher.Di
 		ArgsUsage: "[ENVIRONMENT]",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  commands.EnvironmentAddVPCOption,
+				Name:  options.VPC,
 				Usage: "The vpc to create the environment in",
 			},
 			cli.StringFlag{
-				Name:  commands.EnvironmentAddALBSubnetsOption,
+				Name:  options.ALBSubnets,
 				Usage: "The subnets to place the application load balancer in",
 			},
 			cli.StringFlag{
-				Name:  commands.EnvironmentAddInstanceSubnetsOption,
+				Name:  options.InstanceSubnets,
 				Usage: "The subnets to place the ecs container instances in",
 			},
 			cli.StringFlag{
-				Name:  commands.EnvironmentAddRegionOption,
+				Name:  options.Region,
 				Usage: "The AWS region to create the environment in",
 			},
 			cli.IntFlag{
-				Name:  commands.EnvironmentAddSizeOption,
+				Name:  options.Size,
 				Usage: "Then number of container instances to create",
 			},
 			cli.StringFlag{
-				Name:  commands.EnvironmentAddInstanceTypeOption,
+				Name:  options.InstanceType,
 				Usage: "The type of container instances to create",
 			},
 			cli.StringFlag{
-				Name:  commands.EnvironmentAddKeyPairOption,
+				Name:  options.KeyPair,
 				Usage: "The keypair to use when accessing EC2 instances",
 			},
 		},
@@ -116,10 +141,17 @@ func NewEnvironmentDescribeCliCommand(project *ecso.Project, dispatcher dispatch
 }
 
 func NewEnvironmentDownCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
+
+	options := struct {
+		Force string
+	}{
+		Force: "force",
+	}
+
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeEnvironmentCommand(ctx, project, func(env *ecso.Environment) ecso.Command {
 			return commands.NewEnvironmentDownCommand(env.Name, cfg.EnvironmentAPI(env.Region)).
-				WithForce(ctx.Bool(commands.EnvironmentDownForceOption))
+				WithForce(ctx.Bool(options.Force))
 		})
 	}
 
@@ -130,7 +162,7 @@ func NewEnvironmentDownCliCommand(project *ecso.Project, dispatcher dispatcher.D
 		ArgsUsage:   "ENVIRONMENT",
 		Flags: []cli.Flag{
 			cli.BoolFlag{
-				Name:  commands.EnvironmentDownForceOption,
+				Name:  options.Force,
 				Usage: "Required. Confirms the environment will be terminated",
 			},
 		},
@@ -155,10 +187,16 @@ func NewEnvironmentPsCliCommand(project *ecso.Project, dispatcher dispatcher.Dis
 }
 
 func NewEnvironmentRmCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
+	options := struct {
+		Force string
+	}{
+		Force: "force",
+	}
+
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeEnvironmentCommand(ctx, project, func(env *ecso.Environment) ecso.Command {
 			return commands.NewEnvironmentRmCommand(env.Name, cfg.EnvironmentAPI(env.Region)).
-				WithForce(ctx.Bool(commands.EnvironmentRmForceOption))
+				WithForce(ctx.Bool(options.Force))
 		})
 	}
 
@@ -169,7 +207,7 @@ func NewEnvironmentRmCliCommand(project *ecso.Project, dispatcher dispatcher.Dis
 		ArgsUsage:   "ENVIRONMENT",
 		Flags: []cli.Flag{
 			cli.BoolFlag{
-				Name:  commands.EnvironmentRmForceOption,
+				Name:  options.Force,
 				Usage: "Required. Confirms the environment will be removed",
 			},
 		},
@@ -178,11 +216,23 @@ func NewEnvironmentRmCliCommand(project *ecso.Project, dispatcher dispatcher.Dis
 }
 
 func NewEnvironmentUpCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
+	options := struct {
+		DryRun string
+		Force  string
+	}{
+		DryRun: "dry-run",
+		Force:  "force",
+	}
+
+	const (
+		EnvironmentUpDryRunOption = "dry-run"
+		EnvironmentUpForceOption  = "force"
+	)
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeEnvironmentCommand(ctx, project, func(env *ecso.Environment) ecso.Command {
 			return commands.NewEnvironmentUpCommand(env.Name, cfg.EnvironmentAPI(env.Region)).
-				WithDryRun(ctx.Bool(commands.EnvironmentUpDryRunOption)).
-				WithForce(ctx.Bool(commands.EnvironmentUpForceOption))
+				WithDryRun(ctx.Bool(options.DryRun)).
+				WithForce(ctx.Bool(options.Force))
 		})
 	}
 
@@ -193,11 +243,11 @@ func NewEnvironmentUpCliCommand(project *ecso.Project, dispatcher dispatcher.Dis
 		ArgsUsage:   "ENVIRONMENT",
 		Flags: []cli.Flag{
 			cli.BoolFlag{
-				Name:  commands.EnvironmentUpDryRunOption,
+				Name:  options.DryRun,
 				Usage: "If set, list pending changes, but do not execute the updates.",
 			},
 			cli.BoolFlag{
-				Name:  commands.EnvironmentUpForceOption,
+				Name:  options.Force,
 				Usage: "Override warnings about first time environment deployments if cloud formation stack already exists",
 			},
 		},
@@ -239,11 +289,21 @@ func NewServiceCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatche
 }
 
 func NewServiceAddCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
+	options := struct {
+		DesiredCount string
+		Route        string
+		Port         string
+	}{
+		DesiredCount: "desired-count",
+		Route:        "route",
+		Port:         "port",
+	}
+
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return commands.NewServiceAddCommand(ctx.Args().First()).
-			WithDesiredCount(ctx.Int(commands.ServiceAddDesiredCountOption)).
-			WithRoute(ctx.String(commands.ServiceAddRouteOption)).
-			WithPort(ctx.Int(commands.ServiceAddPortOption)), nil
+			WithDesiredCount(ctx.Int(options.DesiredCount)).
+			WithRoute(ctx.String(options.Route)).
+			WithPort(ctx.Int(options.Port)), nil
 	}
 
 	return cli.Command{
@@ -253,15 +313,15 @@ func NewServiceAddCliCommand(project *ecso.Project, dispatcher dispatcher.Dispat
 		ArgsUsage:   "SERVICE",
 		Flags: []cli.Flag{
 			cli.IntFlag{
-				Name:  commands.ServiceAddDesiredCountOption,
+				Name:  options.DesiredCount,
 				Usage: "The desired number of service instances",
 			},
 			cli.StringFlag{
-				Name:  commands.ServiceAddRouteOption,
+				Name:  options.Route,
 				Usage: "If set, the service will be registered with the load balancer at this route",
 			},
 			cli.IntFlag{
-				Name:  commands.ServiceAddPortOption,
+				Name:  options.Port,
 				Usage: "If set, the loadbalancer will bind to this port of the web container in this service",
 			},
 		},
@@ -270,6 +330,12 @@ func NewServiceAddCliCommand(project *ecso.Project, dispatcher dispatcher.Dispat
 }
 
 func NewServiceDescribeCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
+	options := struct {
+		Environment string
+	}{
+		Environment: "environment",
+	}
+
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, project, func(service *ecso.Service, env *ecso.Environment) ecso.Command {
 			return commands.NewServiceDescribeCommand(service.Name, env.Name, cfg.ServiceAPI(env.Region))
@@ -283,7 +349,7 @@ func NewServiceDescribeCliCommand(project *ecso.Project, dispatcher dispatcher.D
 		ArgsUsage:   "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:   commands.ServiceEnvironmentOption,
+				Name:   options.Environment,
 				Usage:  "The environment to query",
 				EnvVar: "ECSO_ENVIRONMENT",
 			},
@@ -293,10 +359,18 @@ func NewServiceDescribeCliCommand(project *ecso.Project, dispatcher dispatcher.D
 }
 
 func NewServiceDownCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
+	options := struct {
+		Environment string
+		Force       string
+	}{
+		Environment: "environment",
+		Force:       "force",
+	}
+
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, project, func(service *ecso.Service, env *ecso.Environment) ecso.Command {
 			return commands.NewServiceDownCommand(service.Name, env.Name, cfg.ServiceAPI(env.Region)).
-				WithForce(ctx.Bool(commands.ServiceDownForceOption))
+				WithForce(ctx.Bool(options.Force))
 		})
 	}
 
@@ -307,12 +381,12 @@ func NewServiceDownCliCommand(project *ecso.Project, dispatcher dispatcher.Dispa
 		ArgsUsage:   "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:   commands.ServiceEnvironmentOption,
+				Name:   options.Environment,
 				Usage:  "The environment to terminate the service from",
 				EnvVar: "ECSO_ENVIRONMENT",
 			},
 			cli.BoolFlag{
-				Name:  commands.ServiceDownForceOption,
+				Name:  options.Force,
 				Usage: "Required. Confirms the service will be terminated",
 			},
 		},
@@ -321,6 +395,12 @@ func NewServiceDownCliCommand(project *ecso.Project, dispatcher dispatcher.Dispa
 }
 
 func NewServiceEventsCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
+	options := struct {
+		Environment string
+	}{
+		Environment: "environment",
+	}
+
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, project, func(service *ecso.Service, env *ecso.Environment) ecso.Command {
 			return commands.NewServiceEventsCommand(service.Name, env.Name, cfg.ServiceAPI(env.Region))
@@ -333,7 +413,7 @@ func NewServiceEventsCliCommand(project *ecso.Project, dispatcher dispatcher.Dis
 		ArgsUsage: "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:   commands.ServiceEnvironmentOption,
+				Name:   options.Environment,
 				Usage:  "The name of the environment",
 				EnvVar: "ECSO_ENVIRONMENT",
 			},
@@ -343,6 +423,12 @@ func NewServiceEventsCliCommand(project *ecso.Project, dispatcher dispatcher.Dis
 }
 
 func NewServiceLogsCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
+	options := struct {
+		Environment string
+	}{
+		Environment: "environment",
+	}
+
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, project, func(service *ecso.Service, env *ecso.Environment) ecso.Command {
 			return commands.NewServiceLogsCommand(service.Name, env.Name, cfg.ServiceAPI(env.Region))
@@ -355,7 +441,7 @@ func NewServiceLogsCliCommand(project *ecso.Project, dispatcher dispatcher.Dispa
 		ArgsUsage: "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:   commands.ServiceEnvironmentOption,
+				Name:   options.Environment,
 				Usage:  "The environment to terminate the service from",
 				EnvVar: "ECSO_ENVIRONMENT",
 			},
@@ -365,8 +451,14 @@ func NewServiceLogsCliCommand(project *ecso.Project, dispatcher dispatcher.Dispa
 }
 
 func NewServiceLsCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
+	options := struct {
+		Environment string
+	}{
+		Environment: "environment",
+	}
+
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-		e := ctx.String(commands.ServiceLsEnvironmentOption)
+		e := ctx.String(options.Environment)
 
 		if e == "" {
 			e = os.Getenv("ECSO_ENVIRONMENT")
@@ -389,7 +481,7 @@ func NewServiceLsCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatc
 		ArgsUsage: "",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:   commands.ServiceLsEnvironmentOption,
+				Name:   options.Environment,
 				Usage:  "Environment to query",
 				EnvVar: "ECSO_ENVIRONMENT",
 			},
@@ -399,6 +491,12 @@ func NewServiceLsCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatc
 }
 
 func NewServicePsCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
+	options := struct {
+		Environment string
+	}{
+		Environment: "environment",
+	}
+
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, project, func(service *ecso.Service, env *ecso.Environment) ecso.Command {
 			return commands.NewServicePsCommand(service.Name, env.Name, cfg.ServiceAPI(env.Region))
@@ -411,7 +509,7 @@ func NewServicePsCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatc
 		ArgsUsage: "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:   commands.ServiceEnvironmentOption,
+				Name:   options.Environment,
 				Usage:  "The name of the environment",
 				EnvVar: "ECSO_ENVIRONMENT",
 			},
@@ -421,12 +519,20 @@ func NewServicePsCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatc
 }
 
 func NewServiceRollbackCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
+	options := struct {
+		Environment string
+		Version     string
+	}{
+		Environment: "environment",
+		Version:     "version",
+	}
+
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, project, func(service *ecso.Service, env *ecso.Environment) ecso.Command {
 			return commands.NewServiceRollbackCommand(
 				service.Name,
 				env.Name,
-				ctx.String(commands.ServiceRollbackVersionOption),
+				ctx.String(options.Version),
 				cfg.ServiceAPI(env.Region))
 		})
 	}
@@ -438,12 +544,12 @@ func NewServiceRollbackCliCommand(project *ecso.Project, dispatcher dispatcher.D
 		ArgsUsage:   "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:   commands.ServiceEnvironmentOption,
+				Name:   options.Environment,
 				Usage:  "The name of the environment to deploy to",
 				EnvVar: "ECSO_ENVIRONMENT",
 			},
 			cli.StringFlag{
-				Name:  commands.ServiceRollbackVersionOption,
+				Name:  options.Version,
 				Usage: "The version to rollback to",
 			},
 		},
@@ -452,6 +558,12 @@ func NewServiceRollbackCliCommand(project *ecso.Project, dispatcher dispatcher.D
 }
 
 func NewServiceUpCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
+	options := struct {
+		Environment string
+	}{
+		Environment: "environment",
+	}
+
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, project, func(service *ecso.Service, env *ecso.Environment) ecso.Command {
 			return commands.NewServiceUpCommand(service.Name, env.Name, cfg.ServiceAPI(env.Region))
@@ -465,7 +577,7 @@ func NewServiceUpCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatc
 		ArgsUsage:   "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:   commands.ServiceEnvironmentOption,
+				Name:   options.Environment,
 				Usage:  "The name of the environment to deploy to",
 				EnvVar: "ECSO_ENVIRONMENT",
 			},
@@ -475,6 +587,12 @@ func NewServiceUpCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatc
 }
 
 func NewServiceVersionsCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
+	options := struct {
+		Environment string
+	}{
+		Environment: "environment",
+	}
+
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
 		return makeServiceCommand(ctx, project, func(service *ecso.Service, env *ecso.Environment) ecso.Command {
 			return commands.NewServiceVersionsCommand(service.Name, env.Name, cfg.ServiceAPI(env.Region))
@@ -487,7 +605,7 @@ func NewServiceVersionsCliCommand(project *ecso.Project, dispatcher dispatcher.D
 		ArgsUsage: "SERVICE",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:   commands.ServiceEnvironmentOption,
+				Name:   options.Environment,
 				Usage:  "The name of the environment",
 				EnvVar: "ECSO_ENVIRONMENT",
 			},
@@ -515,8 +633,14 @@ func makeEnvironmentCommand(c *cli.Context, project *ecso.Project, fn func(*ecso
 }
 
 func makeServiceCommand(c *cli.Context, project *ecso.Project, fn func(*ecso.Service, *ecso.Environment) ecso.Command) (ecso.Command, error) {
+	options := struct {
+		Environment string
+	}{
+		Environment: "environment",
+	}
+
 	name := c.Args().First()
-	environmentName := c.String(commands.ServiceEnvironmentOption)
+	environmentName := c.String(options.Environment)
 
 	if name == "" {
 		return nil, ecso.NewArgumentRequiredError("service")

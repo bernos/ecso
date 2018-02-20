@@ -10,12 +10,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-const (
-	ServiceAddDesiredCountOption = "desired-count"
-	ServiceAddRouteOption        = "route"
-	ServiceAddPortOption         = "port"
-)
-
 func NewServiceAddCommand(name string) *ServiceAddCommand {
 	return &ServiceAddCommand{
 		name:         name,

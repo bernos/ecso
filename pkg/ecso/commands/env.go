@@ -8,10 +8,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso"
 )
 
-const (
-	EnvUnsetOption = "unset"
-)
-
 func NewEnvCommand(environmentName string) *EnvCommand {
 	return &EnvCommand{
 		EnvironmentCommand: &EnvironmentCommand{

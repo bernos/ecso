@@ -9,10 +9,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-const (
-	EnvironmentDownForceOption = "force"
-)
-
 func NewEnvironmentDownCommand(environmentName string, environmentAPI api.EnvironmentAPI) *EnvironmentDownCommand {
 	return &EnvironmentDownCommand{
 		EnvironmentCommand: &EnvironmentCommand{
@@ -57,7 +53,7 @@ func (cmd *EnvironmentDownCommand) Validate(ctx *ecso.CommandContext) error {
 	}
 
 	if !cmd.force {
-		return ecso.NewOptionRequiredError(EnvironmentDownForceOption)
+		return ecso.NewOptionRequiredError("force")
 	}
 
 	return nil
