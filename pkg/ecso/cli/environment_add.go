@@ -64,7 +64,6 @@ var EnvironmentAddFlags = struct {
 func NewEnvironmentAddCliCommand(project *ecso.Project, dispatcher dispatcher.Dispatcher) cli.Command {
 
 	fn := func(ctx *cli.Context, cfg *config.Config) (ecso.Command, error) {
-
 		return &environmentAddCommandWrapper{ctx, cfg}, nil
 	}
 
