@@ -92,15 +92,12 @@ type environmentAddCommandWrapper struct {
 	cfg    *config.Config
 }
 
-func (wrapper *environmentAddCommandWrapper) Validate(ctx *ecso.CommandContext) error {
-	return nil
-}
-
 func (wrapper *environmentAddCommandWrapper) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
 	var (
 		project         = ctx.Project
 		prefs           = ctx.UserPreferences
 		blue            = ui.NewBannerWriter(w, ui.BlueBold)
+		green           = ui.NewBannerWriter(w, ui.GreenBold)
 		accountDefaults = ecso.AccountDefaults{}
 
 		environmentName = wrapper.cliCtx.Args().First()
@@ -167,11 +164,11 @@ func (wrapper *environmentAddCommandWrapper) Execute(ctx *ecso.CommandContext, r
 	// If yes, then ask for the cfn stack id and collect outputs
 	fmt.Fprintf(blue, "Adding a new environment to the %s project", project.Name)
 
-	if err := ui.AskStringIfEmptyVar(r, w, &environmentName, prompts.Name, "dev", validators.Name); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &environmentName, prompts.Name, ecso.DefaultEnvironmentName, validators.Name); err != nil {
 		return err
 	}
 
-	if err := ui.AskStringIfEmptyVar(r, w, &region, prompts.Region, "ap-southeast-2", validators.Region); err != nil {
+	if err := ui.AskStringIfEmptyVar(r, w, &region, prompts.Region, ecso.DefaultRegion, validators.Region); err != nil {
 		return err
 	}
 
@@ -226,7 +223,18 @@ func (wrapper *environmentAddCommandWrapper) Execute(ctx *ecso.CommandContext, r
 		WithDatadogAPIKey(datadogAPIKey).
 		WithDNSZone(dnsZone)
 
-	return cmd.Execute(ctx, r, w)
+	if err := cmd.Execute(ctx, r, w); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(green, "Successfully added environment '%s' to the project", environmentName)
+	fmt.Fprintf(w, "Now run `ecso environment up %s` to provision the environment in AWS\n\n", environmentName)
+
+	return nil
+}
+
+func (wrapper *environmentAddCommandWrapper) Validate(ctx *ecso.CommandContext) error {
+	return nil
 }
 
 func environmentNameValidator(p *ecso.Project) ui.StringValidator {
@@ -236,8 +244,9 @@ func environmentNameValidator(p *ecso.Project) ui.StringValidator {
 		}
 
 		if p.HasEnvironment(val) {
-			return fmt.Errorf("This project already contains an environment named '%s', please choose another name", val)
+			return ecso.NewEnvironmentExistsError(val)
 		}
+
 		return nil
 	})
 }

@@ -34,6 +34,18 @@ func (err *ArgumentRequiredError) Option() string {
 	return err.arg
 }
 
+type EnvironmentExistsError struct {
+	name string
+}
+
+func NewEnvironmentExistsError(name string) error {
+	return &EnvironmentExistsError{name}
+}
+
+func (err *EnvironmentExistsError) Error() string {
+	return fmt.Sprintf("An environment named '%s' already exists for this project.", err.name)
+}
+
 func IsArgumentRequiredError(err error) bool {
 	_, ok := err.(*ArgumentRequiredError)
 	return ok

@@ -6,7 +6,6 @@ import (
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
 type EnvironmentAddCommand struct {
@@ -78,14 +77,11 @@ func NewEnvironmentAddCommand(environmentName string, environmentAPI api.Environ
 }
 
 func (c *EnvironmentAddCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
-	project := ctx.Project
-	green := ui.NewBannerWriter(w, ui.GreenBold)
-
-	if project.HasEnvironment(c.environmentName) {
-		return fmt.Errorf("An environment named '%s' already exists for this project.", c.environmentName)
+	if ctx.Project.HasEnvironment(c.environmentName) {
+		return ecso.NewEnvironmentExistsError(c.environmentName)
 	}
 
-	project.AddEnvironment(&ecso.Environment{
+	ctx.Project.AddEnvironment(&ecso.Environment{
 		Name:   c.environmentName,
 		Region: c.region,
 		CloudFormationParameters: map[string]string{
@@ -100,18 +96,11 @@ func (c *EnvironmentAddCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w
 		},
 		CloudFormationTags: map[string]string{
 			"environment": c.environmentName,
-			"project":     project.Name,
+			"project":     ctx.Project.Name,
 		},
 	})
 
-	if err := project.Save(); err != nil {
-		return err
-	}
-
-	fmt.Fprintf(green, "Successfully added environment '%s' to the project", c.environmentName)
-	fmt.Fprintf(w, "Now run `ecso environment up %s` to provision the environment in AWS\n\n", c.environmentName)
-
-	return nil
+	return ctx.Project.Save()
 }
 
 func (c *EnvironmentAddCommand) Validate(ctx *ecso.CommandContext) error {

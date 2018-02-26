@@ -18,6 +18,10 @@ var (
 	// EnvironmentCloudFormationTemplateFile is the filename of the root
 	// cloudformation template for an environment
 	EnvironmentCloudFormationTemplateFile = filepath.Join(EnvironmentCloudFormationDir, "stack.yaml")
+
+	DefaultEnvironmentName = "dev"
+
+	DefaultRegion = "ap-southeast-2"
 )
 
 type Environment struct {
