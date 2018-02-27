@@ -34,12 +34,11 @@ func (cmd *ServiceLsCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io
 	}
 
 	tw := ui.NewTableWriter(w, "|")
-	tw.WriteHeader([]byte("SERVICE|ECS SERVICE|TASK|DESIRED|RUNNING|STATUS"))
+	tw.WriteHeader([]byte("SERVICE|TASK|DESIRED|RUNNING|STATUS"))
 
 	for _, s := range services {
 		row := fmt.Sprintf(
-			"%s|%s|%s|%d|%d|%s",
-			localServiceName(s, env, ctx.Project),
+			"%s|%s|%d|%d|%s",
 			*s.ServiceName,
 			util.GetIDFromArn(*s.TaskDefinition),
 			*s.DesiredCount,
