@@ -29,21 +29,21 @@ type Service struct {
 	environmentLookup func(env *Environment) (lconfig.EnvironmentLookup, error)
 	resourceLookup    func(env *Environment) (lconfig.ResourceLookup, error)
 
-	Name          string
-	ComposeFile   string
-	DesiredCount  int
-	Route         string
-	RoutePriority int
-	Port          int
-	Tags          map[string]string
-	Environments  map[string]ServiceConfiguration
+	Name          string                          `yaml:"Name"`
+	ComposeFile   string                          `yaml:"ComposeFile"`
+	DesiredCount  int                             `yaml:"DesiredCount"`
+	Route         string                          `yaml:"Route"`
+	RoutePriority int                             `yaml:"RoutePriority"`
+	Port          int                             `yaml:"Port"`
+	Tags          map[string]string               `yaml:"Tags"`
+	Environments  map[string]ServiceConfiguration `yaml:"Environments"`
 }
 
 // ServiceConfiguration contains environment vars and cloudformation params
 // for a service
 type ServiceConfiguration struct {
-	Env                      map[string]string
-	CloudFormationParameters map[string]string
+	Env                      map[string]string `yaml:"Env"`
+	CloudFormationParameters map[string]string `yaml:"CloudFormationParameters"`
 }
 
 // Dir returns the source directory of the service

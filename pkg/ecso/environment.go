@@ -31,10 +31,10 @@ var (
 type Environment struct {
 	project *Project
 
-	Name                     string
-	Region                   string
-	CloudFormationParameters map[string]string
-	CloudFormationTags       map[string]string
+	Name                     string            `yaml:"Name"`
+	Region                   string            `yaml:"Region"`
+	CloudFormationParameters map[string]string `yaml:"CloudFormationParameters"`
+	CloudFormationTags       map[string]string `yaml:"CloudFormationTags"`
 }
 
 func (e *Environment) GetCloudFormationStackName() string {

@@ -6,11 +6,14 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/bernos/ecso/pkg/ecso/resources"
+	"gopkg.in/yaml.v2"
 )
 
 const (
 	ecsoDotDir      = ".ecso"
-	projectFilename = "project.json"
+	projectFilename = "project.yaml"
 )
 
 // LoadCurrentProject loads the current ecso project from the project.json
@@ -50,7 +53,7 @@ func LoadProject(dir string) (*Project, error) {
 		return nil, err
 	}
 
-	err = json.Unmarshal(data, project)
+	err = yaml.Unmarshal(data, project)
 
 	return project, err
 }
@@ -72,10 +75,10 @@ func NewProject(dir, name, version string) *Project {
 type Project struct {
 	dir string
 
-	Name         string
-	EcsoVersion  string
-	Environments map[string]*Environment
-	Services     map[string]*Service
+	Name         string                  `yaml:"Name"`
+	EcsoVersion  string                  `yaml:"EcsoVersion"`
+	Environments map[string]*Environment `yaml:"Environments"`
+	Services     map[string]*Service     `yaml:"Services"`
 }
 
 func (p *Project) Dir() string {
@@ -98,16 +101,32 @@ func (p *Project) ProjectFile() string {
 	return filepath.Join(p.DotDir(), projectFilename)
 }
 
-func (p *Project) UnmarshalJSON(b []byte) error {
+// func (p *Project) UnmarshalJSON(b []byte) error {
+// 	type Alias Project
+
+// 	aux := (*Alias)(p)
+
+// 	if err := json.Unmarshal(b, aux); err != nil {
+// 		return err
+// 	}
+
+// 	for _, env := range p.Environments {
+// 		env.project = p
+// 	}
+
+// 	for _, svc := range p.Services {
+// 		svc.project = p
+// 	}
+
+// 	return nil
+// }
+
+func (p *Project) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type Alias Project
 
-	aux := &struct {
-		*Alias
-	}{
-		Alias: (*Alias)(p),
-	}
+	aux := (*Alias)(p)
 
-	if err := json.Unmarshal(b, aux); err != nil {
+	if err := unmarshal(aux); err != nil {
 		return err
 	}
 
@@ -123,14 +142,17 @@ func (p *Project) UnmarshalJSON(b []byte) error {
 }
 
 func (p *Project) Save() error {
-	w, err := os.Create(p.ProjectFile())
-	if err != nil {
-		return err
-	}
+	transform := resources.TemplateTransformation(p)
 
-	_, err = p.WriteTo(w)
+	return resources.RestoreAssetWithTransform(p.DotDir(), "project.yaml", "", transform)
+	// w, err := os.Create(p.ProjectFile())
+	// if err != nil {
+	// 	return err
+	// }
 
-	return err
+	// _, err = p.WriteTo(w)
+
+	// return err
 }
 
 func (p *Project) WriteTo(w io.Writer) (int64, error) {

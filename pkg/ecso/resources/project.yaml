@@ -1,0 +1,30 @@
+Name: {{.Name}}
+EcsoVersion: {{.EcsoVersion}}
+
+Environments: {{range .Environments}}
+  {{.Name}}:
+    Name: {{.Name}}
+    Region: {{.Region}}
+    CloudFormationParameters:{{range $k, $v := .CloudFormationParameters}}
+      {{$k}}: {{$v}}{{end}}
+    CloudFormationTags:{{range $k, $v := .CloudFormationTags}}
+      {{$k}}: {{$v}}{{end}}
+{{end}}
+Services: {{range .Services}}
+  {{.Name}}:
+    Name: {{.Name}}
+    ComposeFile: {{.ComposeFile}}
+    DesiredCount: {{.DesiredCount}}
+    {{if .Route}}Route: {{.Route}}
+    RoutePriority: {{.RoutePriority}}
+    Port: {{.Port}}{{end}}
+    Tags:{{range $k, $v := .Tags}}
+      {{$k}}: {{$v}}{{end}}
+    Environments:{{range $k, $v := .Environments}}
+      {{$k}}:
+        Env: {{range $k, $v := $v.Env}}
+          {{$k}}: {{$v}}{{end}}
+        CloudFormationParameters: {{range $k, $v := $v.CloudFormationParameters}}
+          {{$k}}: {{$v}}{{end}}{{end}}
+{{end}}
+      
