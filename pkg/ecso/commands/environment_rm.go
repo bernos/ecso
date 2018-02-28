@@ -9,10 +9,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-const (
-	EnvironmentRmForceOption = "force"
-)
-
 func NewEnvironmentRmCommand(environmentName string, environmentAPI api.EnvironmentAPI) *EnvironmentRmCommand {
 	return &EnvironmentRmCommand{
 		EnvironmentCommand: &EnvironmentCommand{
@@ -63,7 +59,7 @@ func (cmd *EnvironmentRmCommand) Validate(ctx *ecso.CommandContext) error {
 	}
 
 	if !cmd.force {
-		return ecso.NewOptionRequiredError(EnvironmentRmForceOption)
+		return ecso.NewOptionRequiredError("force")
 	}
 
 	return nil

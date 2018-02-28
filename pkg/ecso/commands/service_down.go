@@ -9,10 +9,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-const (
-	ServiceDownForceOption = "force"
-)
-
 func NewServiceDownCommand(name string, environmentName string, serviceAPI api.ServiceAPI) *ServiceDownCommand {
 	return &ServiceDownCommand{
 		ServiceCommand: &ServiceCommand{
@@ -58,7 +54,7 @@ func (cmd *ServiceDownCommand) Validate(ctx *ecso.CommandContext) error {
 	}
 
 	if !cmd.force {
-		return ecso.NewOptionRequiredError(ServiceDownForceOption)
+		return ecso.NewOptionRequiredError("force")
 	}
 
 	return nil

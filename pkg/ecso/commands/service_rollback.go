@@ -9,10 +9,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
-const (
-	ServiceRollbackVersionOption = "version"
-)
-
 func NewServiceRollbackCommand(name string, environmentName string, version string, serviceAPI api.ServiceAPI) *ServiceRollbackCommand {
 	return &ServiceRollbackCommand{
 		ServiceCommand: &ServiceCommand{

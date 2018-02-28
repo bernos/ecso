@@ -7,10 +7,6 @@ import (
 	"github.com/bernos/ecso/pkg/ecso/api"
 )
 
-const (
-	ServiceEnvironmentOption = "environment"
-)
-
 type ServiceCommand struct {
 	name            string
 	environmentName string
