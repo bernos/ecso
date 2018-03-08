@@ -1,12 +1,10 @@
 package commands
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/bernos/ecso/pkg/ecso"
 	"github.com/bernos/ecso/pkg/ecso/api"
-	"github.com/bernos/ecso/pkg/ecso/ui"
 )
 
 func NewEnvironmentDownCommand(environmentName string, environmentAPI api.EnvironmentAPI) *EnvironmentDownCommand {
@@ -32,19 +30,9 @@ func (cmd *EnvironmentDownCommand) Execute(ctx *ecso.CommandContext, r io.Reader
 	var (
 		project = ctx.Project
 		env     = cmd.Environment(ctx)
-		blue    = ui.NewBannerWriter(w, ui.BlueBold)
-		green   = ui.NewBannerWriter(w, ui.GreenBold)
 	)
 
-	fmt.Fprintf(blue, "Stopping '%s' environment", env.Name)
-
-	if err := cmd.environmentAPI.EnvironmentDown(project, env, w); err != nil {
-		return err
-	}
-
-	fmt.Fprintf(green, "Successfully stopped '%s' environment", env.Name)
-
-	return nil
+	return cmd.environmentAPI.EnvironmentDown(project, env, w)
 }
 
 func (cmd *EnvironmentDownCommand) Validate(ctx *ecso.CommandContext) error {
