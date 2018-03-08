@@ -101,26 +101,6 @@ func (p *Project) ProjectFile() string {
 	return filepath.Join(p.DotDir(), projectFilename)
 }
 
-// func (p *Project) UnmarshalJSON(b []byte) error {
-// 	type Alias Project
-
-// 	aux := (*Alias)(p)
-
-// 	if err := json.Unmarshal(b, aux); err != nil {
-// 		return err
-// 	}
-
-// 	for _, env := range p.Environments {
-// 		env.project = p
-// 	}
-
-// 	for _, svc := range p.Services {
-// 		svc.project = p
-// 	}
-
-// 	return nil
-// }
-
 func (p *Project) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type Alias Project
 
@@ -145,14 +125,6 @@ func (p *Project) Save() error {
 	transform := resources.TemplateTransformation(p)
 
 	return resources.RestoreAssetWithTransform(p.DotDir(), "project.yaml", "", transform)
-	// w, err := os.Create(p.ProjectFile())
-	// if err != nil {
-	// 	return err
-	// }
-
-	// _, err = p.WriteTo(w)
-
-	// return err
 }
 
 func (p *Project) WriteTo(w io.Writer) (int64, error) {
