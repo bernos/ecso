@@ -122,7 +122,7 @@ func (p *Project) UnmarshalYAML(unmarshal func(interface{}) error) error {
 func (p *Project) Save() error {
 	transform := resources.TemplateTransformation(p)
 
-	return resources.RestoreAssetWithTransform(p.DotDir(), "project.yaml", "", transform)
+	return resources.RestoreAssetWithTransform(p.DotDir(), projectFilename, "", transform)
 }
 
 func (p *Project) AddEnvironment(environment *Environment) {
