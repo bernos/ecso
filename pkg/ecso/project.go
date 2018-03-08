@@ -1,8 +1,6 @@
 package ecso
 
 import (
-	"encoding/json"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -16,7 +14,7 @@ const (
 	projectFilename = "project.yaml"
 )
 
-// LoadCurrentProject loads the current ecso project from the project.json
+// LoadCurrentProject loads the current ecso project from the project.yaml
 // file located at the dir given by GetCurrentProjectDir()
 func LoadCurrentProject() (*Project, error) {
 	dir, err := GetCurrentProjectDir()
@@ -42,7 +40,7 @@ func GetCurrentProjectDir() (string, error) {
 	return os.Getwd()
 }
 
-// LoadProject loads a project from the project.json file in the dir
+// LoadProject loads a project from the project.yaml file in the dir
 // given by dir
 func LoadProject(dir string) (*Project, error) {
 	project := NewProject(dir, "unknown", "unknown")
@@ -125,17 +123,6 @@ func (p *Project) Save() error {
 	transform := resources.TemplateTransformation(p)
 
 	return resources.RestoreAssetWithTransform(p.DotDir(), "project.yaml", "", transform)
-}
-
-func (p *Project) WriteTo(w io.Writer) (int64, error) {
-	b, err := json.Marshal(p)
-	if err != nil {
-		return 0, err
-	}
-
-	n, err := w.Write(b)
-
-	return int64(n), err
 }
 
 func (p *Project) AddEnvironment(environment *Environment) {
