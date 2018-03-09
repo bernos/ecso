@@ -1,19 +1,20 @@
 package ecso
 
 import (
-	"encoding/json"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/bernos/ecso/pkg/ecso/resources"
+	"gopkg.in/yaml.v2"
 )
 
 const (
 	ecsoDotDir      = ".ecso"
-	projectFilename = "project.json"
+	projectFilename = "project.yaml"
 )
 
-// LoadCurrentProject loads the current ecso project from the project.json
+// LoadCurrentProject loads the current ecso project from the project.yaml
 // file located at the dir given by GetCurrentProjectDir()
 func LoadCurrentProject() (*Project, error) {
 	dir, err := GetCurrentProjectDir()
@@ -39,7 +40,7 @@ func GetCurrentProjectDir() (string, error) {
 	return os.Getwd()
 }
 
-// LoadProject loads a project from the project.json file in the dir
+// LoadProject loads a project from the project.yaml file in the dir
 // given by dir
 func LoadProject(dir string) (*Project, error) {
 	project := NewProject(dir, "unknown", "unknown")
@@ -50,7 +51,7 @@ func LoadProject(dir string) (*Project, error) {
 		return nil, err
 	}
 
-	err = json.Unmarshal(data, project)
+	err = yaml.Unmarshal(data, project)
 
 	return project, err
 }
@@ -72,10 +73,10 @@ func NewProject(dir, name, version string) *Project {
 type Project struct {
 	dir string
 
-	Name         string
-	EcsoVersion  string
-	Environments map[string]*Environment
-	Services     map[string]*Service
+	Name         string                  `yaml:"Name"`
+	EcsoVersion  string                  `yaml:"EcsoVersion"`
+	Environments map[string]*Environment `yaml:"Environments"`
+	Services     map[string]*Service     `yaml:"Services"`
 }
 
 func (p *Project) Dir() string {
@@ -98,16 +99,12 @@ func (p *Project) ProjectFile() string {
 	return filepath.Join(p.DotDir(), projectFilename)
 }
 
-func (p *Project) UnmarshalJSON(b []byte) error {
+func (p *Project) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type Alias Project
 
-	aux := &struct {
-		*Alias
-	}{
-		Alias: (*Alias)(p),
-	}
+	aux := (*Alias)(p)
 
-	if err := json.Unmarshal(b, aux); err != nil {
+	if err := unmarshal(aux); err != nil {
 		return err
 	}
 
@@ -123,25 +120,9 @@ func (p *Project) UnmarshalJSON(b []byte) error {
 }
 
 func (p *Project) Save() error {
-	w, err := os.Create(p.ProjectFile())
-	if err != nil {
-		return err
-	}
+	transform := resources.TemplateTransformation(p)
 
-	_, err = p.WriteTo(w)
-
-	return err
-}
-
-func (p *Project) WriteTo(w io.Writer) (int64, error) {
-	b, err := json.Marshal(p)
-	if err != nil {
-		return 0, err
-	}
-
-	n, err := w.Write(b)
-
-	return int64(n), err
+	return resources.RestoreAssetWithTransform(p.DotDir(), projectFilename, "", transform)
 }
 
 func (p *Project) AddEnvironment(environment *Environment) {

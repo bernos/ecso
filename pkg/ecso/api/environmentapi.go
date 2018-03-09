@@ -256,10 +256,6 @@ func (api *environmentAPI) EnvironmentUp(p *ecso.Project, env *ecso.Environment,
 		return err
 	}
 
-	if err := api.uploadEnvironmentResources(bucket, env, version, w); err != nil {
-		return err
-	}
-
 	result, err := api.deployEnvironmentStack(bucket, p, env, version, dryRun, w)
 	if err != nil {
 		return err
@@ -347,14 +343,4 @@ func (api *environmentAPI) deployEnvironmentStack(bucket string, project *ecso.P
 	}
 
 	return cfn.Deploy(pkg, stackName, dryRun, ui.NewPrefixWriter(w, "  "))
-}
-
-func (api *environmentAPI) uploadEnvironmentResources(bucket string, env *ecso.Environment, version string, w io.Writer) error {
-	info := ui.NewInfoWriter(w)
-
-	fmt.Fprintf(info, "Uploading resources for the '%s' environment to S3", env.Name)
-
-	s3Helper := helpers.NewS3Helper(api.s3API, env.Region)
-
-	return s3Helper.UploadDir(env.GetResourceDir(), bucket, env.GetResourceBucketPrefix(), ui.NewPrefixWriter(w, "  "))
 }

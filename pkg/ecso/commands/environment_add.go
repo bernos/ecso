@@ -77,10 +77,6 @@ func NewEnvironmentAddCommand(environmentName string, environmentAPI api.Environ
 }
 
 func (c *EnvironmentAddCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w io.Writer) error {
-	if ctx.Project.HasEnvironment(c.environmentName) {
-		return ecso.NewEnvironmentExistsError(c.environmentName)
-	}
-
 	ctx.Project.AddEnvironment(&ecso.Environment{
 		Name:   c.environmentName,
 		Region: c.region,
@@ -104,5 +100,8 @@ func (c *EnvironmentAddCommand) Execute(ctx *ecso.CommandContext, r io.Reader, w
 }
 
 func (c *EnvironmentAddCommand) Validate(ctx *ecso.CommandContext) error {
+	if ctx.Project.HasEnvironment(c.environmentName) {
+		return ecso.NewEnvironmentExistsError(c.environmentName)
+	}
 	return nil
 }

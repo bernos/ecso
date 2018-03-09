@@ -76,13 +76,11 @@ func (cmd *ServiceAddCommand) Validate(ctx *ecso.CommandContext) error {
 	if cmd.route != "" && cmd.port == 0 {
 		return fmt.Errorf("Port is required")
 	}
+
 	return nil
 }
 
 func (cmd *ServiceAddCommand) createResources(project *ecso.Project, service *ecso.Service) error {
-	cfnWriter := resources.NewFileSystemResourceWriter(service.GetCloudFormationTemplateDir())
-	resourceWriter := resources.NewFileSystemResourceWriter(service.Dir())
-
 	templateData := struct {
 		Service *ecso.Service
 		Project *ecso.Project
@@ -91,21 +89,11 @@ func (cmd *ServiceAddCommand) createResources(project *ecso.Project, service *ec
 		Project: project,
 	}
 
-	var serviceResources *resources.ServiceResources
+	transform := resources.TemplateTransformation(templateData)
 
 	if len(service.Route) > 0 {
-		serviceResources = &resources.WebService
-	} else {
-		serviceResources = &resources.WorkerService
+		return resources.RestoreAssetDirWithTransform(service.Dir(), "services/web", transform)
 	}
 
-	if err := cfnWriter.WriteResource(serviceResources.CloudFormationTemplate, templateData); err != nil {
-		return err
-	}
-
-	if err := resourceWriter.WriteResource(serviceResources.ComposeFile, templateData); err != nil {
-		return err
-	}
-
-	return nil
+	return resources.RestoreAssetDirWithTransform(service.Dir(), "services/worker", transform)
 }
